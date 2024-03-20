@@ -10,18 +10,20 @@ version = "2.3.1"
 readme = "../../README.md"
 
 [dependencies]
-arrayref  = "0.3"
+arrayref = "0.3"
 auto_impl = { version = "1.0", default-features = false }
 bytes = { version = "1.1", default-features = false }
 futures = { version = "0.3.24", optional = true }
+halo2_proofs = { git = "https://github.com/scroll-tech/halo2.git", branch = "v1.1" }
 hashbrown = { version = "0.13" }
+hash-circuit = { package = "poseidon-circuit", git = "https://github.com/scroll-tech/poseidon-circuit.git", branch = "scroll-dev-1201" }
 hex = { version = "0.4", optional = true }
 num_enum = { version = "0.5", default-features = false }#used for SpecId from u8 cast
 parking_lot = { version = "0.12", optional = true }
 primitive-types = { version = "0.12", default-features = false, features = ["rlp"] }
 revm_precompiles = { path = "../revm_precompiles", version = "1.1.2", default-features = false }
 rlp = { version = "0.5", default-features = false }#used for create2 address calculation
-serde = { version = "1.0", features = ["derive","rc"], optional = true }
+serde = { version = "1.0", features = ["derive", "rc"], optional = true }
 sha3 = { version = "0.10", default-features = false }
 tokio = { version = "1.21", features = ["rt-multi-thread", "macros"], optional = true }
 web3 = { version = "0.18", optional = true }

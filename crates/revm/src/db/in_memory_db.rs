@@ -1,5 +1,5 @@
 use super::{DatabaseCommit, DatabaseRef};
-use crate::{interpreter::bytecode::Bytecode, Database, KECCAK_EMPTY};
+use crate::{interpreter::bytecode::Bytecode, Database, KECCAK_EMPTY, POSEIDON_EMPTY};
 use crate::{Account, AccountInfo, Log};
 use alloc::vec::Vec;
 use core::convert::Infallible;
@@ -94,7 +94,7 @@ pub enum AccountState {
 impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
         let mut contracts = Map::new();
-        contracts.insert(KECCAK_EMPTY, Bytecode::new());
+        contracts.insert(POSEIDON_EMPTY, Bytecode::new());
         contracts.insert(H256::zero(), Bytecode::new());
         Self {
             accounts: Map::new(),
@@ -109,13 +109,15 @@ impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
         if let Some(code) = &account.code {
             if !code.is_empty() {
                 account.code_hash = code.hash();
+                account.keccak_code_hash = code.keccak_hash();
                 self.contracts
                     .entry(account.code_hash)
                     .or_insert_with(|| code.clone());
             }
         }
         if account.code_hash.is_zero() {
-            account.code_hash = KECCAK_EMPTY;
+            account.code_hash = POSEIDON_EMPTY;
+            account.keccak_code_hash = KECCAK_EMPTY;
         }
     }
 
@@ -352,12 +354,13 @@ impl DatabaseRef for EmptyDB {
 ///
 /// Any other address will return an empty account.
 #[derive(Debug, Default, Clone)]
-pub struct BenchmarkDB(pub Bytecode, H256);
+pub struct BenchmarkDB(pub Bytecode, H256, H256);
 
 impl BenchmarkDB {
     pub fn new_bytecode(bytecode: Bytecode) -> Self {
         let hash = bytecode.hash();
-        Self(bytecode, hash)
+        let keccak_hash = bytecode.keccak_hash();
+        Self(bytecode, hash, keccak_hash)
     }
 }
 
@@ -371,6 +374,7 @@ impl Database for BenchmarkDB {
                 balance: U256::from(10000000),
                 code: Some(self.0.clone()),
                 code_hash: self.1,
+                keccak_code_hash: self.2,
             }));
         }
         Ok(None)

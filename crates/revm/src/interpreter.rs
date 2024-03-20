@@ -3,7 +3,7 @@ mod contract;
 pub(crate) mod memory;
 mod stack;
 
-pub use bytecode::{Bytecode, BytecodeLocked, BytecodeState};
+pub use bytecode::{hash_code_poseidon, Bytecode, BytecodeLocked, BytecodeState};
 pub use contract::Contract;
 pub use memory::Memory;
 pub use stack::Stack;

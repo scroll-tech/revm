@@ -1,4 +1,7 @@
-use crate::{interpreter::bytecode::Bytecode, models::SelfDestructResult, Return, KECCAK_EMPTY};
+use crate::{
+    interpreter::bytecode::Bytecode, models::SelfDestructResult, Return, KECCAK_EMPTY,
+    POSEIDON_EMPTY,
+};
 use alloc::{vec, vec::Vec};
 use core::mem::{self};
 use hashbrown::{hash_map::Entry, HashMap as Map};
@@ -232,6 +235,7 @@ impl JournaledState {
             });
 
         account.info.code_hash = code.hash();
+        account.info.keccak_code_hash = code.keccak_hash();
         account.info.code = Some(code);
     }
 
@@ -329,7 +333,8 @@ impl JournaledState {
             .iter_mut()
             .for_each(|(_, slot)| *slot = empty.clone());
 
-        acc.info.code_hash = KECCAK_EMPTY;
+        acc.info.code_hash = POSEIDON_EMPTY;
+        acc.info.keccak_code_hash = KECCAK_EMPTY;
         acc.info.code = None;
 
         self.journal
@@ -398,6 +403,7 @@ impl JournaledState {
                 JournalEntry::CodeChange { address, had_code } => {
                     let acc = state.get_mut(&address).unwrap();
                     acc.info.code_hash = had_code.hash();
+                    acc.info.keccak_code_hash = had_code.keccak_hash();
                     acc.info.code = Some(had_code);
                 }
             }
@@ -527,7 +533,7 @@ impl JournaledState {
     ) -> Result<(&mut Account, bool), DB::Error> {
         let (acc, is_cold) = self.load_account(address, db)?;
         if acc.info.code.is_none() {
-            if acc.info.code_hash == KECCAK_EMPTY {
+            if acc.info.code_hash == POSEIDON_EMPTY {
                 let empty = Bytecode::new();
                 acc.info.code = Some(empty);
             } else {

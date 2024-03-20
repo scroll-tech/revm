@@ -8,7 +8,7 @@ use crate::{
     precompiles, return_ok, return_revert, AnalysisKind, CallContext, CallInputs, CallScheme,
     CreateInputs, CreateScheme, Env, ExecutionResult, Gas, Inspector, Log, Return, Spec,
     SpecId::{self, *},
-    TransactOut, TransactTo, Transfer, KECCAK_EMPTY,
+    TransactOut, TransactTo, Transfer, KECCAK_EMPTY, POSEIDON_EMPTY,
 };
 use alloc::vec::Vec;
 use bytes::Bytes;
@@ -106,7 +106,7 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> Transact
         // This EIP is introduced after london but there was no colision in past
         // so we can leave it enabled always
         if !disable_eip3607
-            && self.data.journaled_state.account(caller).info.code_hash != KECCAK_EMPTY
+            && self.data.journaled_state.account(caller).info.code_hash != POSEIDON_EMPTY
         {
             return exit(Return::RejectCallerWithCode);
         }
@@ -782,7 +782,7 @@ impl<'a, GSPEC: Spec, DB: Database + 'a, const INSPECT: bool> Host
             return Some((H256::zero(), is_cold));
         }
 
-        Some((acc.info.code_hash, is_cold))
+        Some((acc.info.keccak_code_hash, is_cold))
     }
 
     fn sload(&mut self, address: H160, index: U256) -> Option<(U256, bool)> {

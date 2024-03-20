@@ -1,7 +1,8 @@
 use super::contract::{AnalysisData, ValidJumpAddress};
-use crate::{opcode, spec_opcode_gas, Spec, KECCAK_EMPTY};
+use crate::{opcode, spec_opcode_gas, Spec, KECCAK_EMPTY, POSEIDON_EMPTY};
 use bytes::Bytes;
-use primitive_types::H256;
+use halo2_proofs::halo2curves::{bn256::Fr, group::ff::PrimeField};
+use primitive_types::{H256, U256};
 use sha3::{Digest, Keccak256};
 use std::sync::Arc;
 
@@ -24,6 +25,7 @@ pub struct Bytecode {
     #[cfg_attr(feature = "with-serde", serde(with = "crate::models::serde_hex_bytes"))]
     bytecode: Bytes,
     hash: H256,
+    keccak_hash: H256,
     state: BytecodeState,
 }
 
@@ -38,7 +40,8 @@ impl Bytecode {
         // bytecode with one STOP opcode
         Bytecode {
             bytecode: vec![0].into(),
-            hash: KECCAK_EMPTY,
+            hash: POSEIDON_EMPTY,
+            keccak_hash: KECCAK_EMPTY,
             state: BytecodeState::Analysed {
                 len: 0,
                 jumptable: ValidJumpAddress::new(Arc::new(vec![AnalysisData::none()]), 0),
@@ -47,14 +50,18 @@ impl Bytecode {
     }
 
     pub fn new_raw(bytecode: Bytes) -> Self {
-        let hash = if bytecode.is_empty() {
-            KECCAK_EMPTY
+        let (hash, keccak_hash) = if bytecode.is_empty() {
+            (POSEIDON_EMPTY, KECCAK_EMPTY)
         } else {
-            H256::from_slice(Keccak256::digest(&bytecode).as_slice())
+            (
+                hash_code_poseidon(&bytecode),
+                H256::from_slice(Keccak256::digest(&bytecode).as_slice()),
+            )
         };
         Self {
             bytecode,
             hash,
+            keccak_hash,
             state: BytecodeState::Raw,
         }
     }
@@ -62,11 +69,12 @@ impl Bytecode {
     /// Create new raw Bytecode with hash
     ///
     /// # Safety
-    /// Hash need to be appropriate keccak256 over bytecode.
-    pub unsafe fn new_raw_with_hash(bytecode: Bytes, hash: H256) -> Self {
+    /// Hash need to be appropriate poseidon and keccak256 over bytecode.
+    pub unsafe fn new_raw_with_hash(bytecode: Bytes, hash: H256, keccak_hash: H256) -> Self {
         Self {
             bytecode,
             hash,
+            keccak_hash,
             state: BytecodeState::Raw,
         }
     }
@@ -76,8 +84,18 @@ impl Bytecode {
     /// # Safety
     /// Bytecode need to end with STOP (0x00) opcode as checked bytecode assumes
     /// that it is safe to iterate over bytecode without checking lengths
-    pub unsafe fn new_checked(bytecode: Bytes, len: usize, hash: Option<H256>) -> Self {
+    pub unsafe fn new_checked(
+        bytecode: Bytes,
+        len: usize,
+        hash: Option<H256>,
+        keccak_hash: Option<H256>,
+    ) -> Self {
         let hash = match hash {
+            None if len == 0 => POSEIDON_EMPTY,
+            None => hash_code_poseidon(&bytecode),
+            Some(hash) => hash,
+        };
+        let keccak_hash = match keccak_hash {
             None if len == 0 => KECCAK_EMPTY,
             None => H256::from_slice(Keccak256::digest(&bytecode).as_slice()),
             Some(hash) => hash,
@@ -85,6 +103,7 @@ impl Bytecode {
         Self {
             bytecode,
             hash,
+            keccak_hash,
             state: BytecodeState::Checked { len },
         }
     }
@@ -100,8 +119,14 @@ impl Bytecode {
         len: usize,
         jumptable: ValidJumpAddress,
         hash: Option<H256>,
+        keccak_hash: Option<H256>,
     ) -> Self {
         let hash = match hash {
+            None if len == 0 => POSEIDON_EMPTY,
+            None => hash_code_poseidon(&bytecode),
+            Some(hash) => hash,
+        };
+        let keccak_hash = match keccak_hash {
             None if len == 0 => KECCAK_EMPTY,
             None => H256::from_slice(Keccak256::digest(&bytecode).as_slice()),
             Some(hash) => hash,
@@ -109,6 +134,7 @@ impl Bytecode {
         Self {
             bytecode,
             hash,
+            keccak_hash,
             state: BytecodeState::Analysed { len, jumptable },
         }
     }
@@ -119,6 +145,10 @@ impl Bytecode {
 
     pub fn hash(&self) -> H256 {
         self.hash
+    }
+
+    pub fn keccak_hash(&self) -> H256 {
+        self.keccak_hash
     }
 
     pub fn state(&self) -> &BytecodeState {
@@ -150,6 +180,7 @@ impl Bytecode {
                 Self {
                     bytecode: bytecode.into(),
                     hash: self.hash,
+                    keccak_hash: self.keccak_hash,
                     state: BytecodeState::Checked { len },
                 }
             }
@@ -159,6 +190,7 @@ impl Bytecode {
 
     pub fn to_analysed<SPEC: Spec>(self) -> Self {
         let hash = self.hash;
+        let keccak_hash = self.keccak_hash;
         let (bytecode, len) = match self.state {
             BytecodeState::Raw => {
                 let len = self.bytecode.len();
@@ -173,6 +205,7 @@ impl Bytecode {
         Self {
             bytecode,
             hash,
+            keccak_hash,
             state: BytecodeState::Analysed { len, jumptable },
         }
     }
@@ -181,6 +214,7 @@ impl Bytecode {
         let Bytecode {
             bytecode,
             hash,
+            keccak_hash,
             state,
         } = self.to_analysed::<SPEC>();
         if let BytecodeState::Analysed { len, jumptable } = state {
@@ -188,6 +222,7 @@ impl Bytecode {
                 bytecode,
                 len,
                 hash,
+                keccak_hash,
                 jumptable,
             }
         } else {
@@ -268,6 +303,7 @@ pub struct BytecodeLocked {
     bytecode: Bytes,
     len: usize,
     hash: H256,
+    keccak_hash: H256,
     jumptable: ValidJumpAddress,
 }
 
@@ -283,6 +319,10 @@ impl BytecodeLocked {
         self.hash
     }
 
+    pub fn keccak_hash(&self) -> H256 {
+        self.keccak_hash
+    }
+
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
@@ -291,6 +331,7 @@ impl BytecodeLocked {
         Bytecode {
             bytecode: self.bytecode,
             hash: self.hash,
+            keccak_hash: self.keccak_hash,
             state: BytecodeState::Analysed {
                 len: self.len,
                 jumptable: self.jumptable,
@@ -308,4 +349,46 @@ impl BytecodeLocked {
     pub fn jumptable(&self) -> &ValidJumpAddress {
         &self.jumptable
     }
+}
+
+/// Default number of bytes to pack into a field element.
+pub const POSEIDON_HASH_BYTES_IN_FIELD: usize = 31;
+
+/// Poseidon code hash
+pub fn hash_code_poseidon(code: &[u8]) -> H256 {
+    use hash_circuit::hash::{Hashable, MessageHashable, HASHABLE_DOMAIN_SPEC};
+
+    let bytes_in_field = POSEIDON_HASH_BYTES_IN_FIELD;
+    let fls = (0..(code.len() / bytes_in_field))
+        .map(|i| i * bytes_in_field)
+        .map(|i| {
+            let mut buf: [u8; 32] = [0; 32];
+            U256::from_big_endian(&code[i..i + bytes_in_field]).to_little_endian(&mut buf);
+            Fr::from_bytes(&buf).unwrap()
+        });
+    let msgs: Vec<_> = fls
+        .chain(if code.len() % bytes_in_field == 0 {
+            None
+        } else {
+            let last_code = &code[code.len() - code.len() % bytes_in_field..];
+            // pad to bytes_in_field
+            let mut last_buf = vec![0u8; bytes_in_field];
+            last_buf.as_mut_slice()[..last_code.len()].copy_from_slice(last_code);
+            let mut buf: [u8; 32] = [0; 32];
+            U256::from_big_endian(&last_buf).to_little_endian(&mut buf);
+            Some(Fr::from_bytes(&buf).unwrap())
+        })
+        .collect();
+
+    let h = if msgs.is_empty() {
+        // the empty code hash is overlapped with simple hash on [0, 0]
+        // an issue in poseidon primitive prevent us calculate it from hash_msg
+        Fr::hash_with_domain([Fr::zero(), Fr::zero()], Fr::zero())
+    } else {
+        Fr::hash_msg(&msgs, Some(code.len() as u128 * HASHABLE_DOMAIN_SPEC))
+    };
+
+    let mut buf: [u8; 32] = [0; 32];
+    U256::from_little_endian(h.to_repr().as_ref()).to_big_endian(&mut buf);
+    H256::from_slice(&buf)
 }

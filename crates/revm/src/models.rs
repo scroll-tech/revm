@@ -4,9 +4,16 @@ use crate::{alloc::vec::Vec, interpreter::bytecode::Bytecode, Return, SpecId};
 use bytes::Bytes;
 use primitive_types::{H160, H256, U256};
 
+// 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 pub const KECCAK_EMPTY: H256 = H256([
     0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc, 0xc7, 0x03, 0xc0,
     0xe5, 0x00, 0xb6, 0x53, 0xca, 0x82, 0x27, 0x3b, 0x7b, 0xfa, 0xd8, 0x04, 0x5d, 0x85, 0xa4, 0x70,
+]);
+
+// 0x2098f5fb9e239eab3ceac3f27b81e481dc3124d55ffed523a839ee8446b64864
+pub const POSEIDON_EMPTY: H256 = H256([
+    0x20, 0x98, 0xf5, 0xfb, 0x9e, 0x23, 0x9e, 0xab, 0x3c, 0xea, 0xc3, 0xf2, 0x7b, 0x81, 0xe4, 0x81,
+    0xdc, 0x31, 0x24, 0xd5, 0x5f, 0xfe, 0xd5, 0x23, 0xa8, 0x39, 0xee, 0x84, 0x46, 0xb6, 0x48, 0x64,
 ]);
 
 /// AccountInfo account information.
@@ -19,6 +26,8 @@ pub struct AccountInfo {
     pub nonce: u64,
     /// code hash,
     pub code_hash: H256,
+    /// keccak code hash
+    pub keccak_code_hash: H256,
     /// code: if None, `code_by_hash` will be used to fetch it if code needs to be loaded from
     /// inside of revm.
     pub code: Option<Bytecode>,
@@ -28,7 +37,8 @@ impl Default for AccountInfo {
     fn default() -> Self {
         Self {
             balance: U256::zero(),
-            code_hash: KECCAK_EMPTY,
+            code_hash: POSEIDON_EMPTY,
+            keccak_code_hash: KECCAK_EMPTY,
             code: Some(Bytecode::new()),
             nonce: 0,
         }
@@ -40,22 +50,25 @@ impl PartialEq for AccountInfo {
         self.balance == other.balance
             && self.nonce == other.nonce
             && self.code_hash == other.code_hash
+            && self.keccak_code_hash == other.keccak_code_hash
     }
 }
 
 impl AccountInfo {
     pub fn new(balance: U256, nonce: u64, code: Bytecode) -> Self {
         let code_hash = code.hash();
+        let keccak_code_hash = code.keccak_hash();
         Self {
             balance,
             nonce,
-            code: Some(code),
             code_hash,
+            keccak_code_hash,
+            code: Some(code),
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        let code_empty = self.code_hash == KECCAK_EMPTY || self.code_hash.is_zero();
+        let code_empty = self.code_hash == POSEIDON_EMPTY || self.code_hash.is_zero();
         self.balance.is_zero() && self.nonce == 0 && code_empty
     }
 
