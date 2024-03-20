@@ -1,6 +1,7 @@
 use super::{DatabaseCommit, DatabaseRef, EmptyDB};
 use crate::primitives::{
-    hash_map::Entry, Account, AccountInfo, Bytecode, HashMap, Log, B160, B256, KECCAK_EMPTY, U256,
+    hash_map::Entry, Account, AccountInfo, Bytecode, HashMap, Log, B160, B256, KECCAK_EMPTY,
+    POSEIDON_EMPTY, U256,
 };
 use crate::Database;
 use alloc::vec::Vec;
@@ -42,7 +43,7 @@ impl<ExtDB: DatabaseRef + Default> Default for CacheDB<ExtDB> {
 impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
         let mut contracts = HashMap::new();
-        contracts.insert(KECCAK_EMPTY, Bytecode::new());
+        contracts.insert(POSEIDON_EMPTY, Bytecode::new());
         contracts.insert(B256::zero(), Bytecode::new());
         Self {
             accounts: HashMap::new(),
@@ -61,8 +62,11 @@ impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
     pub fn insert_contract(&mut self, account: &mut AccountInfo) {
         if let Some(code) = &account.code {
             if !code.is_empty() {
-                if account.code_hash == KECCAK_EMPTY {
-                    account.code_hash = code.hash_slow();
+                if account.code_hash == POSEIDON_EMPTY {
+                    account.code_hash = code.poseidon_hash_slow();
+                }
+                if account.keccak_code_hash == KECCAK_EMPTY {
+                    account.keccak_code_hash = code.keccak_hash_slow();
                 }
                 self.contracts
                     .entry(account.code_hash)
@@ -70,7 +74,9 @@ impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
             }
         }
         if account.code_hash == B256::zero() {
-            account.code_hash = KECCAK_EMPTY;
+            debug_assert_eq!(account.keccak_code_hash, B256::zero());
+            account.code_hash = POSEIDON_EMPTY;
+            account.keccak_code_hash = KECCAK_EMPTY;
         }
     }
 
@@ -354,12 +360,13 @@ impl AccountState {
 ///
 /// Any other address will return an empty account.
 #[derive(Debug, Default, Clone)]
-pub struct BenchmarkDB(pub Bytecode, B256);
+pub struct BenchmarkDB(pub Bytecode, B256, B256);
 
 impl BenchmarkDB {
     pub fn new_bytecode(bytecode: Bytecode) -> Self {
-        let hash = bytecode.hash_slow();
-        Self(bytecode, hash)
+        let poseidon_hash = bytecode.poseidon_hash_slow();
+        let keccak_hash = bytecode.keccak_hash_slow();
+        Self(bytecode, poseidon_hash, keccak_hash)
     }
 }
 
@@ -373,6 +380,7 @@ impl Database for BenchmarkDB {
                 balance: U256::from(10000000),
                 code: Some(self.0.clone()),
                 code_hash: self.1,
+                keccak_code_hash: self.2,
             }));
         }
         if address == B160::from(1) {
@@ -380,7 +388,8 @@ impl Database for BenchmarkDB {
                 nonce: 0,
                 balance: U256::from(10000000),
                 code: None,
-                code_hash: KECCAK_EMPTY,
+                code_hash: POSEIDON_EMPTY,
+                keccak_code_hash: KECCAK_EMPTY,
             }));
         }
         Ok(None)

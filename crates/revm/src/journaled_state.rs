@@ -1,7 +1,7 @@
 use crate::interpreter::{inner_models::SelfDestructResult, InstructionResult};
 use crate::primitives::{
     db::Database, hash_map::Entry, Account, Bytecode, HashMap, Log, Spec, SpecId::*, State,
-    StorageSlot, TransientStorage, B160, KECCAK_EMPTY, PRECOMPILE3, U256,
+    StorageSlot, TransientStorage, B160, KECCAK_EMPTY, POSEIDON_EMPTY, PRECOMPILE3, U256,
 };
 use alloc::vec::Vec;
 use core::mem;
@@ -164,7 +164,8 @@ impl JournaledState {
             .unwrap()
             .push(JournalEntry::CodeChange { address });
 
-        account.info.code_hash = code.hash_slow();
+        account.info.code_hash = code.poseidon_hash_slow();
+        account.info.keccak_code_hash = code.keccak_hash_slow();
         account.info.code = Some(code);
     }
 
@@ -315,7 +316,8 @@ impl JournaledState {
         num_of_precompiles: usize,
     ) -> bool {
         // Check collision. Bytecode needs to be empty.
-        if account.info.code_hash != KECCAK_EMPTY {
+        if account.info.code_hash != POSEIDON_EMPTY && account.info.keccak_code_hash != KECCAK_EMPTY
+        {
             return true;
         }
         // Check collision. Nonce is not zero
@@ -415,7 +417,8 @@ impl JournaledState {
                 }
                 JournalEntry::CodeChange { address } => {
                     let acc = state.get_mut(&address).unwrap();
-                    acc.info.code_hash = KECCAK_EMPTY;
+                    acc.info.code_hash = POSEIDON_EMPTY;
+                    acc.info.keccak_code_hash = KECCAK_EMPTY;
                     acc.info.code = None;
                 }
             }
@@ -537,7 +540,7 @@ impl JournaledState {
     ) -> Result<&mut Account, DB::Error> {
         let account = self.initial_account_load(address, &[], db)?;
         if account.info.code.is_none() {
-            if account.info.code_hash == KECCAK_EMPTY {
+            if account.info.code_hash == POSEIDON_EMPTY {
                 account.info.code = Some(Bytecode::new());
             } else {
                 // load code if requested
@@ -629,7 +632,7 @@ impl JournaledState {
     ) -> Result<(&mut Account, bool), DB::Error> {
         let (acc, is_cold) = self.load_account(address, db)?;
         if acc.info.code.is_none() {
-            if acc.info.code_hash == KECCAK_EMPTY {
+            if acc.info.code_hash == POSEIDON_EMPTY {
                 let empty = Bytecode::new();
                 acc.info.code = Some(empty);
             } else {

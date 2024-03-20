@@ -1,4 +1,4 @@
-use crate::{Bytecode, B160, B256, KECCAK_EMPTY, U256};
+use crate::{Bytecode, B160, B256, KECCAK_EMPTY, POSEIDON_EMPTY, U256};
 use bitflags::bitflags;
 use hashbrown::HashMap;
 
@@ -172,6 +172,8 @@ pub struct AccountInfo {
     pub nonce: u64,
     /// code hash,
     pub code_hash: B256,
+    /// keccak code hash,
+    pub keccak_code_hash: B256,
     /// code: if None, `code_by_hash` will be used to fetch it if code needs to be loaded from
     /// inside of `revm`.
     pub code: Option<Bytecode>,
@@ -181,7 +183,8 @@ impl Default for AccountInfo {
     fn default() -> Self {
         Self {
             balance: U256::ZERO,
-            code_hash: KECCAK_EMPTY,
+            code_hash: POSEIDON_EMPTY,
+            keccak_code_hash: KECCAK_EMPTY,
             code: Some(Bytecode::new()),
             nonce: 0,
         }
@@ -190,19 +193,32 @@ impl Default for AccountInfo {
 
 impl PartialEq for AccountInfo {
     fn eq(&self, other: &Self) -> bool {
-        self.balance == other.balance
+        let eq = self.balance == other.balance
             && self.nonce == other.nonce
-            && self.code_hash == other.code_hash
+            && self.code_hash == other.code_hash;
+        #[cfg(debug_assertions)]
+        if eq {
+            assert_eq!(self.keccak_code_hash, other.keccak_code_hash);
+        }
+
+        eq
     }
 }
 
 impl AccountInfo {
-    pub fn new(balance: U256, nonce: u64, code_hash: B256, code: Bytecode) -> Self {
+    pub fn new(
+        balance: U256,
+        nonce: u64,
+        code_hash: B256,
+        keccak_code_hash: B256,
+        code: Bytecode,
+    ) -> Self {
         Self {
             balance,
             nonce,
             code: Some(code),
             code_hash,
+            keccak_code_hash,
         }
     }
 
@@ -213,7 +229,7 @@ impl AccountInfo {
     }
 
     pub fn is_empty(&self) -> bool {
-        let code_empty = self.code_hash == KECCAK_EMPTY || self.code_hash == B256::zero();
+        let code_empty = self.code_hash == POSEIDON_EMPTY || self.code_hash == B256::zero();
         self.balance == U256::ZERO && self.nonce == 0 && code_empty
     }
 
@@ -222,9 +238,15 @@ impl AccountInfo {
     }
 
     /// Return bytecode hash associated with this account.
-    /// If account does not have code, it return's `KECCAK_EMPTY` hash.
+    /// If account does not have code, it return's `POSEIDON_EMPTY` hash.
     pub fn code_hash(&self) -> B256 {
         self.code_hash
+    }
+
+    /// Return keccak code hash associated with this account.
+    /// If account does not have code, it return's `KECCAK_EMPTY` hash.
+    pub fn keccak_code_hash(&self) -> B256 {
+        self.keccak_code_hash
     }
 
     /// Take bytecode from account. Code will be set to None.

@@ -1,6 +1,6 @@
 use crate::{
     alloc::vec::Vec, calc_blob_gasprice, Account, InvalidHeader, InvalidTransaction, Spec, SpecId,
-    B160, B256, GAS_PER_BLOB, KECCAK_EMPTY, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE, U256,
+    B160, B256, GAS_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE, POSEIDON_EMPTY, U256,
     VERSIONED_HASH_VERSION_KZG,
 };
 use bytes::Bytes;
@@ -611,7 +611,7 @@ impl Env {
         // EIP-3607: Reject transactions from senders with deployed code
         // This EIP is introduced after london but there was no collision in past
         // so we can leave it enabled always
-        if !self.cfg.is_eip3607_disabled() && account.info.code_hash != KECCAK_EMPTY {
+        if !self.cfg.is_eip3607_disabled() && account.info.code_hash != POSEIDON_EMPTY {
             return Err(InvalidTransaction::RejectCallerWithCode);
         }
 

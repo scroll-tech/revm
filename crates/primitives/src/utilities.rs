@@ -1,6 +1,8 @@
 use crate::{
     B160, B256, BLOB_GASPRICE_UPDATE_FRACTION, MIN_BLOB_GASPRICE, TARGET_BLOB_GAS_PER_BLOCK, U256,
 };
+use halo2_proofs::halo2curves::bn256::Fr;
+use halo2_proofs::halo2curves::ff::PrimeField;
 use hex_literal::hex;
 use sha3::{Digest, Keccak256};
 
@@ -8,9 +10,65 @@ pub const KECCAK_EMPTY: B256 = B256(hex!(
     "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 ));
 
+pub const POSEIDON_EMPTY: B256 = B256(hex!(
+    "2098f5fb9e239eab3ceac3f27b81e481dc3124d55ffed523a839ee8446b64864"
+));
+
 #[inline(always)]
 pub fn keccak256(input: &[u8]) -> B256 {
     B256(Keccak256::digest(input)[..].try_into().unwrap())
+}
+
+/// Default number of bytes to pack into a field element.
+pub const POSEIDON_HASH_BYTES_IN_FIELD: usize = 31;
+
+/// Poseidon code hash
+pub fn hash_code_poseidon(code: &[u8]) -> B256 {
+    use hash_circuit::hash::{Hashable, MessageHashable, HASHABLE_DOMAIN_SPEC};
+
+    let bytes_in_field = POSEIDON_HASH_BYTES_IN_FIELD;
+    let fls = (0..(code.len() / bytes_in_field))
+        .map(|i| i * bytes_in_field)
+        .map(|i| {
+            Fr::from_bytes(
+                &U256::try_from_be_slice(&code[i..i + bytes_in_field])
+                    .expect("infallible")
+                    .to_le_bytes(),
+            )
+            .unwrap()
+        });
+    let msgs: Vec<_> = fls
+        .chain(if code.len() % bytes_in_field == 0 {
+            None
+        } else {
+            let last_code = &code[code.len() - code.len() % bytes_in_field..];
+            // pad to bytes_in_field
+            let mut last_buf = [0u8; POSEIDON_HASH_BYTES_IN_FIELD];
+            last_buf.as_mut_slice()[..last_code.len()].copy_from_slice(last_code);
+            Some(
+                Fr::from_bytes(
+                    &U256::try_from_be_slice(&last_buf)
+                        .expect("infallible")
+                        .to_le_bytes(),
+                )
+                .unwrap(),
+            )
+        })
+        .collect();
+
+    let h = if msgs.is_empty() {
+        // the empty code hash is overlapped with simple hash on [0, 0]
+        // an issue in poseidon primitive prevent us calculate it from hash_msg
+        Fr::hash_with_domain([Fr::zero(), Fr::zero()], Fr::zero())
+    } else {
+        Fr::hash_msg(&msgs, Some(code.len() as u128 * HASHABLE_DOMAIN_SPEC))
+    };
+
+    B256::from(
+        &U256::try_from_be_slice(h.to_repr().as_ref())
+            .expect("infallible")
+            .to_be_bytes(),
+    )
 }
 
 /// Returns the address for the legacy `CREATE` scheme: [`crate::env::CreateScheme::Create`]

@@ -1,4 +1,4 @@
-use crate::{keccak256, B256, KECCAK_EMPTY};
+use crate::{hash_code_poseidon, keccak256, B256, KECCAK_EMPTY, POSEIDON_EMPTY};
 use alloc::{sync::Arc, vec::Vec};
 use bitvec::prelude::{bitvec, Lsb0};
 use bitvec::vec::BitVec;
@@ -87,8 +87,17 @@ impl Bytecode {
         }
     }
 
+    /// Calculate poseidon hash of the bytecode.
+    pub fn poseidon_hash_slow(&self) -> B256 {
+        if self.is_empty() {
+            POSEIDON_EMPTY
+        } else {
+            hash_code_poseidon(&self.original_bytes())
+        }
+    }
+
     /// Calculate hash of the bytecode.
-    pub fn hash_slow(&self) -> B256 {
+    pub fn keccak_hash_slow(&self) -> B256 {
         if self.is_empty() {
             KECCAK_EMPTY
         } else {

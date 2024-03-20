@@ -2,7 +2,7 @@ use super::{
     plain_account::PlainStorage, AccountStatus, BundleAccount, PlainAccount,
     StorageWithOriginalValues, TransitionAccount,
 };
-use revm_interpreter::primitives::{AccountInfo, KECCAK_EMPTY, U256};
+use revm_interpreter::primitives::{AccountInfo, POSEIDON_EMPTY, U256};
 use revm_precompile::HashMap;
 
 /// Cache account contains plain state that gets updated
@@ -315,7 +315,8 @@ impl CacheAccount {
         self.status = match self.status {
             AccountStatus::Loaded => {
                 // Account that have nonce zero and empty code hash is considered to be fully in memory.
-                if previous_info.as_ref().map(|a| (a.code_hash, a.nonce)) == Some((KECCAK_EMPTY, 0))
+                if previous_info.as_ref().map(|a| (a.code_hash, a.nonce))
+                    == Some((POSEIDON_EMPTY, 0))
                 {
                     AccountStatus::InMemoryChange
                 } else {
@@ -376,7 +377,8 @@ impl CacheAccount {
 
         self.status = match self.status {
             AccountStatus::Loaded => {
-                if previous_info.as_ref().map(|a| (a.code_hash, a.nonce)) == Some((KECCAK_EMPTY, 0))
+                if previous_info.as_ref().map(|a| (a.code_hash, a.nonce))
+                    == Some((POSEIDON_EMPTY, 0))
                 {
                     // account is fully in memory
                     AccountStatus::InMemoryChange
