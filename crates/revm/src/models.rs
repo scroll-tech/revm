@@ -225,6 +225,7 @@ pub struct TxEnv {
     pub gas_limit: u64,
     pub gas_price: U256,
     pub gas_priority_fee: Option<U256>,
+    pub l1_fee: U256,
     pub transact_to: TransactTo,
     pub value: U256,
     #[cfg_attr(feature = "with-serde", serde(with = "serde_hex_bytes"))]
@@ -324,6 +325,7 @@ impl Default for TxEnv {
             gas_limit: u64::MAX,
             gas_price: U256::zero(),
             gas_priority_fee: None,
+            l1_fee: U256::zero(),
             transact_to: TransactTo::Call(H160::zero()), //will do nothing
             value: U256::zero(),
             data: Bytes::new(),

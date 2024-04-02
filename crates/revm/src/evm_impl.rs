@@ -46,6 +46,7 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> Transact
         let value = self.data.env.tx.value;
         let data = self.data.env.tx.data.clone();
         let gas_limit = self.data.env.tx.gas_limit;
+        let l1_fee = self.data.env.tx.l1_fee;
         let exit = |reason: Return| (ExecutionResult::new_with_reason(reason), State::new());
 
         if GSPEC::enabled(MERGE) && self.data.env.block.prevrandao.is_none() {
@@ -112,8 +113,9 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> Transact
         }
 
         // substract gas_limit*gas_price from current account.
-        if let Some(payment_value) =
-            U256::from(gas_limit).checked_mul(self.data.env.effective_gas_price())
+        if let Some(payment_value) = U256::from(gas_limit)
+            .checked_mul(self.data.env.effective_gas_price())
+            .map(|gas_fee| gas_fee + l1_fee)
         {
             let balance = &mut self
                 .data
@@ -183,6 +185,7 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> Transact
                 (exit, ret_gas, TransactOut::Create(bytes, address))
             }
         };
+        log::trace!("ret_gas: {ret_gas:?}");
 
         if crate::USE_GAS {
             match exit_reason {
@@ -196,6 +199,7 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> Transact
                 _ => {}
             }
         }
+        log::trace!("gas: {gas:?}");
 
         let (state, logs, gas_used, gas_refunded) = self.finalize::<GSPEC>(caller, &gas);
         (
@@ -242,8 +246,10 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> EVMImpl<'a, GSPEC, DB, 
         gas: &Gas,
     ) -> (Map<H160, Account>, Vec<Log>, u64, u64) {
         let coinbase = self.data.env.block.coinbase;
+        let l1_fee = self.data.env.tx.l1_fee;
         let (gas_used, gas_refunded) = if crate::USE_GAS {
             let effective_gas_price = self.data.env.effective_gas_price();
+            log::trace!("effective_gas_price: {effective_gas_price:#x}");
             let basefee = self.data.env.block.basefee;
 
             #[cfg(feature = "optional_gas_refund")]
@@ -258,11 +264,22 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> EVMImpl<'a, GSPEC, DB, 
                 let max_refund_quotient = if SPEC::enabled(LONDON) { 5 } else { 2 };
                 min(gas.refunded() as u64, gas.spend() / max_refund_quotient)
             };
+            log::trace!(
+                "gas.refunded(): {:#x}, gas.spend(): {:#x}",
+                gas.refunded(),
+                gas.spend()
+            );
             let acc_caller = self.data.journaled_state.state().get_mut(&caller).unwrap();
             acc_caller.info.balance = acc_caller
                 .info
                 .balance
                 .saturating_add(effective_gas_price * (gas.remaining() + gas_refunded));
+            log::trace!(
+                "refund balance: {:#x}, gas.remaining(): {:#x}, EIP-3529 gas_refunded: {:#x}",
+                effective_gas_price * (gas.remaining() + gas_refunded),
+                gas.remaining(),
+                gas_refunded
+            );
 
             // EIP-1559
             let coinbase_gas_price = if SPEC::enabled(LONDON) {
@@ -270,6 +287,7 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> EVMImpl<'a, GSPEC, DB, 
             } else {
                 effective_gas_price
             };
+            log::trace!("coinbase_gas_price: {:#x}", coinbase_gas_price);
 
             // TODO
             let _ = self
@@ -286,7 +304,11 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> EVMImpl<'a, GSPEC, DB, 
             acc_coinbase.info.balance = acc_coinbase
                 .info
                 .balance
-                .saturating_add(coinbase_gas_price * (gas.spend() - gas_refunded));
+                .saturating_add(coinbase_gas_price * (gas.spend() - gas_refunded) + l1_fee);
+            log::trace!(
+                "coinbase reward: {:#x}",
+                coinbase_gas_price * (gas.spend() - gas_refunded)
+            );
             (gas.spend() - gas_refunded, gas_refunded)
         } else {
             // touch coinbase
