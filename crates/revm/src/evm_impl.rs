@@ -282,11 +282,12 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> EVMImpl<'a, GSPEC, DB, 
             );
 
             // EIP-1559
-            let coinbase_gas_price = if SPEC::enabled(LONDON) {
-                effective_gas_price.saturating_sub(basefee)
-            } else {
-                effective_gas_price
-            };
+            // let coinbase_gas_price = if SPEC::enabled(LONDON) {
+            //     effective_gas_price.saturating_sub(basefee)
+            // } else {
+            //     effective_gas_price
+            // };
+            let coinbase_gas_price = effective_gas_price;
             log::trace!("coinbase_gas_price: {:#x}", coinbase_gas_price);
 
             // TODO
@@ -306,8 +307,12 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> EVMImpl<'a, GSPEC, DB, 
                 .balance
                 .saturating_add(coinbase_gas_price * (gas.spend() - gas_refunded) + l1_fee);
             log::trace!(
-                "coinbase reward: {:#x}",
-                coinbase_gas_price * (gas.spend() - gas_refunded)
+                "coinbase reward: {:#x} = {:x} * ({:x} - {:x}) + {:x}",
+                coinbase_gas_price * (gas.spend() - gas_refunded) + l1_fee,
+                coinbase_gas_price,
+                gas.spend(),
+                gas_refunded,
+                l1_fee
             );
             (gas.spend() - gas_refunded, gas_refunded)
         } else {
