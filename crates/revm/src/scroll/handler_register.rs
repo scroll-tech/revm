@@ -1,15 +1,20 @@
 //! Handler related to Scroll chain
 
+use crate::handler::mainnet;
+use crate::handler::mainnet::deduct_caller_inner;
+use crate::primitives::InvalidTransaction;
 use crate::{
     handler::register::EvmHandler,
     interpreter::Gas,
-    primitives::{db::Database, spec_to_generic, EVMError, Spec, SpecId, TransactTo, CANCUN, U256},
+    primitives::{db::Database, spec_to_generic, EVMError, Spec, SpecId, U256},
     Context,
 };
 use std::sync::Arc;
 
 pub fn scroll_handle_register<DB: Database, EXT>(handler: &mut EvmHandler<'_, EXT, DB>) {
     spec_to_generic!(handler.cfg.spec_id, {
+        // load l1 data
+        handler.pre_execution.load_accounts = Arc::new(load_accounts::<SPEC, EXT, DB>);
         // l1_fee is added to the gas cost.
         handler.pre_execution.deduct_caller = Arc::new(deduct_caller::<SPEC, EXT, DB>);
         // basefee is sent to coinbase
@@ -17,12 +22,23 @@ pub fn scroll_handle_register<DB: Database, EXT>(handler: &mut EvmHandler<'_, EX
     });
 }
 
+/// Load account (make them warm) and l1 data from database.
+#[inline]
+pub fn load_accounts<SPEC: Spec, EXT, DB: Database>(
+    context: &mut Context<EXT, DB>,
+) -> Result<(), EVMError<DB::Error>> {
+    let l1_block_info = crate::scroll::L1BlockInfo::try_fetch(&mut context.evm.inner.db)
+        .map_err(EVMError::Database)?;
+    context.evm.inner.l1_block_info = Some(l1_block_info);
+
+    mainnet::load_accounts::<SPEC, EXT, DB>(context)
+}
+
 /// Deducts the caller balance to the transaction limit.
 #[inline]
 pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
 ) -> Result<(), EVMError<DB::Error>> {
-    let l1_fee = context.evm.env.tx.l1_fee;
     // load caller's account.
     let (caller_account, _) = context
         .evm
@@ -30,36 +46,27 @@ pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
         .journaled_state
         .load_account(context.evm.inner.env.tx.caller, &mut context.evm.inner.db)?;
 
-    // deduct gas cost from caller's account.
-    // Subtract gas costs from the caller's account.
-    // We need to saturate the gas cost to prevent underflow in case that `disable_balance_check` is enabled.
-    let mut gas_cost = U256::from(context.evm.inner.env.tx.gas_limit)
-        .saturating_mul(context.evm.inner.env.effective_gas_price());
+    // We deduct caller max balance after minting and before deducing the
+    // l1 cost, max values is already checked in pre_validate but l1 cost wasn't.
+    deduct_caller_inner::<SPEC>(caller_account, &context.evm.inner.env);
 
-    gas_cost = gas_cost.saturating_add(l1_fee);
-
-    // EIP-4844
-    if SPEC::enabled(CANCUN) {
-        let data_fee = context
-            .evm
-            .inner
-            .env
-            .calc_data_fee()
-            .expect("already checked");
-        gas_cost = gas_cost.saturating_add(data_fee);
+    // Deduct l1 fee from caller.
+    let tx_l1_cost = context
+        .evm
+        .inner
+        .l1_block_info
+        .as_ref()
+        .expect("L1BlockInfo should be loaded")
+        .calculate_tx_l1_cost(&context.evm.inner.env.tx.data);
+    if tx_l1_cost.gt(&caller_account.info.balance) {
+        return Err(EVMError::Transaction(
+            InvalidTransaction::LackOfFundForMaxFee {
+                fee: tx_l1_cost.into(),
+                balance: caller_account.info.balance.into(),
+            },
+        ));
     }
-
-    // set new caller account balance.
-    caller_account.info.balance = caller_account.info.balance.saturating_sub(gas_cost);
-
-    // bump the nonce for calls. Nonce for CREATE will be bumped in `handle_create`.
-    if matches!(context.evm.inner.env.tx.transact_to, TransactTo::Call(_)) {
-        // Nonce is already checked
-        caller_account.info.nonce = caller_account.info.nonce.saturating_add(1);
-    }
-
-    // touch account so we know it is changed.
-    caller_account.mark_touch();
+    caller_account.info.balance = caller_account.info.balance.saturating_sub(tx_l1_cost);
     Ok(())
 }
 
@@ -71,7 +78,6 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
 ) -> Result<(), EVMError<DB::Error>> {
     let beneficiary = context.evm.env.block.coinbase;
     let effective_gas_price = context.evm.env.effective_gas_price();
-    let l1_fee = context.evm.env.tx.l1_fee;
 
     // transfer fee to coinbase/beneficiary.
     let coinbase_gas_price = effective_gas_price;
@@ -82,12 +88,20 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
         .journaled_state
         .load_account(beneficiary, &mut context.evm.inner.db)?;
 
+    let Some(l1_block_info) = &context.evm.inner.l1_block_info else {
+        return Err(EVMError::Custom(
+            "[SCROLL] Failed to load L1 block information.".to_string(),
+        ));
+    };
+
+    let l1_cost = l1_block_info.calculate_tx_l1_cost(&context.evm.inner.env.tx.data);
+
     coinbase_account.mark_touch();
     coinbase_account.info.balance = coinbase_account
         .info
         .balance
         .saturating_add(coinbase_gas_price * U256::from(gas.spent() - gas.refunded() as u64))
-        .saturating_add(l1_fee);
+        .saturating_add(l1_cost);
 
     Ok(())
 }

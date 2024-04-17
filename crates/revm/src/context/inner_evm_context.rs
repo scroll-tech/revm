@@ -31,6 +31,9 @@ pub struct InnerEvmContext<DB: Database> {
     /// Used as temporary value holder to store L1 block info.
     #[cfg(feature = "optimism")]
     pub l1_block_info: Option<crate::optimism::L1BlockInfo>,
+    /// Used as temporary value holder to store L1 block info.
+    #[cfg(feature = "scroll")]
+    pub l1_block_info: Option<crate::scroll::L1BlockInfo>,
 }
 
 impl<DB: Database + Clone> Clone for InnerEvmContext<DB>
@@ -43,7 +46,7 @@ where
             journaled_state: self.journaled_state.clone(),
             db: self.db.clone(),
             error: self.error.clone(),
-            #[cfg(feature = "optimism")]
+            #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: self.l1_block_info.clone(),
         }
     }
@@ -56,7 +59,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: JournaledState::new(SpecId::LATEST, HashSet::new()),
             db,
             error: Ok(()),
-            #[cfg(feature = "optimism")]
+            #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: None,
         }
     }
@@ -69,7 +72,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: JournaledState::new(SpecId::LATEST, HashSet::new()),
             db,
             error: Ok(()),
-            #[cfg(feature = "optimism")]
+            #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: None,
         }
     }
@@ -84,7 +87,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: self.journaled_state,
             db,
             error: Ok(()),
-            #[cfg(feature = "optimism")]
+            #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: self.l1_block_info,
         }
     }

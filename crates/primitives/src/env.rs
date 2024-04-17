@@ -552,8 +552,6 @@ pub struct TxEnv {
     #[cfg_attr(feature = "serde", serde(flatten))]
     #[cfg(feature = "optimism")]
     pub optimism: OptimismFields,
-
-    pub l1_fee: U256,
 }
 
 impl TxEnv {
@@ -589,7 +587,6 @@ impl Default for TxEnv {
             max_fee_per_blob_gas: None,
             #[cfg(feature = "optimism")]
             optimism: OptimismFields::default(),
-            l1_fee: U256::ZERO,
         }
     }
 }
