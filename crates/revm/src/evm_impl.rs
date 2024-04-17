@@ -193,6 +193,7 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> Transact<DB::Error>
         let tx_value = env.tx.value;
         let tx_data = env.tx.data.clone();
         let tx_gas_limit = env.tx.gas_limit;
+        let l1_fee = env.tx.l1_fee;
 
         #[cfg(feature = "optimism")]
         let tx_l1_cost = {
@@ -269,8 +270,9 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> Transact<DB::Error>
 
         // Subtract gas costs from the caller's account.
         // We need to saturate the gas cost to prevent underflow in case that `disable_balance_check` is enabled.
-        let mut gas_cost =
-            U256::from(tx_gas_limit).saturating_mul(self.data.env.effective_gas_price());
+        let mut gas_cost = U256::from(tx_gas_limit)
+            .saturating_mul(self.data.env.effective_gas_price())
+            .saturating_add(l1_fee);
 
         // EIP-4844
         if GSPEC::enabled(CANCUN) {

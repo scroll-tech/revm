@@ -64,14 +64,16 @@ pub fn reward_beneficiary<SPEC: Spec, DB: Database>(
 ) -> Result<(), EVMError<DB::Error>> {
     let beneficiary = data.env.block.coinbase;
     let effective_gas_price = data.env.effective_gas_price();
+    let l1_fee = data.env.tx.l1_fee;
 
     // transfer fee to coinbase/beneficiary.
     // EIP-1559 discard basefee for coinbase transfer. Basefee amount of gas is discarded.
-    let coinbase_gas_price = if SPEC::enabled(LONDON) {
-        effective_gas_price.saturating_sub(data.env.block.basefee)
-    } else {
-        effective_gas_price
-    };
+    // let coinbase_gas_price = if SPEC::enabled(LONDON) {
+    //     effective_gas_price.saturating_sub(data.env.block.basefee)
+    // } else {
+    //     effective_gas_price
+    // };
+    let coinbase_gas_price = effective_gas_price;
 
     let (coinbase_account, _) = data
         .journaled_state
@@ -82,7 +84,8 @@ pub fn reward_beneficiary<SPEC: Spec, DB: Database>(
     coinbase_account.info.balance = coinbase_account
         .info
         .balance
-        .saturating_add(coinbase_gas_price * U256::from(gas.spend() - gas_refund));
+        .saturating_add(coinbase_gas_price * U256::from(gas.spend() - gas_refund))
+        .saturating_add(l1_fee);
 
     Ok(())
 }
