@@ -6,13 +6,17 @@ use crate::primitives::InvalidTransaction;
 use crate::{
     handler::register::EvmHandler,
     interpreter::Gas,
+    precompile::Precompiles,
     primitives::{db::Database, spec_to_generic, EVMError, Spec, SpecId, U256},
-    Context,
+    Context, ContextPrecompiles,
 };
+use revm_precompile::PrecompileSpecId;
 use std::sync::Arc;
 
 pub fn scroll_handle_register<DB: Database, EXT>(handler: &mut EvmHandler<'_, EXT, DB>) {
     spec_to_generic!(handler.cfg.spec_id, {
+        // load precompiles
+        handler.pre_execution.load_precompiles = Arc::new(load_precompiles::<SPEC, DB>);
         // load l1 data
         handler.pre_execution.load_accounts = Arc::new(load_accounts::<SPEC, EXT, DB>);
         // l1_fee is added to the gas cost.
@@ -20,6 +24,14 @@ pub fn scroll_handle_register<DB: Database, EXT>(handler: &mut EvmHandler<'_, EX
         // basefee is sent to coinbase
         handler.post_execution.reward_beneficiary = Arc::new(reward_beneficiary::<SPEC, EXT, DB>);
     });
+}
+
+/// Main precompile load
+#[inline]
+pub fn load_precompiles<SPEC: Spec, DB: Database>() -> ContextPrecompiles<DB> {
+    Precompiles::scroll(PrecompileSpecId::from_spec_id(SPEC::SPEC_ID))
+        .clone()
+        .into()
 }
 
 /// Load account (make them warm) and l1 data from database.

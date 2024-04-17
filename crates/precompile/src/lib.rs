@@ -12,6 +12,7 @@ extern crate alloc as std;
 
 pub mod blake2;
 pub mod bn128;
+pub mod disable;
 pub mod hash;
 pub mod identity;
 #[cfg(feature = "c-kzg")]
@@ -152,6 +153,32 @@ impl Precompiles {
                 precompiles
             };
 
+            Box::new(precompiles)
+        })
+    }
+
+    /// Returns precompiles for Scroll
+    #[cfg(feature = "scroll")]
+    pub fn scroll(spec: PrecompileSpecId) -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let mut precompiles = Precompiles::default();
+            precompiles.extend([
+                secp256k1::ECRECOVER,  // 0x01
+                hash::SHA256,          // 0x02
+                disable::RIPEMD160,    // 0x03
+                identity::FUN,         // 0x04
+                modexp::BERLIN,        // 0x05
+                bn128::add::ISTANBUL,  // 0x06
+                bn128::mul::ISTANBUL,  // 0x07
+                bn128::pair::ISTANBUL, // 0x08
+                disable::BLAKE2F,      // 0x09
+            ]);
+            if spec >= PrecompileSpecId::CANCUN {
+                precompiles.extend([
+                    disable::POINT_EVALUATION, // 0x0A
+                ]);
+            }
             Box::new(precompiles)
         })
     }
