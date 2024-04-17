@@ -485,7 +485,9 @@ mod test {
     #[test]
     fn simple_add_stateful_instruction() {
         let code = Bytecode::new_raw([0xEF, 0x00].into());
-        let code_hash = code.hash_slow();
+        #[cfg(feature = "scroll")]
+        let poseidon_code_hash = code.poseidon_hash_slow();
+        let keccak_code_hash = code.keccak_hash_slow();
         let to_addr = address!("ffffffffffffffffffffffffffffffffffffffff");
 
         // initialize the custom context and make sure it's zero
@@ -496,7 +498,12 @@ mod test {
         let mut evm = Evm::builder()
             .with_db(InMemoryDB::default())
             .modify_db(|db| {
-                db.insert_account_info(to_addr, AccountInfo::new(U256::ZERO, 0, code_hash, code))
+                #[cfg(not(feature = "scroll"))]
+                let acc = AccountInfo::new(U256::ZERO, 0, keccak_code_hash, code);
+                #[cfg(feature = "scroll")]
+                let acc =
+                    AccountInfo::new(U256::ZERO, 0, poseidon_code_hash, keccak_code_hash, code);
+                db.insert_account_info(to_addr, acc)
             })
             .modify_tx_env(|tx| tx.transact_to = TransactTo::Call(to_addr))
             // we need to use handle register box to capture the custom context in the handle
