@@ -141,6 +141,18 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
         &mut self.context.evm.env.tx
     }
 
+    /// Returns the reference of database
+    #[inline]
+    pub fn db(&self) -> &DB {
+        &self.context.evm.db
+    }
+
+    /// Returns the mutable reference of database
+    #[inline]
+    pub fn db_mut(&mut self) -> &mut DB {
+        &mut self.context.evm.db
+    }
+
     /// Returns the reference of block
     #[inline]
     pub fn block(&self) -> &BlockEnv {
@@ -326,7 +338,7 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
 
         // load precompiles
         let precompiles = pre_exec.load_precompiles();
-        ctx.evm.set_precompiles(precompiles);
+        ctx.set_precompiles(precompiles);
 
         // deduce caller balance with its limit.
         pre_exec.deduct_caller(ctx)?;
@@ -388,7 +400,7 @@ impl<EXT, DB: Database> Host for Evm<'_, EXT, DB> {
     fn load_account(&mut self, address: Address) -> Option<(bool, bool)> {
         self.context
             .evm
-            .load_account(address)
+            .load_account_exist(address)
             .map_err(|e| self.context.evm.error = Err(e))
             .ok()
     }

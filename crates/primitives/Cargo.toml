@@ -6,7 +6,7 @@ keywords = ["no_std", "ethereum", "evm", "revm", "types"]
 license = "MIT"
 name = "revm-primitives"
 repository = "https://github.com/bluealloy/revm"
-version = "2.1.0"
+version = "3.0.0"
 readme = "../../README.md"
 
 # Don't need to run build script outside of this repo
@@ -21,7 +21,7 @@ alloy-primitives = { version = "0.6", default-features = false, features = [
     "rlp",
 ] }
 hashbrown = "0.14"
-auto_impl = "1.1"
+auto_impl = "1.2"
 bitvec = { version = "1", default-features = false, features = ["alloc"] }
 bitflags = { version = "2.4.2", default-features = false }
 
@@ -33,6 +33,7 @@ once_cell = { version = "1.19", default-features = false, optional = true }
 enumn = "0.1"
 derive_more = { version = "0.99", optional = true }
 cfg-if = "1"
+dyn-clone = "1.0"
 
 # optional
 serde = { version = "1.0", default-features = false, features = [

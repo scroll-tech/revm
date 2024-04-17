@@ -298,6 +298,33 @@ impl<'a, BuilderStage, EXT, DB: Database> EvmBuilder<'a, BuilderStage, EXT, DB> 
         Handler::new(handler_cfg)
     }
 
+    /// This modifies the [EvmBuilder] to make it easy to construct an [`Evm`] with a _specific_
+    /// handler.
+    ///
+    /// # Example
+    /// ```rust
+    /// use revm::{EvmBuilder, Handler, primitives::{SpecId, HandlerCfg}};
+    /// use revm_interpreter::primitives::CancunSpec;
+    /// let builder = EvmBuilder::default();
+    ///
+    /// // get the desired handler
+    /// let mainnet = Handler::mainnet::<CancunSpec>();
+    /// let builder = builder.with_handler(mainnet);
+    ///
+    /// // build the EVM
+    /// let evm = builder.build();
+    /// ```
+    pub fn with_handler(
+        self,
+        handler: Handler<'a, Evm<'a, EXT, DB>, EXT, DB>,
+    ) -> EvmBuilder<'a, BuilderStage, EXT, DB> {
+        EvmBuilder {
+            context: self.context,
+            handler,
+            phantom: PhantomData,
+        }
+    }
+
     /// Builds the [`Evm`].
     pub fn build(self) -> Evm<'a, EXT, DB> {
         Evm::new(self.context, self.handler)
@@ -309,8 +336,8 @@ impl<'a, BuilderStage, EXT, DB: Database> EvmBuilder<'a, BuilderStage, EXT, DB> 
     /// When called, EvmBuilder will transition from SetGenericStage to HandlerStage.
     pub fn append_handler_register(
         mut self,
-        handle_register: register::HandleRegister<'a, EXT, DB>,
-    ) -> EvmBuilder<'_, HandlerStage, EXT, DB> {
+        handle_register: register::HandleRegister<EXT, DB>,
+    ) -> EvmBuilder<'a, HandlerStage, EXT, DB> {
         self.handler
             .append_handler_register(register::HandleRegisters::Plain(handle_register));
         EvmBuilder {
@@ -327,8 +354,8 @@ impl<'a, BuilderStage, EXT, DB: Database> EvmBuilder<'a, BuilderStage, EXT, DB> 
     /// When called, EvmBuilder will transition from SetGenericStage to HandlerStage.
     pub fn append_handler_register_box(
         mut self,
-        handle_register: register::HandleRegisterBox<'a, EXT, DB>,
-    ) -> EvmBuilder<'_, HandlerStage, EXT, DB> {
+        handle_register: register::HandleRegisterBox<EXT, DB>,
+    ) -> EvmBuilder<'a, HandlerStage, EXT, DB> {
         self.handler
             .append_handler_register(register::HandleRegisters::Box(handle_register));
         EvmBuilder {
@@ -438,9 +465,47 @@ impl<'a, BuilderStage, EXT, DB: Database> EvmBuilder<'a, BuilderStage, EXT, DB> 
 mod test {
     use super::SpecId;
     use crate::{
-        db::EmptyDB, inspector::inspector_handle_register, inspectors::NoOpInspector, Context, Evm,
-        EvmContext,
+        db::EmptyDB,
+        inspector::inspector_handle_register,
+        inspectors::NoOpInspector,
+        primitives::{
+            address, AccountInfo, Address, Bytecode, Bytes, PrecompileResult, TransactTo, U256,
+        },
+        Context, ContextPrecompile, ContextStatefulPrecompile, Evm, EvmContext, InMemoryDB,
     };
+    use revm_interpreter::{Host, Interpreter};
+    use std::sync::Arc;
+
+    #[test]
+    fn simple_add_instruction() {
+        const CUSTOM_INSTRUCTION_COST: u64 = 133;
+        const INITIAL_TX_GAS: u64 = 21000;
+        const EXPECTED_RESULT_GAS: u64 = INITIAL_TX_GAS + CUSTOM_INSTRUCTION_COST;
+        fn custom_instruction(interp: &mut Interpreter, _host: &mut impl Host) {
+            // just spend some gas
+            interp.gas.record_cost(CUSTOM_INSTRUCTION_COST);
+        }
+
+        let code = Bytecode::new_raw([0xEF, 0x00].into());
+        let code_hash = code.hash_slow();
+        let to_addr = address!("ffffffffffffffffffffffffffffffffffffffff");
+
+        let mut evm = Evm::builder()
+            .with_db(InMemoryDB::default())
+            .modify_db(|db| {
+                db.insert_account_info(to_addr, AccountInfo::new(U256::ZERO, 0, code_hash, code))
+            })
+            .modify_tx_env(|tx| tx.transact_to = TransactTo::Call(to_addr))
+            .append_handler_register(|handler| {
+                if let Some(ref mut table) = handler.instruction_table {
+                    table.insert(0xEF, custom_instruction)
+                }
+            })
+            .build();
+
+        let result_and_state = evm.transact().unwrap();
+        assert_eq!(result_and_state.result.gas_used(), EXPECTED_RESULT_GAS);
+    }
 
     #[test]
     fn simple_build() {
@@ -495,10 +560,10 @@ mod test {
             .build();
 
         let Context {
-            external,
-            evm: EvmContext { db, .. },
+            external: _,
+            evm: EvmContext { db: _, .. },
+            ..
         } = evm.into_context();
-        let _ = (external, db);
     }
 
     #[test]
@@ -515,5 +580,40 @@ mod test {
             .modify()
             .modify_tx_env(|tx| tx.chain_id = Some(2))
             .build();
+    }
+
+    #[test]
+    fn build_custom_precompile() {
+        struct CustomPrecompile;
+
+        impl ContextStatefulPrecompile<EvmContext<EmptyDB>, ()> for CustomPrecompile {
+            fn call(
+                &self,
+                _input: &Bytes,
+                _gas_price: u64,
+                _context: &mut EvmContext<EmptyDB>,
+                _extctx: &mut (),
+            ) -> PrecompileResult {
+                Ok((10, Bytes::new()))
+            }
+        }
+
+        let mut evm = Evm::builder()
+            .with_empty_db()
+            .with_spec_id(SpecId::HOMESTEAD)
+            .append_handler_register(|handler| {
+                let precompiles = handler.pre_execution.load_precompiles();
+                handler.pre_execution.load_precompiles = Arc::new(move || {
+                    let mut precompiles = precompiles.clone();
+                    precompiles.extend([(
+                        Address::ZERO,
+                        ContextPrecompile::ContextStateful(Arc::new(CustomPrecompile)),
+                    )]);
+                    precompiles
+                });
+            })
+            .build();
+
+        evm.transact().unwrap();
     }
 }
