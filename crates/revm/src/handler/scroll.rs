@@ -13,7 +13,7 @@ pub fn handle_call_return<SPEC: Spec>(
     call_result: InstructionResult,
     returned_gas: Gas,
 ) -> Gas {
-    super::mainnet::handle_call_return(env, call_result, returned_gas)
+    super::mainnet::handle_call_return::<SPEC>(env, call_result, returned_gas)
 }
 
 #[inline]
@@ -22,7 +22,7 @@ pub fn handle_reimburse_caller<SPEC: Spec, DB: Database>(
     gas: &Gas,
     gas_refund: u64,
 ) -> Result<(), EVMError<DB::Error>> {
-    super::mainnet::handle_reimburse_caller(data, gas, gas_refund)
+    super::mainnet::handle_reimburse_caller::<SPEC, DB>(data, gas, gas_refund)
 }
 
 /// Reward beneficiary with gas fee.
@@ -68,5 +68,5 @@ pub fn reward_beneficiary<SPEC: Spec, DB: Database>(
 /// gas spend. (Before london it was 2th part of gas spend)
 #[inline]
 pub fn calculate_gas_refund<SPEC: Spec>(env: &Env, gas: &Gas) -> u64 {
-    super::mainnet::calculate_gas_refund(env, gas)
+    super::mainnet::calculate_gas_refund::<SPEC>(env, gas)
 }
