@@ -471,7 +471,7 @@ mod test {
         primitives::{
             address, AccountInfo, Address, Bytecode, Bytes, PrecompileResult, TransactTo, U256,
         },
-        Context, ContextPrecompile, ContextStatefulPrecompile, Evm, EvmContext, InMemoryDB,
+        Context, ContextPrecompile, ContextStatefulPrecompile, Evm, InMemoryDB, InnerEvmContext,
     };
     use revm_interpreter::{Host, Interpreter};
     use std::sync::Arc;
@@ -487,13 +487,20 @@ mod test {
         }
 
         let code = Bytecode::new_raw([0xEF, 0x00].into());
-        let code_hash = code.hash_slow();
+        #[cfg(feature = "scroll")]
+        let poseidon_code_hash = code.poseidon_hash_slow();
+        let keccak_code_hash = code.keccak_hash_slow();
         let to_addr = address!("ffffffffffffffffffffffffffffffffffffffff");
 
         let mut evm = Evm::builder()
             .with_db(InMemoryDB::default())
             .modify_db(|db| {
-                db.insert_account_info(to_addr, AccountInfo::new(U256::ZERO, 0, code_hash, code))
+                #[cfg(not(feature = "scroll"))]
+                let acc = AccountInfo::new(U256::ZERO, 0, keccak_code_hash, code);
+                #[cfg(feature = "scroll")]
+                let acc =
+                    AccountInfo::new(U256::ZERO, 0, poseidon_code_hash, keccak_code_hash, code);
+                db.insert_account_info(to_addr, acc)
             })
             .modify_tx_env(|tx| tx.transact_to = TransactTo::Call(to_addr))
             .append_handler_register(|handler| {
@@ -559,11 +566,7 @@ mod test {
             // .with_db(..)
             .build();
 
-        let Context {
-            external: _,
-            evm: EvmContext { db: _, .. },
-            ..
-        } = evm.into_context();
+        let Context { external: _, .. } = evm.into_context();
     }
 
     #[test]
@@ -586,13 +589,12 @@ mod test {
     fn build_custom_precompile() {
         struct CustomPrecompile;
 
-        impl ContextStatefulPrecompile<EvmContext<EmptyDB>, ()> for CustomPrecompile {
+        impl ContextStatefulPrecompile<EmptyDB> for CustomPrecompile {
             fn call(
                 &self,
                 _input: &Bytes,
                 _gas_price: u64,
-                _context: &mut EvmContext<EmptyDB>,
-                _extctx: &mut (),
+                _context: &mut InnerEvmContext<EmptyDB>,
             ) -> PrecompileResult {
                 Ok((10, Bytes::new()))
             }

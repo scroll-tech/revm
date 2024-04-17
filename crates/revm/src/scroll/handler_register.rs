@@ -26,20 +26,26 @@ pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
     // load caller's account.
     let (caller_account, _) = context
         .evm
+        .inner
         .journaled_state
-        .load_account(context.evm.env.tx.caller, &mut context.evm.db)?;
+        .load_account(context.evm.inner.env.tx.caller, &mut context.evm.inner.db)?;
 
     // deduct gas cost from caller's account.
     // Subtract gas costs from the caller's account.
     // We need to saturate the gas cost to prevent underflow in case that `disable_balance_check` is enabled.
-    let mut gas_cost = U256::from(context.evm.env.tx.gas_limit)
-        .saturating_mul(context.evm.env.effective_gas_price());
+    let mut gas_cost = U256::from(context.evm.inner.env.tx.gas_limit)
+        .saturating_mul(context.evm.inner.env.effective_gas_price());
 
     gas_cost = gas_cost.saturating_add(l1_fee);
 
     // EIP-4844
     if SPEC::enabled(CANCUN) {
-        let data_fee = context.evm.env.calc_data_fee().expect("already checked");
+        let data_fee = context
+            .evm
+            .inner
+            .env
+            .calc_data_fee()
+            .expect("already checked");
         gas_cost = gas_cost.saturating_add(data_fee);
     }
 
@@ -47,7 +53,7 @@ pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
     caller_account.info.balance = caller_account.info.balance.saturating_sub(gas_cost);
 
     // bump the nonce for calls. Nonce for CREATE will be bumped in `handle_create`.
-    if matches!(context.evm.env.tx.transact_to, TransactTo::Call(_)) {
+    if matches!(context.evm.inner.env.tx.transact_to, TransactTo::Call(_)) {
         // Nonce is already checked
         caller_account.info.nonce = caller_account.info.nonce.saturating_add(1);
     }
@@ -72,8 +78,9 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
 
     let (coinbase_account, _) = context
         .evm
+        .inner
         .journaled_state
-        .load_account(beneficiary, &mut context.evm.db)?;
+        .load_account(beneficiary, &mut context.evm.inner.db)?;
 
     coinbase_account.mark_touch();
     coinbase_account.info.balance = coinbase_account

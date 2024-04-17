@@ -13,7 +13,6 @@ extern crate alloc as std;
 
 mod builder;
 mod context;
-mod context_precompiles;
 
 #[cfg(any(test, feature = "test-utils"))]
 pub mod test_utils;
@@ -32,10 +31,10 @@ pub mod scroll;
 // Export items.
 
 pub use builder::EvmBuilder;
-pub use context::{Context, ContextWithHandlerCfg, EvmContext};
-pub use context_precompiles::{
-    ContextPrecompile, ContextPrecompiles, ContextStatefulPrecompile, ContextStatefulPrecompileArc,
-    ContextStatefulPrecompileBox, ContextStatefulPrecompileMut,
+pub use context::{
+    Context, ContextPrecompile, ContextPrecompiles, ContextStatefulPrecompile,
+    ContextStatefulPrecompileArc, ContextStatefulPrecompileBox, ContextStatefulPrecompileMut,
+    ContextWithHandlerCfg, EvmContext, InnerEvmContext,
 };
 pub use db::{
     CacheState, DBBox, State, StateBuilder, StateDBBox, TransitionAccount, TransitionState,
