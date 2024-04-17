@@ -227,6 +227,7 @@ pub fn log<const N: usize, H: Host>(interpreter: &mut Interpreter, host: &mut H)
     host.log(log);
 }
 
+#[cfg(not(feature = "scroll"))]
 pub fn selfdestruct<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check_staticcall!(interpreter);
     pop_address!(interpreter, target);
@@ -243,6 +244,11 @@ pub fn selfdestruct<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &m
     gas!(interpreter, gas::selfdestruct_cost::<SPEC>(res));
 
     interpreter.instruction_result = InstructionResult::SelfDestruct;
+}
+
+#[cfg(feature = "scroll")]
+pub fn selfdestruct<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, _host: &mut H) {
+    interpreter.instruction_result = InstructionResult::InvalidFEOpcode;
 }
 
 pub fn create<const IS_CREATE2: bool, H: Host, SPEC: Spec>(
