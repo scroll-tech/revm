@@ -6,7 +6,7 @@ keywords = ["no_std", "ethereum", "evm", "revm", "types"]
 license = "MIT"
 name = "revm-primitives"
 repository = "https://github.com/bluealloy/revm"
-version = "3.0.0"
+version = "3.1.0"
 readme = "../../README.md"
 
 # Don't need to run build script outside of this repo
@@ -23,7 +23,7 @@ alloy-primitives = { version = "0.6", default-features = false, features = [
 hashbrown = "0.14"
 auto_impl = "1.2"
 bitvec = { version = "1", default-features = false, features = ["alloc"] }
-bitflags = { version = "2.4.2", default-features = false }
+bitflags = { version = "2.5.0", default-features = false }
 
 # For setting the CfgEnv KZGSettings. Enabled by c-kzg flag.
 c-kzg = { version = "1.0.0", default-features = false, optional = true }
@@ -98,8 +98,4 @@ optional_no_base_fee = []
 optional_beneficiary_reward = []
 
 # See comments in `revm-precompile`
-c-kzg = [
-    "dep:c-kzg",
-    "dep:once_cell",
-    "dep:derive_more",
-]
+c-kzg = ["dep:c-kzg", "dep:once_cell", "dep:derive_more"]
