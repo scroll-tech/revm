@@ -1,11 +1,14 @@
 use crate::interpreter::{inner_models::SelfDestructResult, InstructionResult};
 use crate::primitives::{
     db::Database, hash_map::Entry, Account, Bytecode, HashMap, Log, Spec, SpecId::*, State,
-    StorageSlot, TransientStorage, B160, KECCAK_EMPTY, POSEIDON_EMPTY, PRECOMPILE3, U256,
+    StorageSlot, TransientStorage, B160, KECCAK_EMPTY, PRECOMPILE3, U256,
 };
 use alloc::vec::Vec;
 use core::mem;
 use revm_interpreter::primitives::SpecId;
+
+#[cfg(feature = "scroll")]
+use crate::primitives::POSEIDON_EMPTY;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -164,8 +167,15 @@ impl JournaledState {
             .unwrap()
             .push(JournalEntry::CodeChange { address });
 
-        account.info.code_hash = code.poseidon_hash_slow();
-        account.info.keccak_code_hash = code.keccak_hash_slow();
+        #[cfg(not(feature = "scroll"))]
+        {
+            account.info.code_hash = code.hash_slow();
+        }
+        #[cfg(feature = "scroll")]
+        {
+            account.info.code_hash = code.poseidon_hash_slow();
+            account.info.keccak_code_hash = code.keccak_hash_slow();
+        }
         account.info.code = Some(code);
     }
 
@@ -316,6 +326,11 @@ impl JournaledState {
         num_of_precompiles: usize,
     ) -> bool {
         // Check collision. Bytecode needs to be empty.
+        #[cfg(not(feature = "scroll"))]
+        if account.info.code_hash != KECCAK_EMPTY {
+            return true;
+        }
+        #[cfg(feature = "scroll")]
         if account.info.code_hash != POSEIDON_EMPTY && account.info.keccak_code_hash != KECCAK_EMPTY
         {
             return true;
@@ -417,8 +432,15 @@ impl JournaledState {
                 }
                 JournalEntry::CodeChange { address } => {
                     let acc = state.get_mut(&address).unwrap();
-                    acc.info.code_hash = POSEIDON_EMPTY;
-                    acc.info.keccak_code_hash = KECCAK_EMPTY;
+                    #[cfg(not(feature = "scroll"))]
+                    {
+                        acc.info.code_hash = KECCAK_EMPTY;
+                    }
+                    #[cfg(feature = "scroll")]
+                    {
+                        acc.info.code_hash = POSEIDON_EMPTY;
+                        acc.info.keccak_code_hash = KECCAK_EMPTY;
+                    }
                     acc.info.code = None;
                 }
             }
@@ -540,7 +562,12 @@ impl JournaledState {
     ) -> Result<&mut Account, DB::Error> {
         let account = self.initial_account_load(address, &[], db)?;
         if account.info.code.is_none() {
-            if account.info.code_hash == POSEIDON_EMPTY {
+            #[cfg(not(feature = "scroll"))]
+            let is_empty = account.info.code_hash == KECCAK_EMPTY;
+            #[cfg(feature = "scroll")]
+            let is_empty = account.info.code_hash == POSEIDON_EMPTY;
+
+            if is_empty {
                 account.info.code = Some(Bytecode::new());
             } else {
                 // load code if requested
@@ -632,7 +659,12 @@ impl JournaledState {
     ) -> Result<(&mut Account, bool), DB::Error> {
         let (acc, is_cold) = self.load_account(address, db)?;
         if acc.info.code.is_none() {
-            if acc.info.code_hash == POSEIDON_EMPTY {
+            #[cfg(not(feature = "scroll"))]
+            let is_empty = acc.info.code_hash == KECCAK_EMPTY;
+            #[cfg(feature = "scroll")]
+            let is_empty = acc.info.code_hash == POSEIDON_EMPTY;
+
+            if is_empty {
                 let empty = Bytecode::new();
                 acc.info.code = Some(empty);
             } else {

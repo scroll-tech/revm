@@ -1,6 +1,9 @@
-use crate::{Bytecode, B160, B256, KECCAK_EMPTY, POSEIDON_EMPTY, U256};
+use crate::{Bytecode, B160, B256, KECCAK_EMPTY, U256};
 use bitflags::bitflags;
 use hashbrown::HashMap;
+
+#[cfg(feature = "scroll")]
+use crate::POSEIDON_EMPTY;
 
 #[derive(Debug, Clone, Eq, PartialEq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -172,6 +175,7 @@ pub struct AccountInfo {
     pub nonce: u64,
     /// code hash,
     pub code_hash: B256,
+    #[cfg(feature = "scroll")]
     /// keccak code hash,
     pub keccak_code_hash: B256,
     /// code: if None, `code_by_hash` will be used to fetch it if code needs to be loaded from
@@ -183,7 +187,11 @@ impl Default for AccountInfo {
     fn default() -> Self {
         Self {
             balance: U256::ZERO,
+            #[cfg(not(feature = "scroll"))]
+            code_hash: KECCAK_EMPTY,
+            #[cfg(feature = "scroll")]
             code_hash: POSEIDON_EMPTY,
+            #[cfg(feature = "scroll")]
             keccak_code_hash: KECCAK_EMPTY,
             code: Some(Bytecode::new()),
             nonce: 0,
@@ -196,7 +204,7 @@ impl PartialEq for AccountInfo {
         let eq = self.balance == other.balance
             && self.nonce == other.nonce
             && self.code_hash == other.code_hash;
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, feature = "scroll"))]
         if eq {
             assert_eq!(self.keccak_code_hash, other.keccak_code_hash);
         }
@@ -210,7 +218,7 @@ impl AccountInfo {
         balance: U256,
         nonce: u64,
         code_hash: B256,
-        keccak_code_hash: B256,
+        #[cfg(feature = "scroll")] keccak_code_hash: B256,
         code: Bytecode,
     ) -> Self {
         Self {
@@ -218,6 +226,7 @@ impl AccountInfo {
             nonce,
             code: Some(code),
             code_hash,
+            #[cfg(feature = "scroll")]
             keccak_code_hash,
         }
     }
@@ -229,6 +238,9 @@ impl AccountInfo {
     }
 
     pub fn is_empty(&self) -> bool {
+        #[cfg(not(feature = "scroll"))]
+        let code_empty = self.code_hash == KECCAK_EMPTY || self.code_hash == B256::zero();
+        #[cfg(feature = "scroll")]
         let code_empty = self.code_hash == POSEIDON_EMPTY || self.code_hash == B256::zero();
         self.balance == U256::ZERO && self.nonce == 0 && code_empty
     }
@@ -238,13 +250,16 @@ impl AccountInfo {
     }
 
     /// Return bytecode hash associated with this account.
-    /// If account does not have code, it return's `POSEIDON_EMPTY` hash.
+    /// If account does not have code,
+    #[cfg_attr(not(feature = "scroll"), doc = "it return's `KECCAK_EMPTY` hash.")]
+    #[cfg_attr(feature = "scroll", doc = "it return's `POSEIDON_EMPTY` hash.")]
     pub fn code_hash(&self) -> B256 {
         self.code_hash
     }
 
     /// Return keccak code hash associated with this account.
     /// If account does not have code, it return's `KECCAK_EMPTY` hash.
+    #[cfg(feature = "scroll")]
     pub fn keccak_code_hash(&self) -> B256 {
         self.keccak_code_hash
     }

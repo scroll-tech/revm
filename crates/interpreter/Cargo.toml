@@ -43,6 +43,7 @@ arbitrary = [
 ]
 
 optimism = ["revm-primitives/optimism"]
+scroll = ["revm-primitives/scroll"]
 
 dev = [
     "memory_limit",

@@ -659,7 +659,9 @@ impl BundleState {
 mod tests {
     use super::*;
     use crate::{db::StorageWithOriginalValues, TransitionAccount};
-    use revm_interpreter::primitives::{KECCAK_EMPTY, POSEIDON_EMPTY};
+    use revm_interpreter::primitives::KECCAK_EMPTY;
+    #[cfg(feature = "scroll")]
+    use revm_interpreter::primitives::POSEIDON_EMPTY;
 
     #[test]
     fn transition_states() {
@@ -668,7 +670,11 @@ mod tests {
         let acc1 = AccountInfo {
             balance: U256::from(10),
             nonce: 1,
+            #[cfg(not(feature = "scroll"))]
+            code_hash: KECCAK_EMPTY,
+            #[cfg(feature = "scroll")]
             code_hash: POSEIDON_EMPTY,
+            #[cfg(feature = "scroll")]
             keccak_code_hash: KECCAK_EMPTY,
             code: None,
         };
@@ -720,7 +726,11 @@ mod tests {
                     Some(AccountInfo {
                         nonce: 1,
                         balance: U256::from(10),
+                        #[cfg(not(feature = "scroll"))]
+                        code_hash: KECCAK_EMPTY,
+                        #[cfg(feature = "scroll")]
                         code_hash: POSEIDON_EMPTY,
+                        #[cfg(feature = "scroll")]
                         keccak_code_hash: KECCAK_EMPTY,
                         code: None,
                     }),
@@ -735,7 +745,11 @@ mod tests {
                     Some(AccountInfo {
                         nonce: 1,
                         balance: U256::from(10),
+                        #[cfg(not(feature = "scroll"))]
+                        code_hash: KECCAK_EMPTY,
+                        #[cfg(feature = "scroll")]
                         code_hash: POSEIDON_EMPTY,
+                        #[cfg(feature = "scroll")]
                         keccak_code_hash: KECCAK_EMPTY,
                         code: None,
                     }),
@@ -764,7 +778,11 @@ mod tests {
                 Some(AccountInfo {
                     nonce: 3,
                     balance: U256::from(20),
+                    #[cfg(not(feature = "scroll"))]
+                    code_hash: KECCAK_EMPTY,
+                    #[cfg(feature = "scroll")]
                     code_hash: POSEIDON_EMPTY,
+                    #[cfg(feature = "scroll")]
                     keccak_code_hash: KECCAK_EMPTY,
                     code: None,
                 }),
@@ -775,7 +793,11 @@ mod tests {
                 Some(Some(AccountInfo {
                     nonce: 1,
                     balance: U256::from(10),
+                    #[cfg(not(feature = "scroll"))]
+                    code_hash: KECCAK_EMPTY,
+                    #[cfg(feature = "scroll")]
                     code_hash: POSEIDON_EMPTY,
+                    #[cfg(feature = "scroll")]
                     keccak_code_hash: KECCAK_EMPTY,
                     code: None,
                 })),
@@ -793,7 +815,11 @@ mod tests {
                 AccountInfo {
                     nonce: 1,
                     balance: U256::from(10),
+                    #[cfg(not(feature = "scroll"))]
+                    code_hash: KECCAK_EMPTY,
+                    #[cfg(feature = "scroll")]
                     code_hash: POSEIDON_EMPTY,
+                    #[cfg(feature = "scroll")]
                     keccak_code_hash: KECCAK_EMPTY,
                     code: None,
                 },
@@ -808,7 +834,11 @@ mod tests {
                 AccountInfo {
                     nonce: 1,
                     balance: U256::from(10),
+                    #[cfg(not(feature = "scroll"))]
+                    code_hash: KECCAK_EMPTY,
+                    #[cfg(feature = "scroll")]
                     code_hash: POSEIDON_EMPTY,
+                    #[cfg(feature = "scroll")]
                     keccak_code_hash: KECCAK_EMPTY,
                     code: None,
                 },
@@ -828,7 +858,11 @@ mod tests {
                 AccountInfo {
                     nonce: 3,
                     balance: U256::from(20),
+                    #[cfg(not(feature = "scroll"))]
+                    code_hash: KECCAK_EMPTY,
+                    #[cfg(feature = "scroll")]
                     code_hash: POSEIDON_EMPTY,
+                    #[cfg(feature = "scroll")]
                     keccak_code_hash: KECCAK_EMPTY,
                     code: None,
                 },
@@ -844,7 +878,11 @@ mod tests {
                 Some(Some(AccountInfo {
                     nonce: 1,
                     balance: U256::from(10),
+                    #[cfg(not(feature = "scroll"))]
+                    code_hash: KECCAK_EMPTY,
+                    #[cfg(feature = "scroll")]
                     code_hash: POSEIDON_EMPTY,
+                    #[cfg(feature = "scroll")]
                     keccak_code_hash: KECCAK_EMPTY,
                     code: None,
                 })),

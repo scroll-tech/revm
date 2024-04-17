@@ -2,8 +2,13 @@ use super::{
     plain_account::PlainStorage, AccountStatus, BundleAccount, PlainAccount,
     StorageWithOriginalValues, TransitionAccount,
 };
-use revm_interpreter::primitives::{AccountInfo, POSEIDON_EMPTY, U256};
+use revm_interpreter::primitives::{AccountInfo, U256};
 use revm_precompile::HashMap;
+
+#[cfg(not(feature = "scroll"))]
+use revm_interpreter::primitives::KECCAK_EMPTY;
+#[cfg(feature = "scroll")]
+use revm_interpreter::primitives::POSEIDON_EMPTY;
 
 /// Cache account contains plain state that gets updated
 /// at every transaction when evm output is applied to CacheState.
@@ -315,6 +320,15 @@ impl CacheAccount {
         self.status = match self.status {
             AccountStatus::Loaded => {
                 // Account that have nonce zero and empty code hash is considered to be fully in memory.
+                #[cfg(not(feature = "scroll"))]
+                if previous_info.as_ref().map(|a| (a.code_hash, a.nonce)) == Some((KECCAK_EMPTY, 0))
+                {
+                    AccountStatus::InMemoryChange
+                } else {
+                    AccountStatus::Changed
+                }
+
+                #[cfg(feature = "scroll")]
                 if previous_info.as_ref().map(|a| (a.code_hash, a.nonce))
                     == Some((POSEIDON_EMPTY, 0))
                 {
@@ -377,13 +391,20 @@ impl CacheAccount {
 
         self.status = match self.status {
             AccountStatus::Loaded => {
+                #[cfg(not(feature = "scroll"))]
+                if previous_info.as_ref().map(|a| (a.code_hash, a.nonce)) == Some((KECCAK_EMPTY, 0))
+                {
+                    AccountStatus::InMemoryChange
+                } else {
+                    AccountStatus::Changed
+                }
+
+                #[cfg(feature = "scroll")]
                 if previous_info.as_ref().map(|a| (a.code_hash, a.nonce))
                     == Some((POSEIDON_EMPTY, 0))
                 {
-                    // account is fully in memory
                     AccountStatus::InMemoryChange
                 } else {
-                    // can be contract and some of storage slots can be present inside db.
                     AccountStatus::Changed
                 }
             }

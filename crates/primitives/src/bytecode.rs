@@ -1,9 +1,12 @@
-use crate::{hash_code_poseidon, keccak256, B256, KECCAK_EMPTY, POSEIDON_EMPTY};
+use crate::{keccak256, B256, KECCAK_EMPTY};
 use alloc::{sync::Arc, vec::Vec};
 use bitvec::prelude::{bitvec, Lsb0};
 use bitvec::vec::BitVec;
 use bytes::Bytes;
 use core::fmt::Debug;
+
+#[cfg(feature = "scroll")]
+use crate::{poseidon, POSEIDON_EMPTY};
 
 /// A map of valid `jump` destinations.
 #[derive(Clone, Eq, PartialEq, Default)]
@@ -87,16 +90,28 @@ impl Bytecode {
         }
     }
 
+    /// Calculate hash of the bytecode.
+    #[cfg(not(feature = "scroll"))]
+    pub fn hash_slow(&self) -> B256 {
+        if self.is_empty() {
+            KECCAK_EMPTY
+        } else {
+            keccak256(&self.original_bytes())
+        }
+    }
+
     /// Calculate poseidon hash of the bytecode.
+    #[cfg(feature = "scroll")]
     pub fn poseidon_hash_slow(&self) -> B256 {
         if self.is_empty() {
             POSEIDON_EMPTY
         } else {
-            hash_code_poseidon(&self.original_bytes())
+            poseidon(&self.original_bytes())
         }
     }
 
     /// Calculate hash of the bytecode.
+    #[cfg(feature = "scroll")]
     pub fn keccak_hash_slow(&self) -> B256 {
         if self.is_empty() {
             KECCAK_EMPTY

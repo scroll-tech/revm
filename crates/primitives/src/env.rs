@@ -1,10 +1,15 @@
 use crate::{
     alloc::vec::Vec, calc_blob_gasprice, Account, InvalidHeader, InvalidTransaction, Spec, SpecId,
-    B160, B256, GAS_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE, POSEIDON_EMPTY, U256,
+    B160, B256, GAS_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE, U256,
     VERSIONED_HASH_VERSION_KZG,
 };
 use bytes::Bytes;
 use core::cmp::{min, Ordering};
+
+#[cfg(not(feature = "scroll"))]
+use crate::KECCAK_EMPTY;
+#[cfg(feature = "scroll")]
+use crate::POSEIDON_EMPTY;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -614,8 +619,15 @@ impl Env {
         // EIP-3607: Reject transactions from senders with deployed code
         // This EIP is introduced after london but there was no collision in past
         // so we can leave it enabled always
-        if !self.cfg.is_eip3607_disabled() && account.info.code_hash != POSEIDON_EMPTY {
-            return Err(InvalidTransaction::RejectCallerWithCode);
+        if !self.cfg.is_eip3607_disabled() {
+            #[cfg(not(feature = "scroll"))]
+            if account.info.code_hash != KECCAK_EMPTY {
+                return Err(InvalidTransaction::RejectCallerWithCode);
+            }
+            #[cfg(feature = "scroll")]
+            if account.info.code_hash != POSEIDON_EMPTY {
+                return Err(InvalidTransaction::RejectCallerWithCode);
+            }
         }
 
         // On Optimism, deposit transactions do not have verification on the nonce

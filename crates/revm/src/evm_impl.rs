@@ -728,6 +728,9 @@ impl<'a, GSPEC: Spec, DB: Database, const INSPECT: bool> EVMImpl<'a, GSPEC, DB, 
                 });
             }
         };
+        #[cfg(not(feature = "scroll"))]
+        let code_hash = account.info.code_hash();
+        #[cfg(feature = "scroll")]
         let code_hash = account.info.keccak_code_hash();
         let bytecode = account.info.code.clone().unwrap_or_default();
 
@@ -889,7 +892,10 @@ impl<'a, GSPEC: Spec, DB: Database + 'a, const INSPECT: bool> Host
             return Some((B256::zero(), is_cold));
         }
 
-        Some((acc.info.keccak_code_hash, is_cold))
+        #[cfg(not(feature = "scroll"))]
+        return Some((acc.info.code_hash, is_cold));
+        #[cfg(feature = "scroll")]
+        return Some((acc.info.keccak_code_hash(), is_cold));
     }
 
     fn sload(&mut self, address: B160, index: U256) -> Option<(U256, bool)> {

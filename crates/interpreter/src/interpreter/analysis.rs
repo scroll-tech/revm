@@ -5,7 +5,9 @@ use crate::primitives::{
 };
 use alloc::sync::Arc;
 use core::fmt;
-use revm_primitives::{hash_code_poseidon, POSEIDON_EMPTY};
+
+#[cfg(feature = "scroll")]
+use crate::primitives::{poseidon, POSEIDON_EMPTY};
 
 /// Perform bytecode analysis.
 ///
@@ -126,16 +128,29 @@ impl BytecodeLocked {
 
     /// Calculate poseidon hash of the bytecode.
     #[inline]
+    #[cfg(not(feature = "scroll"))]
+    pub fn hash_slow(&self) -> B256 {
+        if self.is_empty() {
+            KECCAK_EMPTY
+        } else {
+            keccak256(self.original_bytecode_slice())
+        }
+    }
+
+    /// Calculate poseidon hash of the bytecode.
+    #[inline]
+    #[cfg(feature = "scroll")]
     pub fn poseidon_hash_slow(&self) -> B256 {
         if self.is_empty() {
             POSEIDON_EMPTY
         } else {
-            hash_code_poseidon(self.original_bytecode_slice())
+            poseidon(self.original_bytecode_slice())
         }
     }
 
     /// Calculate keccak hash of the bytecode.
     #[inline]
+    #[cfg(feature = "scroll")]
     pub fn keccak_hash_slow(&self) -> B256 {
         if self.is_empty() {
             KECCAK_EMPTY

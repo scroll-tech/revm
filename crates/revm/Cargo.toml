@@ -69,6 +69,7 @@ c-kzg = ["revm-precompile/c-kzg"]
 web3db = []
 with-serde = []
 optimism = ["revm-interpreter/optimism", "revm-precompile/optimism"]
+scroll = ["revm-interpreter/scroll", "revm-precompile/scroll"]
 
 [[example]]
 name = "fork_ref_transact"

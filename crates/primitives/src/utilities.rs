@@ -1,15 +1,19 @@
 use crate::{
     B160, B256, BLOB_GASPRICE_UPDATE_FRACTION, MIN_BLOB_GASPRICE, TARGET_BLOB_GAS_PER_BLOCK, U256,
 };
-use halo2_proofs::halo2curves::bn256::Fr;
-use halo2_proofs::halo2curves::ff::PrimeField;
 use hex_literal::hex;
 use sha3::{Digest, Keccak256};
+
+#[cfg(feature = "scroll")]
+use halo2_proofs::halo2curves::bn256::Fr;
+#[cfg(feature = "scroll")]
+use halo2_proofs::halo2curves::ff::PrimeField;
 
 pub const KECCAK_EMPTY: B256 = B256(hex!(
     "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
 ));
 
+#[cfg(feature = "scroll")]
 pub const POSEIDON_EMPTY: B256 = B256(hex!(
     "2098f5fb9e239eab3ceac3f27b81e481dc3124d55ffed523a839ee8446b64864"
 ));
@@ -20,10 +24,12 @@ pub fn keccak256(input: &[u8]) -> B256 {
 }
 
 /// Default number of bytes to pack into a field element.
+#[cfg(feature = "scroll")]
 pub const POSEIDON_HASH_BYTES_IN_FIELD: usize = 31;
 
 /// Poseidon code hash
-pub fn hash_code_poseidon(code: &[u8]) -> B256 {
+#[cfg(feature = "scroll")]
+pub fn poseidon(code: &[u8]) -> B256 {
     use hash_circuit::hash::{Hashable, MessageHashable, HASHABLE_DOMAIN_SPEC};
 
     let bytes_in_field = POSEIDON_HASH_BYTES_IN_FIELD;
