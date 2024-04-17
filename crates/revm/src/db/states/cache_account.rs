@@ -5,14 +5,9 @@ use super::{
 use revm_interpreter::primitives::{AccountInfo, U256};
 use revm_precompile::HashMap;
 
-#[cfg(not(feature = "scroll"))]
-use revm_interpreter::primitives::KECCAK_EMPTY;
-#[cfg(feature = "scroll")]
-use revm_interpreter::primitives::POSEIDON_EMPTY;
-
 /// Cache account contains plain state that gets updated
 /// at every transaction when evm output is applied to CacheState.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CacheAccount {
     pub account: Option<PlainAccount>,
     pub status: AccountStatus,
@@ -105,7 +100,7 @@ impl CacheAccount {
 
     /// Fetch account info if it exist.
     pub fn account_info(&self) -> Option<AccountInfo> {
-        self.account.as_ref().map(|a| a.info.clone())
+        self.account.clone().map(|a| a.info)
     }
 
     /// Dissolve account into components.
@@ -120,31 +115,13 @@ impl CacheAccount {
     ) -> Option<TransitionAccount> {
         let previous_status = self.status;
 
-        self.status = match self.status {
-            AccountStatus::DestroyedChanged => {
-                if self
-                    .account
-                    .as_ref()
-                    .map(|a| a.info.is_empty())
-                    .unwrap_or_default()
-                {
-                    return None;
-                }
-                AccountStatus::DestroyedChanged
-            }
-            AccountStatus::Destroyed | AccountStatus::DestroyedAgain => {
-                AccountStatus::DestroyedChanged
-            }
-            AccountStatus::LoadedEmptyEIP161 => {
-                return None;
-            }
-            AccountStatus::InMemoryChange | AccountStatus::LoadedNotExisting => {
-                AccountStatus::InMemoryChange
-            }
-            AccountStatus::Loaded | AccountStatus::Changed => {
-                unreachable!("Wrong state transition, touch crate is not possible from {self:?}")
-            }
-        };
+        let had_no_info = self
+            .account
+            .as_ref()
+            .map(|a| a.info.is_empty())
+            .unwrap_or_default();
+        self.status = self.status.on_touched_created_pre_eip161(had_no_info)?;
+
         let plain_storage = storage.iter().map(|(k, v)| (*k, v.present_value)).collect();
         let previous_info = self.account.take().map(|a| a.info);
 
@@ -170,27 +147,8 @@ impl CacheAccount {
         let previous_info = self.account.take().map(|acc| acc.info);
 
         // Set account state to Destroyed as we need to clear the storage if it exist.
-        self.status = match self.status {
-            AccountStatus::InMemoryChange
-            | AccountStatus::Destroyed
-            | AccountStatus::LoadedEmptyEIP161 => {
-                // account can be created empty then touched.
-                AccountStatus::Destroyed
-            }
-            AccountStatus::LoadedNotExisting => {
-                // account can be touched but not existing.
-                // This is a noop.
-                AccountStatus::LoadedNotExisting
-            }
-            AccountStatus::DestroyedAgain | AccountStatus::DestroyedChanged => {
-                // do nothing
-                AccountStatus::DestroyedAgain
-            }
-            _ => {
-                // do nothing
-                unreachable!("Wrong state transition, touch empty is not possible from {self:?}");
-            }
-        };
+        self.status = self.status.on_touched_empty_post_eip161();
+
         if matches!(
             previous_status,
             AccountStatus::LoadedNotExisting
@@ -218,23 +176,9 @@ impl CacheAccount {
         let previous_info = self.account.take().map(|a| a.info);
         let previous_status = self.status;
 
-        self.status = match self.status {
-            AccountStatus::DestroyedChanged
-            | AccountStatus::DestroyedAgain
-            | AccountStatus::Destroyed => {
-                // mark as destroyed again, this can happen if account is created and
-                // then selfdestructed in same block.
-                // Note: there is no big difference between Destroyed and DestroyedAgain
-                // in this case, but was added for clarity.
-                AccountStatus::DestroyedAgain
-            }
-
-            _ => AccountStatus::Destroyed,
-        };
+        self.status = self.status.on_selfdestructed();
 
         if previous_status == AccountStatus::LoadedNotExisting {
-            // transitions for account loaded as not existing.
-            self.status = AccountStatus::LoadedNotExisting;
             None
         } else {
             Some(TransitionAccount {
@@ -262,24 +206,7 @@ impl CacheAccount {
             .map(|(k, s)| (*k, s.present_value))
             .collect();
 
-        self.status = match self.status {
-            // if account was destroyed previously just copy new info to it.
-            AccountStatus::DestroyedAgain
-            | AccountStatus::Destroyed
-            | AccountStatus::DestroyedChanged => AccountStatus::DestroyedChanged,
-            // if account is loaded from db.
-            AccountStatus::LoadedNotExisting
-            // Loaded empty eip161 to creates is not possible as CREATE2 was added after EIP-161
-            | AccountStatus::LoadedEmptyEIP161
-            | AccountStatus::Loaded
-            | AccountStatus::Changed
-            | AccountStatus::InMemoryChange => {
-                // If account is loaded and not empty this means that account has some balance.
-                // This means that account cannot be created.
-                // We are assuming that EVM did necessary checks before allowing account to be created.
-                AccountStatus::InMemoryChange
-            }
-        };
+        self.status = self.status.on_created();
         let transition_account = TransitionAccount {
             info: Some(new_info.clone()),
             status: self.status,
@@ -319,34 +246,11 @@ impl CacheAccount {
         let output = change(&mut account.info);
         self.account = Some(account);
 
-        self.status = match self.status {
-            AccountStatus::Loaded => {
-                // Account that have nonce zero and empty code hash is considered to be fully in memory.
-                #[cfg(not(feature = "scroll"))]
-                if previous_info.as_ref().map(|a| (a.code_hash, a.nonce)) == Some((KECCAK_EMPTY, 0))
-                {
-                    AccountStatus::InMemoryChange
-                } else {
-                    AccountStatus::Changed
-                }
-
-                #[cfg(feature = "scroll")]
-                if previous_info.as_ref().map(|a| (a.code_hash, a.nonce))
-                    == Some((POSEIDON_EMPTY, 0))
-                {
-                    AccountStatus::InMemoryChange
-                } else {
-                    AccountStatus::Changed
-                }
-            }
-            AccountStatus::LoadedNotExisting
-            | AccountStatus::LoadedEmptyEIP161
-            | AccountStatus::InMemoryChange => AccountStatus::InMemoryChange,
-            AccountStatus::Changed => AccountStatus::Changed,
-            AccountStatus::Destroyed
-            | AccountStatus::DestroyedAgain
-            | AccountStatus::DestroyedChanged => AccountStatus::DestroyedChanged,
-        };
+        let had_no_nonce_and_code = previous_info
+            .as_ref()
+            .map(AccountInfo::has_no_code_and_nonce)
+            .unwrap_or_default();
+        self.status = self.status.on_changed(had_no_nonce_and_code);
 
         (
             output,
@@ -378,7 +282,7 @@ impl CacheAccount {
         storage: StorageWithOriginalValues,
     ) -> TransitionAccount {
         let previous_status = self.status;
-        let previous_info = self.account.as_ref().map(|a| a.info.clone());
+        let previous_info = self.account.clone().map(|a| a.info);
         let mut this_storage = self
             .account
             .take()
@@ -391,59 +295,15 @@ impl CacheAccount {
             storage: this_storage,
         };
 
-        self.status = match self.status {
-            AccountStatus::Loaded => {
-                #[cfg(not(feature = "scroll"))]
-                if previous_info.as_ref().map(|a| (a.code_hash, a.nonce)) == Some((KECCAK_EMPTY, 0))
-                {
-                    AccountStatus::InMemoryChange
-                } else {
-                    AccountStatus::Changed
-                }
-
-                #[cfg(feature = "scroll")]
-                if previous_info.as_ref().map(|a| (a.code_hash, a.nonce))
-                    == Some((POSEIDON_EMPTY, 0))
-                {
-                    AccountStatus::InMemoryChange
-                } else {
-                    AccountStatus::Changed
-                }
-            }
-            AccountStatus::Changed => {
-                // Update to new changed state.
-                AccountStatus::Changed
-            }
-            AccountStatus::InMemoryChange => {
-                // promote to NewChanged.
-                // Check if account is empty is done outside of this fn.
-                AccountStatus::InMemoryChange
-            }
-            AccountStatus::DestroyedChanged => {
-                // have same state
-                AccountStatus::DestroyedChanged
-            }
-            AccountStatus::LoadedEmptyEIP161 => {
-                // Change on empty account, should transfer storage if there is any.
-                // There is possibility that there are storage inside db.
-                // That storage is used in merkle tree calculation before state clear EIP.
-                AccountStatus::InMemoryChange
-            }
-            AccountStatus::LoadedNotExisting => {
-                // if it is loaded not existing and then changed
-                // This means this is balance transfer that created the account.
-                AccountStatus::InMemoryChange
-            }
-            AccountStatus::Destroyed | AccountStatus::DestroyedAgain => {
-                // If account is destroyed and then changed this means this is
-                // balance transfer.
-                AccountStatus::DestroyedChanged
-            }
-        };
+        let had_no_nonce_and_code = previous_info
+            .as_ref()
+            .map(AccountInfo::has_no_code_and_nonce)
+            .unwrap_or_default();
+        self.status = self.status.on_changed(had_no_nonce_and_code);
         self.account = Some(changed_account);
 
         TransitionAccount {
-            info: self.account.as_ref().map(|a| a.info.clone()),
+            info: self.account.clone().map(|a| a.info),
             status: self.status,
             previous_info,
             previous_status,

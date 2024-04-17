@@ -57,7 +57,7 @@ impl BundleAccount {
         let slot = self.storage.get(&slot).map(|s| s.present_value);
         if slot.is_some() {
             slot
-        } else if self.status.storage_known() {
+        } else if self.status.is_storage_known() {
             Some(U256::ZERO)
         } else {
             None
@@ -92,8 +92,16 @@ impl BundleAccount {
             AccountInfoRevert::DoNothing => (),
             AccountInfoRevert::DeleteIt => {
                 self.info = None;
-                self.storage = HashMap::new();
-                return true;
+                if self.original_info.is_none() {
+                    self.storage = HashMap::new();
+                    return true;
+                } else {
+                    // set all storage to zero but preserve original values.
+                    self.storage.iter_mut().for_each(|(_, v)| {
+                        v.present_value = U256::ZERO;
+                    });
+                    return false;
+                }
             }
             AccountInfoRevert::RevertTo(info) => self.info = Some(info),
         };
@@ -102,10 +110,10 @@ impl BundleAccount {
             match slot {
                 RevertToSlot::Some(value) => {
                     // Don't overwrite original values if present
-                    // if storage is not present set original values as current value.
+                    // if storage is not present set original value as current value.
                     self.storage
                         .entry(key)
-                        .or_insert(StorageSlot::new_changed(value, U256::ZERO))
+                        .or_insert(StorageSlot::new(value))
                         .present_value = value;
                 }
                 RevertToSlot::Destroyed => {
@@ -140,7 +148,7 @@ impl BundleAccount {
             |updated_storage: &StorageWithOriginalValues| -> HashMap<U256, RevertToSlot> {
                 updated_storage
                     .iter()
-                    .filter(|s| s.1.previous_or_original_value != s.1.present_value)
+                    .filter(|s| s.1.is_changed())
                     .map(|(key, value)| {
                         (*key, RevertToSlot::Some(value.previous_or_original_value))
                     })

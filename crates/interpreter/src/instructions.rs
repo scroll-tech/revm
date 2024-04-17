@@ -1,3 +1,5 @@
+//! EVM opcode implementations.
+
 #[macro_use]
 pub mod macros;
 

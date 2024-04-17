@@ -1,5 +1,11 @@
-#![no_std]
+//! # revm-precompile
+//!
+//! Implementations of EVM precompiled contracts.
+#![warn(rustdoc::all)]
 #![warn(unused_crate_dependencies)]
+#![deny(unused_must_use, rust_2018_idioms)]
+#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 
 #[macro_use]
 extern crate alloc;
@@ -12,36 +18,27 @@ mod identity;
 pub mod kzg_point_evaluation;
 mod modexp;
 mod secp256k1;
+pub mod utilities;
 
 use alloc::{boxed::Box, vec::Vec};
-use core::fmt;
+use core::{fmt, hash::Hash};
 use once_cell::race::OnceBox;
-pub use primitives::{
-    precompile::{PrecompileError as Error, *},
-    Bytes, HashMap,
-};
-#[doc(inline)]
+#[doc(hidden)]
 pub use revm_primitives as primitives;
-
-pub type Address = [u8; 20];
-pub type B256 = [u8; 32];
+pub use revm_primitives::{
+    precompile::{PrecompileError as Error, *},
+    Address, Bytes, HashMap, Log, B256,
+};
 
 pub fn calc_linear_cost_u32(len: usize, base: u64, word: u64) -> u64 {
     (len as u64 + 32 - 1) / 32 * word + base
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct PrecompileOutput {
     pub cost: u64,
     pub output: Vec<u8>,
     pub logs: Vec<Log>,
-}
-
-#[derive(Debug, Default)]
-pub struct Log {
-    pub address: Address,
-    pub topics: Vec<B256>,
-    pub data: Bytes,
 }
 
 impl PrecompileOutput {
@@ -53,15 +50,156 @@ impl PrecompileOutput {
         }
     }
 }
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct Precompiles {
-    pub fun: HashMap<Address, Precompile>,
+    /// Precompiles.
+    pub inner: HashMap<Address, Precompile>,
 }
 
-impl Default for Precompiles {
-    fn default() -> Self {
-        Self::new(SpecId::LATEST).clone() //berlin
+impl Precompiles {
+    /// Returns the precompiles for the given spec.
+    pub fn new(spec: PrecompileSpecId) -> &'static Self {
+        match spec {
+            PrecompileSpecId::HOMESTEAD => Self::homestead(),
+            PrecompileSpecId::BYZANTIUM => Self::byzantium(),
+            PrecompileSpecId::ISTANBUL => Self::istanbul(),
+            PrecompileSpecId::BERLIN => Self::berlin(),
+            PrecompileSpecId::CANCUN => Self::cancun(),
+            PrecompileSpecId::LATEST => Self::latest(),
+        }
+    }
+
+    /// Returns precompiles for Homestead spec.
+    pub fn homestead() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let mut precompiles = Precompiles::default();
+            precompiles.extend([
+                secp256k1::ECRECOVER,
+                hash::SHA256,
+                hash::RIPEMD160,
+                identity::FUN,
+            ]);
+            Box::new(precompiles)
+        })
+    }
+
+    /// Returns precompiles for Byzantium spec.
+    pub fn byzantium() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let mut precompiles = Self::homestead().clone();
+            precompiles.extend([
+                // EIP-196: Precompiled contracts for addition and scalar multiplication on the elliptic curve alt_bn128.
+                // EIP-197: Precompiled contracts for optimal ate pairing check on the elliptic curve alt_bn128.
+                bn128::add::BYZANTIUM,
+                bn128::mul::BYZANTIUM,
+                bn128::pair::BYZANTIUM,
+                // EIP-198: Big integer modular exponentiation.
+                modexp::BYZANTIUM,
+            ]);
+            Box::new(precompiles)
+        })
+    }
+
+    /// Returns precompiles for Istanbul spec.
+    pub fn istanbul() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let mut precompiles = Self::byzantium().clone();
+            precompiles.extend([
+                // EIP-152: Add BLAKE2 compression function `F` precompile.
+                blake2::FUN,
+                // EIP-1108: Reduce alt_bn128 precompile gas costs.
+                bn128::add::ISTANBUL,
+                bn128::mul::ISTANBUL,
+                bn128::pair::ISTANBUL,
+            ]);
+            Box::new(precompiles)
+        })
+    }
+
+    /// Returns precompiles for Berlin spec.
+    pub fn berlin() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let mut precompiles = Self::istanbul().clone();
+            precompiles.extend([
+                // EIP-2565: ModExp Gas Cost.
+                modexp::BERLIN,
+            ]);
+            Box::new(precompiles)
+        })
+    }
+
+    /// Returns precompiles for Cancun spec.
+    ///
+    /// If the `c-kzg` feature is not enabled KZG Point Evaluation precompile will not be included,
+    /// effectively making this the same as Berlin.
+    pub fn cancun() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let precompiles = Self::berlin().clone();
+
+            // Don't include KZG point evaluation precompile in no_std builds.
+            #[cfg(feature = "c-kzg")]
+            let precompiles = {
+                let mut precompiles = precompiles;
+                precompiles.extend([
+                    // EIP-4844: Shard Blob Transactions
+                    kzg_point_evaluation::POINT_EVALUATION,
+                ]);
+                precompiles
+            };
+
+            Box::new(precompiles)
+        })
+    }
+
+    /// Returns the precompiles for the latest spec.
+    pub fn latest() -> &'static Self {
+        Self::cancun()
+    }
+
+    /// Returns an iterator over the precompiles addresses.
+    #[inline]
+    pub fn addresses(&self) -> impl Iterator<Item = &Address> + '_ {
+        self.inner.keys()
+    }
+
+    /// Consumes the type and returns all precompile addresses.
+    #[inline]
+    pub fn into_addresses(self) -> impl Iterator<Item = Address> {
+        self.inner.into_keys()
+    }
+
+    /// Is the given address a precompile.
+    #[inline]
+    pub fn contains(&self, address: &Address) -> bool {
+        self.get(address).is_some()
+    }
+
+    /// Returns the precompile for the given address.
+    #[inline]
+    pub fn get(&self, address: &Address) -> Option<Precompile> {
+        self.inner.get(address).cloned()
+    }
+
+    /// Is the precompiles list empty.
+    pub fn is_empty(&self) -> bool {
+        self.inner.len() == 0
+    }
+
+    /// Returns the number of precompiles.
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    /// Extends the precompiles with the given precompiles.
+    ///
+    /// Other precompiles with overwrite existing precompiles.
+    pub fn extend(&mut self, other: impl IntoIterator<Item = PrecompileWithAddress>) {
+        self.inner.extend(other.into_iter().map(Into::into));
     }
 }
 
@@ -80,16 +218,23 @@ impl fmt::Debug for Precompile {
     }
 }
 
-pub struct PrecompileAddress(Address, Precompile);
+#[derive(Clone, Debug)]
+pub struct PrecompileWithAddress(pub Address, pub Precompile);
 
-impl From<PrecompileAddress> for (Address, Precompile) {
-    fn from(value: PrecompileAddress) -> Self {
+impl From<(Address, Precompile)> for PrecompileWithAddress {
+    fn from(value: (Address, Precompile)) -> Self {
+        PrecompileWithAddress(value.0, value.1)
+    }
+}
+
+impl From<PrecompileWithAddress> for (Address, Precompile) {
+    fn from(value: PrecompileWithAddress) -> Self {
         (value.0, value.1)
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
-pub enum SpecId {
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub enum PrecompileSpecId {
     HOMESTEAD,
     BYZANTIUM,
     ISTANBUL,
@@ -98,7 +243,7 @@ pub enum SpecId {
     LATEST,
 }
 
-impl SpecId {
+impl PrecompileSpecId {
     /// Returns the appropriate precompile Spec for the primitive [SpecId](revm_primitives::SpecId)
     pub const fn from_spec_id(spec_id: revm_primitives::SpecId) -> Self {
         use revm_primitives::SpecId::*;
@@ -112,148 +257,10 @@ impl SpecId {
             CANCUN => Self::CANCUN,
             LATEST => Self::LATEST,
             #[cfg(feature = "optimism")]
-            BEDROCK | REGOLITH => Self::BERLIN,
+            BEDROCK | REGOLITH | CANYON => Self::BERLIN,
+            #[cfg(feature = "optimism")]
+            ECOTONE => Self::CANCUN,
         }
-    }
-
-    pub const fn enabled(self, spec_id: u8) -> bool {
-        spec_id >= self as u8
-    }
-}
-
-impl Precompiles {
-    pub fn homestead() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
-        INSTANCE.get_or_init(|| {
-            let fun = [
-                secp256k1::ECRECOVER,
-                hash::SHA256,
-                hash::RIPEMD160,
-                identity::FUN,
-            ]
-            .into_iter()
-            .map(From::from)
-            .collect();
-            Box::new(Self { fun })
-        })
-    }
-
-    pub fn byzantium() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
-        INSTANCE.get_or_init(|| {
-            let mut precompiles = Box::new(Self::homestead().clone());
-            precompiles.fun.extend(
-                [
-                    // EIP-196: Precompiled contracts for addition and scalar multiplication on the elliptic curve alt_bn128.
-                    // EIP-197: Precompiled contracts for optimal ate pairing check on the elliptic curve alt_bn128.
-                    bn128::add::BYZANTIUM,
-                    bn128::mul::BYZANTIUM,
-                    bn128::pair::BYZANTIUM,
-                    // EIP-198: Big integer modular exponentiation.
-                    modexp::BYZANTIUM,
-                ]
-                .into_iter()
-                .map(From::from),
-            );
-            precompiles
-        })
-    }
-
-    pub fn istanbul() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
-        INSTANCE.get_or_init(|| {
-            let mut precompiles = Box::new(Self::byzantium().clone());
-            precompiles.fun.extend(
-                [
-                    // EIP-152: Add BLAKE2 compression function `F` precompile.
-                    blake2::FUN,
-                    // EIP-1108: Reduce alt_bn128 precompile gas costs.
-                    bn128::add::ISTANBUL,
-                    bn128::mul::ISTANBUL,
-                    bn128::pair::ISTANBUL,
-                ]
-                .into_iter()
-                .map(From::from),
-            );
-            precompiles
-        })
-    }
-
-    pub fn berlin() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
-        INSTANCE.get_or_init(|| {
-            let mut precompiles = Box::new(Self::istanbul().clone());
-            precompiles.fun.extend(
-                [
-                    // EIP-2565: ModExp Gas Cost.
-                    modexp::BERLIN,
-                ]
-                .into_iter()
-                .map(From::from),
-            );
-            precompiles
-        })
-    }
-
-    /// If `std` feature is not enabled KZG Point Evaluation precompile will not be included.
-    pub fn cancun() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
-        INSTANCE.get_or_init(|| {
-            // Don't include KZG point evaluation precompile in no_std builds.
-            #[cfg(feature = "c-kzg")]
-            {
-                let mut precompiles = Box::new(Self::berlin().clone());
-                precompiles.fun.extend(
-                    [
-                        // EIP-4844: Shard Blob Transactions
-                        kzg_point_evaluation::POINT_EVALUATION,
-                    ]
-                    .into_iter()
-                    .map(From::from),
-                );
-                precompiles
-            }
-            #[cfg(not(feature = "c-kzg"))]
-            {
-                Box::new(Self::berlin().clone())
-            }
-        })
-    }
-
-    pub fn latest() -> &'static Self {
-        Self::berlin()
-    }
-
-    pub fn new(spec: SpecId) -> &'static Self {
-        match spec {
-            SpecId::HOMESTEAD => Self::homestead(),
-            SpecId::BYZANTIUM => Self::byzantium(),
-            SpecId::ISTANBUL => Self::istanbul(),
-            SpecId::BERLIN => Self::berlin(),
-            SpecId::CANCUN => Self::cancun(),
-            SpecId::LATEST => Self::latest(),
-        }
-    }
-
-    pub fn addresses(&self) -> impl IntoIterator<Item = &Address> {
-        self.fun.keys()
-    }
-
-    pub fn contains(&self, address: &Address) -> bool {
-        self.fun.contains_key(address)
-    }
-
-    pub fn get(&self, address: &Address) -> Option<Precompile> {
-        //return None;
-        self.fun.get(address).cloned()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.fun.len() == 0
-    }
-
-    pub fn len(&self) -> usize {
-        self.fun.len()
     }
 }
 
@@ -264,7 +271,7 @@ impl Precompiles {
 #[inline]
 const fn u64_to_address(x: u64) -> Address {
     let x = x.to_be_bytes();
-    [
+    Address::new([
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7],
-    ]
+    ])
 }

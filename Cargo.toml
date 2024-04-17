@@ -1,11 +1,23 @@
 [workspace]
+members = [
+    "bins/revme",
+    "bins/revm-test",
+    "crates/revm",
+    "crates/primitives",
+    "crates/interpreter",
+    "crates/precompile",
+]
 resolver = "2"
-members = ["bins/*", "crates/*"]
 default-members = ["crates/revm"]
+
+[workspace.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [profile.release]
 lto = true
 codegen-units = 1
+debug = true
 
 [profile.ethtests]
 inherits = "test"

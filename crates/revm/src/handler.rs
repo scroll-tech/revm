@@ -1,103 +1,258 @@
+// Modules.
+mod handle_types;
 pub mod mainnet;
-#[cfg(feature = "optimism")]
-pub mod optimism;
-#[cfg(feature = "scroll")]
-pub mod scroll;
+pub mod register;
 
-use revm_interpreter::primitives::db::Database;
-use revm_interpreter::primitives::{EVMError, EVMResultGeneric};
+// Exports.
+pub use handle_types::*;
 
-use crate::interpreter::{Gas, InstructionResult};
-use crate::primitives::{Env, Spec};
-use crate::EVMData;
+// Includes.
+use crate::{
+    interpreter::{
+        opcode::{make_instruction_table, InstructionTables},
+        Host,
+    },
+    primitives::{db::Database, spec_to_generic, HandlerCfg, Spec, SpecId},
+    Evm,
+};
+use alloc::vec::Vec;
+use register::{EvmHandler, HandleRegisters};
 
-/// Handle call return and return final gas value.
-type CallReturnHandle = fn(&Env, InstructionResult, Gas) -> Gas;
-
-/// Reimburse the caller with ethereum it didn't spent.
-type ReimburseCallerHandle<DB> =
-    fn(&mut EVMData<'_, DB>, &Gas, u64) -> EVMResultGeneric<(), <DB as Database>::Error>;
-
-/// Reward beneficiary with transaction rewards.
-type RewardBeneficiaryHandle<DB> = ReimburseCallerHandle<DB>;
-
-/// Calculate gas refund for transaction.
-type CalculateGasRefundHandle = fn(&Env, &Gas) -> u64;
+use self::register::{HandleRegister, HandleRegisterBox};
 
 /// Handler acts as a proxy and allow to define different behavior for different
 /// sections of the code. This allows nice integration of different chains or
 /// to disable some mainnet behavior.
-pub struct Handler<DB: Database> {
-    // Uses env, call resul and returned gas from the call to determine the gas
-    // that is returned from transaction execution..
-    pub call_return: CallReturnHandle,
-    pub reimburse_caller: ReimburseCallerHandle<DB>,
-    pub reward_beneficiary: RewardBeneficiaryHandle<DB>,
-    pub calculate_gas_refund: CalculateGasRefundHandle,
+pub struct Handler<'a, H: Host + 'a, EXT, DB: Database> {
+    /// Handler config.
+    pub cfg: HandlerCfg,
+    /// Instruction table type.
+    pub instruction_table: Option<InstructionTables<'a, H>>,
+    /// Registers that will be called on initialization.
+    pub registers: Vec<HandleRegisters<'a, EXT, DB>>,
+    /// Validity handles.
+    pub validation: ValidationHandler<'a, EXT, DB>,
+    /// Pre execution handle
+    pub pre_execution: PreExecutionHandler<'a, EXT, DB>,
+    /// post Execution handle
+    pub post_execution: PostExecutionHandler<'a, EXT, DB>,
+    /// Execution loop that handles frames.
+    pub execution: ExecutionHandler<'a, EXT, DB>,
 }
 
-impl<DB: Database> Handler<DB> {
+impl<'a, EXT, DB: Database> EvmHandler<'a, EXT, DB> {
+    /// Created new Handler with given configuration.
+    ///
+    /// Internaly it calls `mainnet_with_spec` with the given spec id.
+    /// Or `optimism_with_spec` if the optimism feature is enabled and `cfg.is_optimism` is set.
+    pub fn new(cfg: HandlerCfg) -> Self {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "optimism")] {
+                if cfg.is_optimism {
+                    Handler::optimism_with_spec(cfg.spec_id)
+                } else {
+                    Handler::mainnet_with_spec(cfg.spec_id)
+                }
+            } else if #[cfg(feature = "scroll")] {
+                if cfg.is_scroll {
+                    Handler::scroll_with_spec(cfg.spec_id)
+                } else {
+                    Handler::mainnet_with_spec(cfg.spec_id)
+                }
+            } else {
+                Handler::mainnet_with_spec(cfg.spec_id)
+            }
+        }
+    }
     /// Handler for the mainnet
-    pub fn mainnet<SPEC: Spec>() -> Self {
+    pub fn mainnet<SPEC: Spec + 'static>() -> Self {
         Self {
-            call_return: mainnet::handle_call_return::<SPEC>,
-            calculate_gas_refund: mainnet::calculate_gas_refund::<SPEC>,
-            reimburse_caller: mainnet::handle_reimburse_caller::<SPEC, DB>,
-            reward_beneficiary: mainnet::reward_beneficiary::<SPEC, DB>,
+            cfg: HandlerCfg::new(SPEC::SPEC_ID),
+            instruction_table: Some(InstructionTables::Plain(make_instruction_table::<
+                Evm<'a, EXT, DB>,
+                SPEC,
+            >())),
+            registers: Vec::new(),
+            validation: ValidationHandler::new::<SPEC>(),
+            pre_execution: PreExecutionHandler::new::<SPEC>(),
+            post_execution: PostExecutionHandler::new::<SPEC>(),
+            execution: ExecutionHandler::new::<SPEC>(),
         }
     }
 
-    /// Handler for the scroll
-    #[cfg(feature = "scroll")]
-    pub fn scroll<SPEC: Spec>() -> Self {
-        Self {
-            call_return: scroll::handle_call_return::<SPEC>,
-            calculate_gas_refund: scroll::calculate_gas_refund::<SPEC>,
-            reimburse_caller: scroll::handle_reimburse_caller::<SPEC, DB>,
-            reward_beneficiary: scroll::reward_beneficiary::<SPEC, DB>,
-        }
+    /// Is optimism enabled.
+    pub fn is_optimism(&self) -> bool {
+        self.cfg.is_optimism()
     }
 
-    /// Handler for the optimism
+    /// Handler for optimism
     #[cfg(feature = "optimism")]
-    pub fn optimism<SPEC: Spec>() -> Self {
-        Self {
-            call_return: optimism::handle_call_return::<SPEC>,
-            // we reinburse caller the same was as in mainnet.
-            // Refund is calculated differently then mainnet.
-            reimburse_caller: mainnet::handle_reimburse_caller::<SPEC, DB>,
-            calculate_gas_refund: optimism::calculate_gas_refund::<SPEC>,
-            reward_beneficiary: optimism::reward_beneficiary::<SPEC, DB>,
+    pub fn optimism<SPEC: Spec + 'static>() -> Self {
+        let mut handler = Self::mainnet::<SPEC>();
+        handler.cfg.is_optimism = true;
+        handler.append_handled_register(HandleRegisters::Plain(
+            crate::optimism::optimism_handle_register::<DB, EXT>,
+        ));
+        handler
+    }
+
+    /// Handler for scroll
+    #[cfg(feature = "scroll")]
+    pub fn scroll<SPEC: Spec + 'static>() -> Self {
+        let mut handler = Self::mainnet::<SPEC>();
+        handler.cfg.is_scroll = true;
+        handler.append_handled_register(HandleRegisters::Plain(
+            crate::scroll::scroll_handle_register::<DB, EXT>,
+        ));
+        handler
+    }
+
+    /// Optimism with spec. Similar to [`Self::mainnet_with_spec`]
+    #[cfg(feature = "optimism")]
+    pub fn optimism_with_spec(spec_id: SpecId) -> Self {
+        spec_to_generic!(spec_id, Self::optimism::<SPEC>())
+    }
+
+    /// Scroll with spec. Similar to [`Self::mainnet_with_spec`]
+    #[cfg(feature = "scroll")]
+    pub fn scroll_with_spec(spec_id: SpecId) -> Self {
+        spec_to_generic!(spec_id, Self::scroll::<SPEC>())
+    }
+
+    /// Creates handler with variable spec id, inside it will call `mainnet::<SPEC>` for
+    /// appropriate spec.
+    pub fn mainnet_with_spec(spec_id: SpecId) -> Self {
+        spec_to_generic!(spec_id, Self::mainnet::<SPEC>())
+    }
+
+    /// Specification ID.
+    pub fn cfg(&self) -> HandlerCfg {
+        self.cfg
+    }
+
+    /// Take instruction table.
+    pub fn take_instruction_table(&mut self) -> Option<InstructionTables<'a, Evm<'a, EXT, DB>>> {
+        self.instruction_table.take()
+    }
+
+    /// Set instruction table.
+    pub fn set_instruction_table(&mut self, table: InstructionTables<'a, Evm<'a, EXT, DB>>) {
+        self.instruction_table = Some(table);
+    }
+
+    /// Returns reference to pre execution handler.
+    pub fn pre_execution(&self) -> &PreExecutionHandler<'a, EXT, DB> {
+        &self.pre_execution
+    }
+
+    /// Returns reference to pre execution handler.
+    pub fn post_execution(&self) -> &PostExecutionHandler<'a, EXT, DB> {
+        &self.post_execution
+    }
+
+    /// Returns reference to frame handler.
+    pub fn execution(&self) -> &ExecutionHandler<'a, EXT, DB> {
+        &self.execution
+    }
+
+    /// Returns reference to validation handler.
+    pub fn validation(&self) -> &ValidationHandler<'a, EXT, DB> {
+        &self.validation
+    }
+
+    /// Append handle register.
+    pub fn append_handled_register(&mut self, register: HandleRegisters<'a, EXT, DB>) {
+        register.register(self);
+        self.registers.push(register);
+    }
+
+    /// Append plain handle register.
+    pub fn append_handler_register_plain(&mut self, register: HandleRegister<'a, EXT, DB>) {
+        register(self);
+        self.registers.push(HandleRegisters::Plain(register));
+    }
+
+    /// Append boxed handle register.
+    pub fn append_handler_register_box(&mut self, register: HandleRegisterBox<'a, EXT, DB>) {
+        register(self);
+        self.registers.push(HandleRegisters::Box(register));
+    }
+
+    /// Pop last handle register and reapply all registers that are left.
+    pub fn pop_handle_register(&mut self) -> Option<HandleRegisters<'a, EXT, DB>> {
+        let out = self.registers.pop();
+        if out.is_some() {
+            let registers = core::mem::take(&mut self.registers);
+            let mut base_handler = Handler::mainnet_with_spec(self.cfg.spec_id);
+            // apply all registers to default handeler and raw mainnet instruction table.
+            for register in registers {
+                base_handler.append_handled_register(register)
+            }
+            *self = base_handler;
         }
+        out
     }
 
-    /// Handle call return, depending on instruction result gas will be reimbursed or not.
-    pub fn call_return(&self, env: &Env, call_result: InstructionResult, returned_gas: Gas) -> Gas {
-        (self.call_return)(env, call_result, returned_gas)
+    /// Creates the Handler with Generic Spec.
+    pub fn create_handle_generic<SPEC: Spec + 'static>(&mut self) -> EvmHandler<'a, EXT, DB> {
+        let registers = core::mem::take(&mut self.registers);
+        let mut base_handler = Handler::mainnet::<SPEC>();
+        // apply all registers to default handeler and raw mainnet instruction table.
+        for register in registers {
+            base_handler.append_handled_register(register)
+        }
+        base_handler
     }
 
-    /// Reimburse the caller with gas that were not spend.
-    pub fn reimburse_caller(
-        &self,
-        data: &mut EVMData<'_, DB>,
-        gas: &Gas,
-        gas_refund: u64,
-    ) -> Result<(), EVMError<DB::Error>> {
-        (self.reimburse_caller)(data, gas, gas_refund)
-    }
+    /// Creates the Handler with variable SpecId, inside it will call function with Generic Spec.
+    pub fn modify_spec_id(&mut self, spec_id: SpecId) {
+        if self.cfg.spec_id == spec_id {
+            return;
+        }
 
-    /// Calculate gas refund for transaction. Some chains have it disabled.
-    pub fn calculate_gas_refund(&self, env: &Env, gas: &Gas) -> u64 {
-        (self.calculate_gas_refund)(env, gas)
+        let registers = core::mem::take(&mut self.registers);
+        // register for optimism is added as a register, so we need to create mainnet handler here.
+        let mut handler = Handler::mainnet_with_spec(spec_id);
+        // apply all registers to default handeler and raw mainnet instruction table.
+        for register in registers {
+            handler.append_handled_register(register)
+        }
+        handler.cfg = self.cfg();
+        *self = handler;
     }
+}
 
-    /// Reward beneficiary
-    pub fn reward_beneficiary(
-        &self,
-        data: &mut EVMData<'_, DB>,
-        gas: &Gas,
-        gas_refund: u64,
-    ) -> Result<(), EVMError<DB::Error>> {
-        (self.reward_beneficiary)(data, gas, gas_refund)
+#[cfg(test)]
+mod test {
+    use core::cell::RefCell;
+
+    use crate::{db::EmptyDB, primitives::EVMError};
+    use alloc::{rc::Rc, sync::Arc};
+
+    use super::*;
+
+    #[test]
+    fn test_handler_register_pop() {
+        let register = |inner: &Rc<RefCell<i32>>| -> HandleRegisterBox<'_, (), EmptyDB> {
+            let inner = inner.clone();
+            Box::new(move |h| {
+                *inner.borrow_mut() += 1;
+                h.post_execution.output = Arc::new(|_, _| Err(EVMError::Custom("test".to_string())))
+            })
+        };
+
+        let mut handler = EvmHandler::<(), EmptyDB>::new(HandlerCfg::new(SpecId::LATEST));
+        let test = Rc::new(RefCell::new(0));
+
+        handler.append_handler_register_box(register(&test));
+        assert_eq!(*test.borrow(), 1);
+
+        handler.append_handler_register_box(register(&test));
+        assert_eq!(*test.borrow(), 2);
+
+        assert!(handler.pop_handle_register().is_some());
+
+        // first handler is reapplied
+        assert_eq!(*test.borrow(), 3);
     }
 }

@@ -1,10 +1,12 @@
-use crate::primitives::{hash_map::Entry, Bytecode, Bytes, HashMap, U256};
+use crate::primitives::{hash_map::Entry, Bytecode, HashMap, U256};
 use crate::{
     primitives::{Address, Env, Log, B256, KECCAK_EMPTY},
-    CallInputs, CreateInputs, Gas, Host, InstructionResult, Interpreter, SelfDestructResult,
+    Host, SelfDestructResult,
 };
 use alloc::vec::Vec;
 
+/// A dummy [Host] implementation.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct DummyHost {
     pub env: Env,
     pub storage: HashMap<U256, U256>,
@@ -18,9 +20,7 @@ impl DummyHost {
     pub fn new(env: Env) -> Self {
         Self {
             env,
-            storage: HashMap::new(),
-            transient_storage: Default::default(),
-            log: Vec::new(),
+            ..Default::default()
         }
     }
 
@@ -34,21 +34,12 @@ impl DummyHost {
 
 impl Host for DummyHost {
     #[inline]
-    fn step(&mut self, _interp: &mut Interpreter) -> InstructionResult {
-        InstructionResult::Continue
+    fn env(&self) -> &Env {
+        &self.env
     }
 
     #[inline]
-    fn step_end(
-        &mut self,
-        _interp: &mut Interpreter,
-        _ret: InstructionResult,
-    ) -> InstructionResult {
-        InstructionResult::Continue
-    }
-
-    #[inline]
-    fn env(&mut self) -> &mut Env {
+    fn env_mut(&mut self) -> &mut Env {
         &mut self.env
     }
 
@@ -120,29 +111,12 @@ impl Host for DummyHost {
     }
 
     #[inline]
-    fn log(&mut self, address: Address, topics: Vec<B256>, data: Bytes) {
-        self.log.push(Log {
-            address,
-            topics,
-            data,
-        })
+    fn log(&mut self, log: Log) {
+        self.log.push(log)
     }
 
     #[inline]
     fn selfdestruct(&mut self, _address: Address, _target: Address) -> Option<SelfDestructResult> {
         panic!("Selfdestruct is not supported for this host")
-    }
-
-    #[inline]
-    fn create(
-        &mut self,
-        _inputs: &mut CreateInputs,
-    ) -> (InstructionResult, Option<Address>, Gas, Bytes) {
-        panic!("Create is not supported for this host")
-    }
-
-    #[inline]
-    fn call(&mut self, _input: &mut CallInputs) -> (InstructionResult, Gas, Bytes) {
-        panic!("Call is not supported for this host")
     }
 }

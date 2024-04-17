@@ -1,14 +1,16 @@
 use crate::{hex, keccak256, Bytes, B256, KECCAK_EMPTY};
 use alloc::{sync::Arc, vec::Vec};
-use bitvec::prelude::{bitvec, Lsb0};
-use bitvec::vec::BitVec;
+use bitvec::{
+    prelude::{bitvec, Lsb0},
+    vec::BitVec,
+};
 use core::fmt::Debug;
 
 #[cfg(feature = "scroll")]
 use crate::{poseidon, POSEIDON_EMPTY};
 
 /// A map of valid `jump` destinations.
-#[derive(Clone, Eq, PartialEq, Default)]
+#[derive(Clone, Default, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct JumpMap(pub Arc<BitVec<u8>>);
 
@@ -41,7 +43,7 @@ impl JumpMap {
 }
 
 /// State of the [`Bytecode`] analysis.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum BytecodeState {
     /// No analysis has been performed.
@@ -52,7 +54,7 @@ pub enum BytecodeState {
     Analysed { len: usize, jump_map: JumpMap },
 }
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Bytecode {
     pub bytecode: Bytes,

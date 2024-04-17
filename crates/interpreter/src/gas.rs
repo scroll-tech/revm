@@ -1,11 +1,14 @@
-pub mod calc;
-pub mod constants;
+//! EVM gas calculation utilities.
+
+mod calc;
+mod constants;
 
 pub use calc::*;
 pub use constants::*;
+use revm_primitives::{Spec, SpecId::LONDON};
 
 /// Represents the state of gas during execution.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Gas {
     /// The initial gas limit.
     limit: u64,
@@ -71,18 +74,31 @@ impl Gas {
 
     /// Records a refund value.
     ///
-    /// `refund` can be negative but `self.refunded` should always be positive.
+    /// `refund` can be negative but `self.refunded` should always be positive
+    /// at the end of transact.
     #[inline]
     pub fn record_refund(&mut self, refund: i64) {
         self.refunded += refund;
     }
 
+    /// Set a refund value for final refund.
+    ///
+    /// Max refund value is limited to Nth part (depending of fork) of gas spend.
+    ///
+    /// Related to EIP-3529: Reduction in refunds
+    pub fn set_final_refund<SPEC: Spec>(&mut self) {
+        let max_refund_quotient = if SPEC::enabled(LONDON) { 5 } else { 2 };
+        self.refunded = (self.refunded() as u64).min(self.spend() / max_refund_quotient) as i64;
+    }
+
+    /// Set a refund value
+    pub fn set_refund(&mut self, refund: i64) {
+        self.refunded = refund;
+    }
+
     /// Records an explicit cost.
     ///
     /// Returns `false` if the gas limit is exceeded.
-    ///
-    /// This function is called on every instruction in the interpreter if the feature
-    /// `no_gas_measuring` is not enabled.
     #[inline(always)]
     pub fn record_cost(&mut self, cost: u64) -> bool {
         let all_used_gas = self.all_used_gas.saturating_add(cost);
@@ -95,7 +111,7 @@ impl Gas {
         true
     }
 
-    /// used in memory_resize! macro to record gas used for memory expansion.
+    /// used in shared_memory_resize! macro to record gas used for memory expansion.
     #[inline]
     pub fn record_memory(&mut self, gas_memory: u64) -> bool {
         if gas_memory > self.memory {

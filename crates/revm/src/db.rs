@@ -1,3 +1,5 @@
+//! [Database] implementations.
+
 pub mod emptydb;
 #[cfg(feature = "ethersdb")]
 pub mod ethersdb;
@@ -14,8 +16,3 @@ pub use states::{
     OriginalValuesKnown, PlainAccount, RevertToSlot, State, StateBuilder, StateDBBox,
     StorageWithOriginalValues, TransitionAccount, TransitionState,
 };
-
-#[cfg(all(not(feature = "ethersdb"), feature = "web3db"))]
-compile_error!(
-    "`web3db` feature is deprecated, drop-in replacement can be found with feature `ethersdb`"
-);
