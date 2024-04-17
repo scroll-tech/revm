@@ -3,8 +3,8 @@ use crate::primitives::{
     bitvec::prelude::{bitvec, BitVec, Lsb0},
     keccak256, Bytecode, BytecodeState, Bytes, JumpMap, B256, KECCAK_EMPTY,
 };
-use alloc::sync::Arc;
 use core::fmt;
+use std::sync::Arc;
 
 #[cfg(feature = "scroll")]
 use crate::primitives::{poseidon, POSEIDON_EMPTY};

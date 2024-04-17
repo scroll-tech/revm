@@ -6,7 +6,7 @@ use crate::{
     primitives::{db::Database, spec_to_generic, EVMError, Spec, SpecId, TransactTo, CANCUN, U256},
     Context,
 };
-use alloc::sync::Arc;
+use std::sync::Arc;
 
 pub fn scroll_handle_register<DB: Database, EXT>(handler: &mut EvmHandler<'_, EXT, DB>) {
     spec_to_generic!(handler.cfg.spec_id, {
@@ -27,8 +27,7 @@ pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
     let (caller_account, _) = context
         .evm
         .journaled_state
-        .load_account(context.evm.env.tx.caller, &mut context.evm.db)
-        .map_err(EVMError::Database)?;
+        .load_account(context.evm.env.tx.caller, &mut context.evm.db)?;
 
     // deduct gas cost from caller's account.
     // Subtract gas costs from the caller's account.
@@ -74,8 +73,7 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
     let (coinbase_account, _) = context
         .evm
         .journaled_state
-        .load_account(beneficiary, &mut context.evm.db)
-        .map_err(EVMError::Database)?;
+        .load_account(beneficiary, &mut context.evm.db)?;
 
     coinbase_account.mark_touch();
     coinbase_account.info.balance = coinbase_account

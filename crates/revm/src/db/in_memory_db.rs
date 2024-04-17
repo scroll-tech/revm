@@ -4,8 +4,8 @@ use crate::primitives::{
     U256,
 };
 use crate::Database;
-use alloc::vec::Vec;
 use core::convert::Infallible;
+use std::vec::Vec;
 
 #[cfg(feature = "scroll")]
 use crate::primitives::POSEIDON_EMPTY;
@@ -22,7 +22,7 @@ pub type InMemoryDB = CacheDB<EmptyDB>;
 /// The [DbAccount] holds the code hash of the contract, which is used to look up the contract in the `contracts` map.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct CacheDB<ExtDB: DatabaseRef> {
+pub struct CacheDB<ExtDB> {
     /// Account info where None means it is not existing. Not existing state is needed for Pre TANGERINE forks.
     /// `code` is always `None`, and bytecode can be found in `contracts`.
     pub accounts: HashMap<Address, DbAccount>,
@@ -38,13 +38,13 @@ pub struct CacheDB<ExtDB: DatabaseRef> {
     pub db: ExtDB,
 }
 
-impl<ExtDB: DatabaseRef + Default> Default for CacheDB<ExtDB> {
+impl<ExtDB: Default> Default for CacheDB<ExtDB> {
     fn default() -> Self {
         Self::new(ExtDB::default())
     }
 }
 
-impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
+impl<ExtDB> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
         let mut contracts = HashMap::new();
         #[cfg(not(feature = "scroll"))]
@@ -106,7 +106,9 @@ impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
         self.insert_contract(&mut info);
         self.accounts.entry(address).or_default().info = info;
     }
+}
 
+impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
     /// Returns the account for the given address.
     ///
     /// If the account was not found in the cache, it will be loaded from the underlying database.
@@ -150,7 +152,7 @@ impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
     }
 }
 
-impl<ExtDB: DatabaseRef> DatabaseCommit for CacheDB<ExtDB> {
+impl<ExtDB> DatabaseCommit for CacheDB<ExtDB> {
     fn commit(&mut self, changes: HashMap<Address, Account>) {
         for (address, mut account) in changes {
             if !account.is_touched() {
@@ -506,7 +508,7 @@ mod tests {
         assert_eq!(new_state.storage(account, key1), Ok(value1));
     }
 
-    #[cfg(feature = "serde")]
+    #[cfg(feature = "serde-json")]
     #[test]
     fn test_serialize_deserialize_cachedb() {
         let account = Address::with_last_byte(69);

@@ -1,10 +1,10 @@
 use crate::{hex, keccak256, Bytes, B256, KECCAK_EMPTY};
-use alloc::{sync::Arc, vec::Vec};
 use bitvec::{
     prelude::{bitvec, Lsb0},
     vec::BitVec,
 };
 use core::fmt::Debug;
+use std::{sync::Arc, vec::Vec};
 
 #[cfg(feature = "scroll")]
 use crate::{poseidon, POSEIDON_EMPTY};
