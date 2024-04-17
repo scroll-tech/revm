@@ -1,6 +1,8 @@
 pub mod mainnet;
 #[cfg(feature = "optimism")]
 pub mod optimism;
+#[cfg(feature = "scroll")]
+pub mod scroll;
 
 use revm_interpreter::primitives::db::Database;
 use revm_interpreter::primitives::{EVMError, EVMResultGeneric};
@@ -42,6 +44,17 @@ impl<DB: Database> Handler<DB> {
             calculate_gas_refund: mainnet::calculate_gas_refund::<SPEC>,
             reimburse_caller: mainnet::handle_reimburse_caller::<SPEC, DB>,
             reward_beneficiary: mainnet::reward_beneficiary::<SPEC, DB>,
+        }
+    }
+
+    /// Handler for the scroll
+    #[cfg(feature = "scroll")]
+    pub fn scroll<SPEC: Spec>() -> Self {
+        Self {
+            call_return: scroll::handle_call_return::<SPEC>,
+            calculate_gas_refund: scroll::calculate_gas_refund::<SPEC>,
+            reimburse_caller: scroll::handle_reimburse_caller::<SPEC, DB>,
+            reward_beneficiary: scroll::reward_beneficiary::<SPEC, DB>,
         }
     }
 
