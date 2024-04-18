@@ -168,7 +168,7 @@ impl Precompiles {
                 hash::SHA256,          // 0x02
                 disable::RIPEMD160,    // 0x03
                 identity::FUN,         // 0x04
-                modexp::SCROLL,        // 0x05
+                modexp::BERLIN,        // 0x05
                 bn128::add::ISTANBUL,  // 0x06
                 bn128::mul::ISTANBUL,  // 0x07
                 bn128::pair::ISTANBUL, // 0x08
