@@ -1,7 +1,7 @@
 use crate::{
     b256, B256, BLOB_GASPRICE_UPDATE_FRACTION, MIN_BLOB_GASPRICE, TARGET_BLOB_GAS_PER_BLOCK,
 };
-pub use alloy_primitives::keccak256;
+pub use alloy_primitives::{keccak256, Keccak256};
 
 #[cfg(feature = "scroll")]
 use crate::U256;
