@@ -66,7 +66,7 @@ pub fn poseidon(code: &[u8]) -> B256 {
     };
 
     B256::from(
-        &U256::try_from_be_slice(h.to_repr().as_ref())
+        &U256::try_from_le_slice(h.to_repr().as_ref())
             .expect("infallible")
             .to_be_bytes(),
     )
