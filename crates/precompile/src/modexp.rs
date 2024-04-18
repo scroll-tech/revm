@@ -15,6 +15,10 @@ pub const BYZANTIUM: PrecompileWithAddress = PrecompileWithAddress(
 pub const BERLIN: PrecompileWithAddress =
     PrecompileWithAddress(crate::u64_to_address(5), Precompile::Standard(berlin_run));
 
+#[cfg(feature = "scroll")]
+pub const SCROLL: PrecompileWithAddress =
+    PrecompileWithAddress(crate::u64_to_address(5), Precompile::Standard(scroll_run));
+
 /// See: <https://eips.ethereum.org/EIPS/eip-198>
 /// See: <https://etherscan.io/address/0000000000000000000000000000000000000005>
 pub fn byzantium_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
@@ -26,6 +30,17 @@ pub fn byzantium_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
 pub fn berlin_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
     run_inner(input, gas_limit, 200, |a, b, c, d| {
         berlin_gas_calc(a, b, c, d)
+    })
+}
+
+#[cfg(feature = "scroll")]
+pub fn scroll_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
+    // modexp temporarily only accepts inputs of 32 bytes (256 bits) or less
+    if input.len() > 32 {
+        return Err(Error::OutOfGas);
+    }
+    run_inner(input, gas_limit, 200, |a, b, c, d| {
+        byzantium_gas_calc(a, b, c, d)
     })
 }
 
