@@ -18,6 +18,12 @@ pub const BYZANTIUM: PrecompileWithAddress = PrecompileWithAddress(
 pub const BERLIN: PrecompileWithAddress =
     PrecompileWithAddress(crate::u64_to_address(5), Precompile::Standard(berlin_run));
 
+#[cfg(feature = "scroll")]
+pub const BERNOULLI: PrecompileWithAddress = PrecompileWithAddress(
+    crate::u64_to_address(5),
+    Precompile::Standard(bernoilli_run),
+);
+
 /// See: <https://eips.ethereum.org/EIPS/eip-198>
 /// See: <https://etherscan.io/address/0000000000000000000000000000000000000005>
 pub fn byzantium_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
@@ -27,6 +33,28 @@ pub fn byzantium_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
 }
 
 pub fn berlin_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
+    run_inner(input, gas_limit, 200, |a, b, c, d| {
+        berlin_gas_calc(a, b, c, d)
+    })
+}
+
+#[cfg(feature = "scroll")]
+pub fn bernoilli_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
+    let base_len = U256::from_be_bytes(right_pad_with_offset::<32>(input, 0).into_owned());
+    let exp_len = U256::from_be_bytes(right_pad_with_offset::<32>(input, 32).into_owned());
+    let mod_len = U256::from_be_bytes(right_pad_with_offset::<32>(input, 64).into_owned());
+
+    // modexp temporarily only accepts inputs of 32 bytes (256 bits) or less
+    if base_len > SCROLL_LEN_LIMIT {
+        return Err(Error::ModexpBaseOverflow);
+    }
+    if exp_len > SCROLL_LEN_LIMIT {
+        return Err(Error::ModexpExpOverflow);
+    }
+    if mod_len > SCROLL_LEN_LIMIT {
+        return Err(Error::ModexpModOverflow);
+    }
+
     run_inner(input, gas_limit, 200, |a, b, c, d| {
         berlin_gas_calc(a, b, c, d)
     })
@@ -66,19 +94,6 @@ where
     let base_len = U256::from_be_bytes(right_pad_with_offset::<32>(input, 0).into_owned());
     let exp_len = U256::from_be_bytes(right_pad_with_offset::<32>(input, 32).into_owned());
     let mod_len = U256::from_be_bytes(right_pad_with_offset::<32>(input, 64).into_owned());
-
-    #[cfg(feature = "scroll")]
-    {
-        if base_len > SCROLL_LEN_LIMIT {
-            return Err(Error::ModexpBaseOverflow);
-        }
-        if exp_len > SCROLL_LEN_LIMIT {
-            return Err(Error::ModexpExpOverflow);
-        }
-        if mod_len > SCROLL_LEN_LIMIT {
-            return Err(Error::ModexpModOverflow);
-        }
-    }
 
     // cast base and modulus to usize, it does not make sense to handle larger values
     let Ok(base_len) = usize::try_from(base_len) else {

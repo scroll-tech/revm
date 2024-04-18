@@ -120,8 +120,7 @@ pub fn extcodecopy<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mu
         .set_data(memory_offset, code_offset, len, code.bytes());
 }
 
-#[cfg(not(feature = "scroll"))]
-pub fn blockhash<H: Host>(interpreter: &mut Interpreter, host: &mut H) {
+pub fn blockhash<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     gas!(interpreter, gas::BLOCKHASH);
     pop_top!(interpreter, number);
 
@@ -129,31 +128,20 @@ pub fn blockhash<H: Host>(interpreter: &mut Interpreter, host: &mut H) {
         let diff = as_usize_saturated!(diff);
         // blockhash should push zero if number is same as current block number.
         if diff <= BLOCK_HASH_HISTORY && diff != 0 {
+            #[cfg(feature = "scroll")]
+            if SPEC::enabled(BERNOULLI) {
+                let number64 = as_usize_or_fail!(interpreter, number);
+                let mut hasher = crate::primitives::Keccak256::new();
+                hasher.update(host.env().cfg.chain_id.to_be_bytes());
+                hasher.update(number64.to_be_bytes());
+                *number = U256::from_be_bytes(*hasher.finalize());
+                return;
+            }
             let Some(hash) = host.block_hash(*number) else {
                 interpreter.instruction_result = InstructionResult::FatalExternalError;
                 return;
             };
             *number = U256::from_be_bytes(hash.0);
-            return;
-        }
-    }
-    *number = U256::ZERO;
-}
-
-#[cfg(feature = "scroll")]
-pub fn blockhash<H: Host>(interpreter: &mut Interpreter, host: &mut H) {
-    gas!(interpreter, gas::BLOCKHASH);
-    pop_top!(interpreter, number);
-
-    let number64 = as_usize_or_fail!(interpreter, number);
-    if let Some(diff) = host.env().block.number.checked_sub(*number) {
-        let diff = as_usize_saturated!(diff);
-        // blockhash should push zero if number is same as current block number.
-        if diff <= BLOCK_HASH_HISTORY && diff != 0 {
-            let mut hasher = crate::primitives::Keccak256::new();
-            hasher.update(host.env().cfg.chain_id.to_be_bytes());
-            hasher.update(number64.to_be_bytes());
-            *number = U256::from_be_bytes(*hasher.finalize());
             return;
         }
     }
@@ -248,10 +236,15 @@ pub fn log<const N: usize, H: Host>(interpreter: &mut Interpreter, host: &mut H)
     host.log(log);
 }
 
-#[cfg(not(feature = "scroll"))]
 pub fn selfdestruct<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check_staticcall!(interpreter);
     pop_address!(interpreter, target);
+
+    #[cfg(feature = "scroll")]
+    if SPEC::enabled(BERNOULLI) {
+        interpreter.instruction_result = InstructionResult::InvalidFEOpcode;
+        return;
+    }
 
     let Some(res) = host.selfdestruct(interpreter.contract.address, target) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
@@ -265,11 +258,6 @@ pub fn selfdestruct<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &m
     gas!(interpreter, gas::selfdestruct_cost::<SPEC>(res));
 
     interpreter.instruction_result = InstructionResult::SelfDestruct;
-}
-
-#[cfg(feature = "scroll")]
-pub fn selfdestruct<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, _host: &mut H) {
-    interpreter.instruction_result = InstructionResult::InvalidFEOpcode;
 }
 
 pub fn create<const IS_CREATE2: bool, H: Host, SPEC: Spec>(

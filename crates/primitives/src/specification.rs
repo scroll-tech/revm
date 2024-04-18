@@ -5,7 +5,7 @@ pub use SpecId::*;
 /// Specification IDs and their activation block.
 ///
 /// Information was obtained from the [Ethereum Execution Specifications](https://github.com/ethereum/execution-specs)
-#[cfg(not(feature = "optimism"))]
+#[cfg(not(any(feature = "optimism", feature = "scroll")))]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, enumn::N)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -66,6 +66,37 @@ pub enum SpecId {
     LATEST = u8::MAX,
 }
 
+/// Specification IDs and their activation block.
+///
+/// Information was obtained from the [Ethereum Execution Specifications](https://github.com/ethereum/execution-specs)
+#[cfg(feature = "scroll")]
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, enumn::N)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum SpecId {
+    FRONTIER = 0,
+    FRONTIER_THAWING = 1,
+    HOMESTEAD = 2,
+    DAO_FORK = 3,
+    TANGERINE = 4,
+    SPURIOUS_DRAGON = 5,
+    BYZANTIUM = 6,
+    CONSTANTINOPLE = 7,
+    PETERSBURG = 8,
+    ISTANBUL = 9,
+    MUIR_GLACIER = 10,
+    BERLIN = 11,
+    LONDON = 12,
+    ARROW_GLACIER = 13,
+    GRAY_GLACIER = 14,
+    MERGE = 15,
+    SHANGHAI = 16,
+    BERNOULLI = 17,
+    CANCUN = 18,
+    #[default]
+    LATEST = u8::MAX,
+}
+
 impl SpecId {
     #[inline]
     pub fn try_from_u8(spec_id: u8) -> Option<Self> {
@@ -107,6 +138,8 @@ impl From<&str> for SpecId {
             "Canyon" => SpecId::CANYON,
             #[cfg(feature = "optimism")]
             "Ecotone" => SpecId::ECOTONE,
+            #[cfg(feature = "scroll")]
+            "Bernoulli" => SpecId::BERNOULLI,
             _ => Self::LATEST,
         }
     }
@@ -141,6 +174,8 @@ impl From<SpecId> for &'static str {
             SpecId::CANYON => "Canyon",
             #[cfg(feature = "optimism")]
             SpecId::ECOTONE => "Ecotone",
+            #[cfg(feature = "scroll")]
+            SpecId::BERNOULLI => "Bernoulli",
             SpecId::LATEST => "Latest",
         }
     }
@@ -198,6 +233,10 @@ spec!(REGOLITH, RegolithSpec);
 spec!(CANYON, CanyonSpec);
 #[cfg(feature = "optimism")]
 spec!(ECOTONE, EcotoneSpec);
+
+// Scroll Hardforks
+#[cfg(feature = "scroll")]
+spec!(BERNOULLI, BernoulliSpec);
 
 #[macro_export]
 macro_rules! spec_to_generic {
@@ -278,6 +317,11 @@ macro_rules! spec_to_generic {
                 use $crate::EcotoneSpec as SPEC;
                 $e
             }
+            #[cfg(feature = "scroll")]
+            $crate::SpecId::BERNOULLI => {
+                use $crate::BernoulliSpec as SPEC;
+                $e
+            }
         }
     }};
 }
@@ -313,6 +357,8 @@ mod tests {
         spec_to_generic!(SHANGHAI, assert_eq!(SPEC::SPEC_ID, SHANGHAI));
         #[cfg(feature = "optimism")]
         spec_to_generic!(CANYON, assert_eq!(SPEC::SPEC_ID, CANYON));
+        #[cfg(feature = "scroll")]
+        spec_to_generic!(BERNOULLI, assert_eq!(SPEC::SPEC_ID, BERNOULLI));
         spec_to_generic!(CANCUN, assert_eq!(SPEC::SPEC_ID, CANCUN));
         spec_to_generic!(LATEST, assert_eq!(SPEC::SPEC_ID, LATEST));
     }
@@ -407,5 +453,19 @@ mod optimism_tests {
         assert!(SpecId::enabled(SpecId::ECOTONE, SpecId::REGOLITH));
         assert!(SpecId::enabled(SpecId::ECOTONE, SpecId::CANYON));
         assert!(SpecId::enabled(SpecId::ECOTONE, SpecId::ECOTONE));
+    }
+}
+
+#[cfg(feature = "scroll")]
+#[cfg(test)]
+mod scroll_tests {
+    use super::*;
+
+    #[test]
+    fn test_bernoulli_post_merge_hardforks() {
+        assert!(BernoulliSpec::enabled(SpecId::MERGE));
+        assert!(BernoulliSpec::enabled(SpecId::SHANGHAI));
+        assert!(!BernoulliSpec::enabled(SpecId::CANCUN));
+        assert!(!BernoulliSpec::enabled(SpecId::LATEST));
     }
 }

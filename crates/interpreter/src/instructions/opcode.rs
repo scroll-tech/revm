@@ -235,7 +235,7 @@ opcodes! {
     0x3D => RETURNDATASIZE => system::returndatasize::<H, SPEC>,
     0x3E => RETURNDATACOPY => system::returndatacopy::<H, SPEC>,
     0x3F => EXTCODEHASH    => host::extcodehash::<H, SPEC>,
-    0x40 => BLOCKHASH      => host::blockhash,
+    0x40 => BLOCKHASH      => host::blockhash::<H, SPEC>,
     0x41 => COINBASE       => host_env::coinbase,
     0x42 => TIMESTAMP      => host_env::timestamp,
     0x43 => NUMBER         => host_env::number,
@@ -945,6 +945,11 @@ pub const fn spec_opcode_gas(spec_id: SpecId) -> &'static [OpInfo; 256] {
                 #[cfg(feature = "optimism")]
                 SpecId::ECOTONE => {
                     const TABLE: &[OpInfo;256] = &make_gas_table(SpecId::ECOTONE);
+                    TABLE
+                }
+                #[cfg(feature = "scroll")]
+                SpecId::BERNOULLI => {
+                    const TABLE: &[OpInfo;256] = &make_gas_table(SpecId::BERNOULLI);
                     TABLE
                 }
             }
