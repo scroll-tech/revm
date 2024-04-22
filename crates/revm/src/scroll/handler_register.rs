@@ -2,11 +2,12 @@
 
 use crate::handler::mainnet;
 use crate::handler::mainnet::deduct_caller_inner;
-use crate::primitives::InvalidTransaction;
 use crate::{
     handler::register::EvmHandler,
     interpreter::Gas,
-    primitives::{db::Database, spec_to_generic, EVMError, Spec, SpecId, U256},
+    primitives::{
+        db::Database, spec_to_generic, EVMError, InvalidTransaction, Spec, SpecId, TransactTo, U256,
+    },
     Context,
 };
 use std::sync::Arc;
@@ -46,27 +47,43 @@ pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
         .journaled_state
         .load_account(context.evm.inner.env.tx.caller, &mut context.evm.inner.db)?;
 
-    // We deduct caller max balance after minting and before deducing the
-    // l1 cost, max values is already checked in pre_validate but l1 cost wasn't.
-    deduct_caller_inner::<SPEC>(caller_account, &context.evm.inner.env);
+    if !context.evm.inner.env.tx.scroll.is_l1_msg {
+        // We deduct caller max balance after minting and before deducing the
+        // l1 cost, max values is already checked in pre_validate but l1 cost wasn't.
+        deduct_caller_inner::<SPEC>(caller_account, &context.evm.inner.env);
 
-    // Deduct l1 fee from caller.
-    let tx_l1_cost = context
-        .evm
-        .inner
-        .l1_block_info
-        .as_ref()
-        .expect("L1BlockInfo should be loaded")
-        .calculate_tx_l1_cost(&context.evm.inner.env.tx.data);
-    if tx_l1_cost.gt(&caller_account.info.balance) {
-        return Err(EVMError::Transaction(
-            InvalidTransaction::LackOfFundForMaxFee {
-                fee: tx_l1_cost.into(),
-                balance: caller_account.info.balance.into(),
-            },
-        ));
+        let Some(rlp_bytes) = &context.evm.inner.env.tx.scroll.rlp_bytes else {
+            return Err(EVMError::Custom(
+                "[SCROLL] Failed to load transaction rlp_bytes.".to_string(),
+            ));
+        };
+        // Deduct l1 fee from caller.
+        let tx_l1_cost = context
+            .evm
+            .inner
+            .l1_block_info
+            .as_ref()
+            .expect("L1BlockInfo should be loaded")
+            .calculate_tx_l1_cost(rlp_bytes);
+        if tx_l1_cost.gt(&caller_account.info.balance) {
+            return Err(EVMError::Transaction(
+                InvalidTransaction::LackOfFundForMaxFee {
+                    fee: tx_l1_cost.into(),
+                    balance: caller_account.info.balance.into(),
+                },
+            ));
+        }
+        caller_account.info.balance = caller_account.info.balance.saturating_sub(tx_l1_cost);
+    } else {
+        // bump the nonce for calls. Nonce for CREATE will be bumped in `handle_create`.
+        if matches!(context.evm.inner.env.tx.transact_to, TransactTo::Call(_)) {
+            // Nonce is already checked
+            caller_account.info.nonce = caller_account.info.nonce.saturating_add(1);
+        }
+
+        // touch account so we know it is changed.
+        caller_account.mark_touch();
     }
-    caller_account.info.balance = caller_account.info.balance.saturating_sub(tx_l1_cost);
     Ok(())
 }
 
@@ -88,20 +105,28 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
         .journaled_state
         .load_account(beneficiary, &mut context.evm.inner.db)?;
 
-    let Some(l1_block_info) = &context.evm.inner.l1_block_info else {
-        return Err(EVMError::Custom(
-            "[SCROLL] Failed to load L1 block information.".to_string(),
-        ));
-    };
+    if !context.evm.inner.env.tx.scroll.is_l1_msg {
+        let Some(l1_block_info) = &context.evm.inner.l1_block_info else {
+            return Err(EVMError::Custom(
+                "[SCROLL] Failed to load L1 block information.".to_string(),
+            ));
+        };
 
-    let l1_cost = l1_block_info.calculate_tx_l1_cost(&context.evm.inner.env.tx.data);
+        let Some(rlp_bytes) = &context.evm.inner.env.tx.scroll.rlp_bytes else {
+            return Err(EVMError::Custom(
+                "[SCROLL] Failed to load transaction rlp_bytes.".to_string(),
+            ));
+        };
 
-    coinbase_account.mark_touch();
-    coinbase_account.info.balance = coinbase_account
-        .info
-        .balance
-        .saturating_add(coinbase_gas_price * U256::from(gas.spent() - gas.refunded() as u64))
-        .saturating_add(l1_cost);
+        let l1_cost = l1_block_info.calculate_tx_l1_cost(rlp_bytes);
+
+        coinbase_account.mark_touch();
+        coinbase_account.info.balance = coinbase_account
+            .info
+            .balance
+            .saturating_add(coinbase_gas_price * U256::from(gas.spent() - gas.refunded() as u64))
+            .saturating_add(l1_cost);
+    }
 
     Ok(())
 }

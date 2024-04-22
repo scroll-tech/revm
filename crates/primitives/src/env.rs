@@ -133,7 +133,12 @@ impl Env {
 
         // Check if the transaction's chain id is correct
         if let Some(tx_chain_id) = self.tx.chain_id {
+            #[cfg(not(feature = "scroll"))]
             if tx_chain_id != self.cfg.chain_id {
+                return Err(InvalidTransaction::InvalidChainId);
+            }
+            #[cfg(feature = "scroll")]
+            if !self.tx.scroll.is_l1_msg && tx_chain_id != self.cfg.chain_id {
                 return Err(InvalidTransaction::InvalidChainId);
             }
         }
@@ -552,6 +557,10 @@ pub struct TxEnv {
     #[cfg_attr(feature = "serde", serde(flatten))]
     #[cfg(feature = "optimism")]
     pub optimism: OptimismFields,
+
+    #[cfg_attr(feature = "serde", serde(flatten))]
+    #[cfg(feature = "scroll")]
+    pub scroll: ScrollFields,
 }
 
 impl TxEnv {
@@ -587,6 +596,8 @@ impl Default for TxEnv {
             max_fee_per_blob_gas: None,
             #[cfg(feature = "optimism")]
             optimism: OptimismFields::default(),
+            #[cfg(feature = "scroll")]
+            scroll: ScrollFields::default(),
         }
     }
 }
@@ -648,6 +659,17 @@ pub struct OptimismFields {
     /// for non-optimism chains when the `optimism` feature is enabled,
     /// but the [CfgEnv] `optimism` field is set to false.
     pub enveloped_tx: Option<Bytes>,
+}
+
+/// Additional [TxEnv] fields for scroll.
+#[cfg(feature = "scroll")]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ScrollFields {
+    pub is_l1_msg: bool,
+    /// The RLP-encoded bytes of the transaction. This is used
+    /// to compute the L1 tx cost using the L1 block info.
+    pub rlp_bytes: Option<Bytes>,
 }
 
 /// Transaction destination.
