@@ -72,7 +72,13 @@ pub fn extcodesize<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mu
 pub fn extcodehash<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check!(interpreter, CONSTANTINOPLE);
     pop_address!(interpreter, address);
-    let Some((code_hash, is_cold)) = host.code_hash(address) else {
+
+    #[cfg(not(feature = "scroll"))]
+    let result = host.code_hash(address);
+    #[cfg(feature = "scroll")]
+    let result = host.keccak_code_hash(address);
+
+    let Some((code_hash, is_cold)) = result else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };

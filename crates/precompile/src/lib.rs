@@ -64,6 +64,7 @@ impl Precompiles {
             PrecompileSpecId::BYZANTIUM => Self::byzantium(),
             PrecompileSpecId::ISTANBUL => Self::istanbul(),
             PrecompileSpecId::BERLIN => Self::berlin(),
+            #[cfg(feature = "scroll")]
             PrecompileSpecId::BERNOULLI => Self::bernoulli(),
             PrecompileSpecId::CANCUN => Self::cancun(),
             PrecompileSpecId::LATEST => Self::latest(),

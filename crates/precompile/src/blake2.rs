@@ -1,5 +1,8 @@
 use crate::{Error, Precompile, PrecompileResult, PrecompileWithAddress};
-use revm_primitives::{Bytes, PrecompileError};
+use revm_primitives::Bytes;
+
+#[cfg(feature = "scroll")]
+use revm_primitives::PrecompileError;
 
 const F_ROUND: u64 = 1;
 const INPUT_LENGTH: usize = 213;

@@ -1,7 +1,10 @@
 use super::calc_linear_cost_u32;
 use crate::{Error, Precompile, PrecompileResult, PrecompileWithAddress};
-use revm_primitives::{Bytes, PrecompileError};
+use revm_primitives::Bytes;
 use sha2::Digest;
+
+#[cfg(feature = "scroll")]
+use revm_primitives::PrecompileError;
 
 pub const SHA256: PrecompileWithAddress =
     PrecompileWithAddress(crate::u64_to_address(2), Precompile::Standard(sha256_run));

@@ -429,6 +429,15 @@ impl<EXT, DB: Database> Host for Evm<'_, EXT, DB> {
             .ok()
     }
 
+    #[cfg(feature = "scroll")]
+    fn keccak_code_hash(&mut self, address: Address) -> Option<(B256, bool)> {
+        self.context
+            .evm
+            .keccak_code_hash(address)
+            .map_err(|e| self.context.evm.error = Err(e))
+            .ok()
+    }
+
     fn sload(&mut self, address: Address, index: U256) -> Option<(U256, bool)> {
         self.context
             .evm
