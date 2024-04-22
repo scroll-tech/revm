@@ -17,7 +17,7 @@ pub const RIPEMD160: PrecompileWithAddress = PrecompileWithAddress(
 #[cfg(feature = "scroll")]
 pub const RIPEMD160_BERNOULLI: PrecompileWithAddress = PrecompileWithAddress(
     crate::u64_to_address(3),
-    Precompile::Standard(|_input: &Bytes, _gas_limit: u64| Err(PrecompileError::OutOfGas)),
+    Precompile::Standard(|_input: &Bytes, _gas_limit: u64| Err(PrecompileError::NotImplemented)),
 );
 
 /// See: <https://ethereum.github.io/yellowpaper/paper.pdf>

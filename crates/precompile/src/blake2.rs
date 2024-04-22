@@ -13,7 +13,7 @@ pub const FUN: PrecompileWithAddress =
 #[cfg(feature = "scroll")]
 pub const BERNOULLI: PrecompileWithAddress = PrecompileWithAddress(
     crate::u64_to_address(9),
-    Precompile::Standard(|_input: &Bytes, _gas_limit: u64| Err(PrecompileError::OutOfGas)),
+    Precompile::Standard(|_input: &Bytes, _gas_limit: u64| Err(PrecompileError::NotImplemented)),
 );
 
 /// reference: <https://eips.ethereum.org/EIPS/eip-152>
