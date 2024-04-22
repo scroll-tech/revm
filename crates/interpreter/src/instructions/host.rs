@@ -248,7 +248,7 @@ pub fn selfdestruct<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &m
 
     #[cfg(feature = "scroll")]
     if SPEC::enabled(BERNOULLI) {
-        interpreter.instruction_result = InstructionResult::InvalidFEOpcode;
+        interpreter.instruction_result = InstructionResult::NotActivated;
         return;
     }
 

@@ -1,7 +1,7 @@
 use crate::{
     gas,
     primitives::{Spec, SpecId::*, U256},
-    Host, Interpreter,
+    Host, InstructionResult, Interpreter,
 };
 
 /// EIP-1344: ChainID opcode
@@ -47,6 +47,11 @@ pub fn gasprice<H: Host>(interpreter: &mut Interpreter, host: &mut H) {
 
 /// EIP-3198: BASEFEE opcode
 pub fn basefee<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
+    #[cfg(feature = "scroll")]
+    if SPEC::enabled(BERNOULLI) {
+        interpreter.instruction_result = InstructionResult::NotActivated;
+        return;
+    }
     check!(interpreter, LONDON);
     gas!(interpreter, gas::BASE);
     push!(interpreter, host.env().block.basefee);
