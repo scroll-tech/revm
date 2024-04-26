@@ -172,7 +172,7 @@ impl Precompiles {
                 modexp::BERNOULLI,         // 0x05
                 bn128::add::ISTANBUL,      // 0x06
                 bn128::mul::ISTANBUL,      // 0x07
-                bn128::pair::ISTANBUL,     // 0x08
+                bn128::pair::BERNOULLI,    // 0x08
                 blake2::BERNOULLI,         // 0x09
             ]);
             Box::new(precompiles)
