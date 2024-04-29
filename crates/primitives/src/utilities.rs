@@ -5,10 +5,6 @@ pub use alloy_primitives::{keccak256, Keccak256};
 
 #[cfg(feature = "scroll")]
 use crate::U256;
-#[cfg(feature = "scroll")]
-use halo2_proofs::halo2curves::bn256::Fr;
-#[cfg(feature = "scroll")]
-use halo2_proofs::halo2curves::ff::PrimeField;
 
 /// The Keccak-256 hash of the empty string `""`.
 pub const KECCAK_EMPTY: B256 =
@@ -25,7 +21,8 @@ pub const POSEIDON_HASH_BYTES_IN_FIELD: usize = 31;
 /// Poseidon code hash
 #[cfg(feature = "scroll")]
 pub fn poseidon(code: &[u8]) -> B256 {
-    use hash_circuit::hash::{Hashable, MessageHashable, HASHABLE_DOMAIN_SPEC};
+    use halo2curves::{bn256::Fr, ff::PrimeField};
+    use poseidon_base::hash::{Hashable, MessageHashable, HASHABLE_DOMAIN_SPEC};
     #[cfg(not(feature = "std"))]
     use std::vec::Vec;
 

@@ -42,8 +42,8 @@ serde = { version = "1.0", default-features = false, features = [
 ], optional = true }
 
 # scroll
-halo2_proofs = { git = "https://github.com/scroll-tech/halo2.git", branch = "v1.1", optional = true }
-hash-circuit = { package = "poseidon-circuit", git = "https://github.com/scroll-tech/poseidon-circuit.git", branch = "scroll-dev-1201", optional = true }
+halo2curves = { version = "0.1.0", optional = true }
+poseidon-base = { git = "https://github.com/scroll-tech/poseidon-circuit.git", rev = "025a761", optional = true }
 
 [build-dependencies]
 hex = { version = "0.4", default-features = false }
@@ -75,7 +75,7 @@ optimism = []
 optimism-default-handler = ["optimism"]
 negate-optimism-default-handler = []
 
-scroll = ["halo2_proofs", "hash-circuit"]
+scroll = ["halo2curves", "poseidon-base"]
 # Scroll default handler enabled Scroll handler register by default in EvmBuilder.
 scroll-default-handler = ["scroll"]
 negate-scroll-default-handler = []
