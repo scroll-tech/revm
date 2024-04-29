@@ -10,6 +10,8 @@ use crate::{
     },
     Context,
 };
+#[cfg(not(feature = "std"))]
+use std::string::ToString;
 use std::sync::Arc;
 
 pub fn scroll_handle_register<DB: Database, EXT>(handler: &mut EvmHandler<'_, EXT, DB>) {

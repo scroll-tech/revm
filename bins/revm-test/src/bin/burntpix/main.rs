@@ -100,11 +100,22 @@ fn try_from_hex_to_u32(hex: &str) -> eyre::Result<u32> {
 }
 
 fn insert_account_info(cache_db: &mut CacheDB<EmptyDB>, addr: Address, code: Bytes) {
-    let code_hash = hex::encode(keccak256(code.clone()));
+    let keccak256_code_hash = hex::encode(keccak256(code.clone()));
+    #[cfg(feature = "scroll")]
+    let poseidon_code_hash = hex::encode(revm::primitives::poseidon(&code));
+    #[cfg(not(feature = "scroll"))]
     let account_info = AccountInfo::new(
         U256::from(0),
         0,
-        B256::from_str(&code_hash).unwrap(),
+        B256::from_str(&keccak256_code_hash).unwrap(),
+        Bytecode::new_raw(code),
+    );
+    #[cfg(feature = "scroll")]
+    let account_info = AccountInfo::new(
+        U256::from(0),
+        0,
+        B256::from_str(&poseidon_code_hash).unwrap(),
+        B256::from_str(&keccak256_code_hash).unwrap(),
         Bytecode::new_raw(code),
     );
     cache_db.insert_account_info(addr, account_info);

@@ -26,6 +26,8 @@ pub const POSEIDON_HASH_BYTES_IN_FIELD: usize = 31;
 #[cfg(feature = "scroll")]
 pub fn poseidon(code: &[u8]) -> B256 {
     use hash_circuit::hash::{Hashable, MessageHashable, HASHABLE_DOMAIN_SPEC};
+    #[cfg(not(feature = "std"))]
+    use std::vec::Vec;
 
     let bytes_in_field = POSEIDON_HASH_BYTES_IN_FIELD;
     let fls = (0..(code.len() / bytes_in_field))

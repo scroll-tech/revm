@@ -86,8 +86,18 @@ impl<M: Middleware> DatabaseRef for EthersDB<M> {
         let balance = U256::from_limbs(balance?.0);
         let nonce = nonce?.as_u64();
         let bytecode = Bytecode::new_raw(code?.0.into());
-        let code_hash = bytecode.hash_slow();
-        Ok(Some(AccountInfo::new(balance, nonce, code_hash, bytecode)))
+        #[cfg(not(feature = "scroll"))]
+        let acc = {
+            let code_hash = bytecode.hash_slow();
+            AccountInfo::new(balance, nonce, code_hash, bytecode)
+        };
+        #[cfg(feature = "scroll")]
+        let acc = {
+            let code_hash = bytecode.poseidon_hash_slow();
+            let keccak_code_hash = bytecode.keccak_hash_slow();
+            AccountInfo::new(balance, nonce, code_hash, keccak_code_hash, bytecode)
+        };
+        Ok(Some(acc))
     }
 
     fn code_by_hash_ref(&self, _code_hash: B256) -> Result<Bytecode, Self::Error> {

@@ -233,7 +233,12 @@ pub fn execute_test_suite(
         for (address, info) in unit.pre {
             let acc_info = revm::primitives::AccountInfo {
                 balance: info.balance,
+                #[cfg(not(feature = "scroll"))]
                 code_hash: keccak256(&info.code),
+                #[cfg(feature = "scroll")]
+                code_hash: revm::primitives::poseidon(&info.code),
+                #[cfg(feature = "scroll")]
+                keccak_code_hash: keccak256(&info.code),
                 code: Some(Bytecode::new_raw(info.code)),
                 nonce: info.nonce,
             };
