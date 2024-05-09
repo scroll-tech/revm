@@ -30,7 +30,9 @@ pub use constants::*;
 pub use env::*;
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "std")] {
+    if #[cfg(feature = "faster-hash")] {
+        pub use hashbrown::{hash_map, hash_set, HashMap, HashSet};
+    } else if #[cfg(feature = "std")] {
         pub use std::collections::{hash_map, hash_set, HashMap, HashSet};
         use hashbrown as _;
     } else {
