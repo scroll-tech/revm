@@ -21,6 +21,7 @@ alloy-primitives = { version = "0.7", default-features = false, features = [
     "rlp",
 ] }
 hashbrown = "0.14"
+rustc-hash = { version = "1.1", default-features = false, optional = true }
 auto_impl = "1.2"
 bitvec = { version = "1", default-features = false, features = ["alloc"] }
 bitflags = { version = "2.5.0", default-features = false }
@@ -49,10 +50,11 @@ poseidon-base = { git = "https://github.com/scroll-tech/poseidon-circuit.git", b
 hex = { version = "0.4", default-features = false }
 
 [features]
-default = ["std", "c-kzg", "portable"]
+default = ["std", "c-kzg", "portable", "fxhash"]
 std = [
     "serde?/std",
     "alloy-primitives/std",
+    "rustc-hash?/std",
     "hex/std",
     "bitvec/std",
     "bitflags/std",
@@ -69,6 +71,7 @@ serde = [
 arbitrary = ["std", "alloy-primitives/arbitrary", "bitflags/arbitrary"]
 asm-keccak = ["alloy-primitives/asm-keccak"]
 portable = ["c-kzg?/portable"]
+fxhash = ["rustc-hash"]
 
 optimism = []
 # Optimism default handler enabled Optimism handler register by default in EvmBuilder.
