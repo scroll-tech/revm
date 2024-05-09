@@ -1,7 +1,7 @@
 use crate::interpreter::{InstructionResult, SelfDestructResult};
 use crate::primitives::{
-    db::Database, hash_map::Entry, Account, Address, Bytecode, EVMError, HashSet, Log, SpecId::*,
-    State, StorageSlot, TransientStorage, TrustedHashMap, KECCAK_EMPTY, PRECOMPILE3, U256,
+    db::Database, hash_map::Entry, Account, Address, Bytecode, EVMError, Log, SpecId::*, State,
+    StorageSlot, TransientStorage, TrustedHashMap, TrustedHashSet, KECCAK_EMPTY, PRECOMPILE3, U256,
 };
 use core::mem;
 use revm_interpreter::primitives::SpecId;
@@ -36,7 +36,7 @@ pub struct JournaledState {
     ///
     /// Note that this not include newly loaded accounts, account and storage
     /// is considered warm if it is found in the `State`.
-    pub warm_preloaded_addresses: HashSet<Address>,
+    pub warm_preloaded_addresses: TrustedHashSet<Address>,
 }
 
 impl JournaledState {
@@ -51,7 +51,7 @@ impl JournaledState {
     /// # Note
     ///
     ///
-    pub fn new(spec: SpecId, warm_preloaded_addresses: HashSet<Address>) -> JournaledState {
+    pub fn new(spec: SpecId, warm_preloaded_addresses: TrustedHashSet<Address>) -> JournaledState {
         Self {
             state: TrustedHashMap::default(),
             transient_storage: TransientStorage::default(),

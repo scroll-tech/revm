@@ -7,9 +7,9 @@ use crate::{
     journaled_state::JournaledState,
     primitives::{
         keccak256, Account, Address, AnalysisKind, Bytecode, Bytes, CreateScheme, EVMError, Env,
-        HashSet, Spec,
+        Spec,
         SpecId::{self, *},
-        B256, U256,
+        TrustedHashSet, B256, U256,
     },
     FrameOrResult, JournalCheckpoint, CALL_STACK_LIMIT,
 };
@@ -56,7 +56,7 @@ impl<DB: Database> InnerEvmContext<DB> {
     pub fn new(db: DB) -> Self {
         Self {
             env: Box::default(),
-            journaled_state: JournaledState::new(SpecId::LATEST, HashSet::new()),
+            journaled_state: JournaledState::new(SpecId::LATEST, TrustedHashSet::default()),
             db,
             error: Ok(()),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
@@ -69,7 +69,7 @@ impl<DB: Database> InnerEvmContext<DB> {
     pub fn new_with_env(db: DB, env: Box<Env>) -> Self {
         Self {
             env,
-            journaled_state: JournaledState::new(SpecId::LATEST, HashSet::new()),
+            journaled_state: JournaledState::new(SpecId::LATEST, TrustedHashSet::default()),
             db,
             error: Ok(()),
             #[cfg(any(feature = "optimism", feature = "scroll"))]

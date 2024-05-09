@@ -4,7 +4,7 @@ use crate::{
     interpreter::{
         return_ok, CallInputs, Contract, Gas, InstructionResult, Interpreter, InterpreterResult,
     },
-    primitives::{Address, Bytes, EVMError, Env, HashSet, U256},
+    primitives::{Address, Bytes, EVMError, Env, TrustedHashSet, U256},
     ContextPrecompiles, FrameOrResult, CALL_STACK_LIMIT,
 };
 use core::{
@@ -93,8 +93,10 @@ impl<DB: Database> EvmContext<DB> {
     #[inline]
     pub fn set_precompiles(&mut self, precompiles: ContextPrecompiles<DB>) {
         // set warm loaded addresses.
-        self.journaled_state.warm_preloaded_addresses =
-            precompiles.addresses().copied().collect::<HashSet<_>>();
+        self.journaled_state.warm_preloaded_addresses = precompiles
+            .addresses()
+            .copied()
+            .collect::<TrustedHashSet<_>>();
         self.precompiles = precompiles;
     }
 
@@ -221,6 +223,7 @@ impl<DB: Database> EvmContext<DB> {
 #[cfg(any(test, feature = "test-utils"))]
 pub(crate) mod test_utils {
     use super::*;
+    use crate::primitives::TrustedHashSet;
     use crate::{
         db::{CacheDB, EmptyDB},
         journaled_state::JournaledState,
@@ -285,7 +288,7 @@ pub(crate) mod test_utils {
         EvmContext {
             inner: InnerEvmContext {
                 env,
-                journaled_state: JournaledState::new(SpecId::CANCUN, HashSet::new()),
+                journaled_state: JournaledState::new(SpecId::CANCUN, TrustedHashSet::default()),
                 db,
                 error: Ok(()),
                 #[cfg(any(feature = "optimism", feature = "scroll"))]
@@ -300,7 +303,7 @@ pub(crate) mod test_utils {
         EvmContext {
             inner: InnerEvmContext {
                 env,
-                journaled_state: JournaledState::new(SpecId::CANCUN, HashSet::new()),
+                journaled_state: JournaledState::new(SpecId::CANCUN, TrustedHashSet::default()),
                 db,
                 error: Ok(()),
                 #[cfg(any(feature = "optimism", feature = "scroll"))]

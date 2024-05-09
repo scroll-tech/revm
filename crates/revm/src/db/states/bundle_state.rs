@@ -6,7 +6,7 @@ use super::{
 use core::{mem, ops::RangeInclusive};
 use revm_interpreter::primitives::{
     hash_map::{self, Entry},
-    AccountInfo, Address, Bytecode, HashMap, HashSet, StorageSlot, TrustedHashMap, B256,
+    AccountInfo, Address, Bytecode, HashMap, StorageSlot, TrustedHashMap, TrustedHashSet, B256,
     KECCAK_EMPTY, U256,
 };
 use std::{
@@ -17,7 +17,7 @@ use std::{
 /// This builder is used to help to facilitate the initialization of `BundleState` struct
 #[derive(Debug)]
 pub struct BundleBuilder {
-    states: HashSet<Address>,
+    states: TrustedHashSet<Address>,
     state_original: TrustedHashMap<Address, AccountInfo>,
     state_present: TrustedHashMap<Address, AccountInfo>,
     state_storage: TrustedHashMap<Address, HashMap<U256, (U256, U256)>>,
@@ -55,7 +55,7 @@ impl OriginalValuesKnown {
 impl Default for BundleBuilder {
     fn default() -> Self {
         BundleBuilder {
-            states: HashSet::new(),
+            states: TrustedHashSet::default(),
             state_original: TrustedHashMap::default(),
             state_present: TrustedHashMap::default(),
             state_storage: TrustedHashMap::default(),
@@ -230,7 +230,7 @@ impl BundleBuilder {
     }
 
     /// Getter for `states` field
-    pub fn get_states(&self) -> &HashSet<Address> {
+    pub fn get_states(&self) -> &TrustedHashSet<Address> {
         &self.states
     }
 }
