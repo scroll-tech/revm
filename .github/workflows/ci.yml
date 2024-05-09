@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [ main, "release/**" ]
+    branches: [ main, "release/**", "scroll-evm-executor/**" ]
   pull_request:
-    branches: [ main, "release/**" ]
+    branches: [ main, "release/**", "scroll-evm-executor/**" ]
 
 env:
   CARGO_TERM_COLOR: always
