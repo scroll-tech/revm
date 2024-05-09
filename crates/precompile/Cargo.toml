@@ -38,7 +38,7 @@ criterion = { version = "0.5" }
 rand = { version = "0.8", features = ["std"] }
 
 [features]
-default = ["std", "c-kzg", "secp256k1", "portable"]
+default = ["std", "c-kzg", "secp256k1", "portable", "fxhash"]
 std = [
     "revm-primitives/std",
     "k256/std",
@@ -75,6 +75,8 @@ negate-scroll-default-handler = [
 # Enables the KZG point evaluation precompile.
 c-kzg = ["dep:c-kzg", "revm-primitives/c-kzg"]
 portable = ["revm-primitives/portable", "c-kzg?/portable"]
+
+fxhash = ["revm-primitives/fxhash"]
 
 # Use `secp256k1` as a faster alternative to `k256`.
 # The problem that `secp256k1` has is it fails to build for `wasm` target on Windows and Mac as it is c lib.
