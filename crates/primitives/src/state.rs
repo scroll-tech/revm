@@ -330,7 +330,7 @@ impl AccountInfo {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Account, KECCAK_EMPTY, U256};
+    use crate::{Account, U256};
 
     #[test]
     fn account_is_empty_balance() {
@@ -367,7 +367,13 @@ mod tests {
         account.info.code_hash = [0; 32].into();
         assert!(account.is_empty());
 
-        account.info.code_hash = KECCAK_EMPTY;
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "scroll")] {
+                account.info.code_hash = crate::POSEIDON_EMPTY;
+            } else {
+                account.info.code_hash = crate::KECCAK_EMPTY;
+            }
+        }
         assert!(account.is_empty());
     }
 
