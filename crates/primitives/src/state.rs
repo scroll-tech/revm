@@ -220,15 +220,16 @@ impl Default for AccountInfo {
 }
 
 impl PartialEq for AccountInfo {
+    #[allow(clippy::let_and_return)]
     fn eq(&self, other: &Self) -> bool {
         let eq = self.balance == other.balance
             && self.nonce == other.nonce
             && self.code_hash == other.code_hash;
+
         #[cfg(all(debug_assertions, feature = "scroll"))]
         if eq {
             assert_eq!(self.keccak_code_hash, other.keccak_code_hash);
         }
-
         eq
     }
 }
