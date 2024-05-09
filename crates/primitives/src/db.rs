@@ -1,4 +1,4 @@
-use crate::{Account, AccountInfo, Address, Bytecode, HashMap, B256, U256};
+use crate::{Account, AccountInfo, Address, Bytecode, TrustedHashMap, B256, U256};
 use auto_impl::auto_impl;
 
 pub mod components;
@@ -29,7 +29,7 @@ pub trait Database {
 #[auto_impl(&mut, Box)]
 pub trait DatabaseCommit {
     /// Commit changes to the database.
-    fn commit(&mut self, changes: HashMap<Address, Account>);
+    fn commit(&mut self, changes: TrustedHashMap<Address, Account>);
 }
 
 /// EVM database interface.
@@ -93,7 +93,7 @@ impl<T: DatabaseRef> Database for WrapDatabaseRef<T> {
 
 impl<T: DatabaseRef + DatabaseCommit> DatabaseCommit for WrapDatabaseRef<T> {
     #[inline]
-    fn commit(&mut self, changes: HashMap<Address, Account>) {
+    fn commit(&mut self, changes: TrustedHashMap<Address, Account>) {
         self.0.commit(changes)
     }
 }

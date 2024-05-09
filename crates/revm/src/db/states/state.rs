@@ -5,7 +5,8 @@ use super::{
 use crate::db::EmptyDB;
 use revm_interpreter::primitives::{
     db::{Database, DatabaseCommit},
-    hash_map, Account, AccountInfo, Address, Bytecode, HashMap, B256, BLOCK_HASH_HISTORY, U256,
+    hash_map, Account, AccountInfo, Address, Bytecode, HashMap, TrustedHashMap, B256,
+    BLOCK_HASH_HISTORY, U256,
 };
 use std::{
     boxed::Box,
@@ -292,7 +293,7 @@ impl<DB: Database> Database for State<DB> {
 }
 
 impl<DB: Database> DatabaseCommit for State<DB> {
-    fn commit(&mut self, evm_state: HashMap<Address, Account>) {
+    fn commit(&mut self, evm_state: TrustedHashMap<Address, Account>) {
         let transitions = self.cache.apply_evm_state(evm_state);
         self.apply_transition(transitions);
     }
@@ -763,7 +764,7 @@ mod tests {
 
         assert_eq!(
             bundle_state.state,
-            HashMap::from([(
+            TrustedHashMap::from_iter([(
                 existing_account_address,
                 BundleAccount {
                     info: Some(existing_account_info.clone()),

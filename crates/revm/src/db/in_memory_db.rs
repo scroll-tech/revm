@@ -1,7 +1,7 @@
 use super::{DatabaseCommit, DatabaseRef, EmptyDB};
 use crate::primitives::{
-    hash_map::Entry, Account, AccountInfo, Address, Bytecode, HashMap, Log, B256, KECCAK_EMPTY,
-    U256,
+    hash_map::Entry, Account, AccountInfo, Address, Bytecode, HashMap, Log, TrustedHashMap, B256,
+    KECCAK_EMPTY, U256,
 };
 use crate::Database;
 use core::convert::Infallible;
@@ -25,13 +25,13 @@ pub type InMemoryDB = CacheDB<EmptyDB>;
 pub struct CacheDB<ExtDB> {
     /// Account info where None means it is not existing. Not existing state is needed for Pre TANGERINE forks.
     /// `code` is always `None`, and bytecode can be found in `contracts`.
-    pub accounts: HashMap<Address, DbAccount>,
+    pub accounts: TrustedHashMap<Address, DbAccount>,
     /// Tracks all contracts by their code hash.
-    pub contracts: HashMap<B256, Bytecode>,
+    pub contracts: TrustedHashMap<B256, Bytecode>,
     /// All logs that were committed via [DatabaseCommit::commit].
     pub logs: Vec<Log>,
     /// All cached block hashes from the [DatabaseRef].
-    pub block_hashes: HashMap<U256, B256>,
+    pub block_hashes: TrustedHashMap<U256, B256>,
     /// The underlying database ([DatabaseRef]) that is used to load data.
     ///
     /// Note: this is read-only, data is never written to this database.
@@ -46,17 +46,17 @@ impl<ExtDB: Default> Default for CacheDB<ExtDB> {
 
 impl<ExtDB> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
-        let mut contracts = HashMap::new();
+        let mut contracts = TrustedHashMap::default();
         #[cfg(not(feature = "scroll"))]
         contracts.insert(KECCAK_EMPTY, Bytecode::new());
         #[cfg(feature = "scroll")]
         contracts.insert(POSEIDON_EMPTY, Bytecode::new());
         contracts.insert(B256::ZERO, Bytecode::new());
         Self {
-            accounts: HashMap::new(),
+            accounts: TrustedHashMap::default(),
             contracts,
             logs: Vec::default(),
-            block_hashes: HashMap::new(),
+            block_hashes: TrustedHashMap::default(),
             db,
         }
     }
@@ -153,7 +153,7 @@ impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
 }
 
 impl<ExtDB> DatabaseCommit for CacheDB<ExtDB> {
-    fn commit(&mut self, changes: HashMap<Address, Account>) {
+    fn commit(&mut self, changes: TrustedHashMap<Address, Account>) {
         for (address, mut account) in changes {
             if !account.is_touched() {
                 continue;

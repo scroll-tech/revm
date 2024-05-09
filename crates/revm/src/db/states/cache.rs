@@ -2,7 +2,7 @@ use super::{
     plain_account::PlainStorage, transition_account::TransitionAccount, CacheAccount, PlainAccount,
 };
 use revm_interpreter::primitives::{
-    Account, AccountInfo, Address, Bytecode, HashMap, State as EVMState, B256,
+    Account, AccountInfo, Address, Bytecode, HashMap, State as EVMState, TrustedHashMap, B256,
 };
 use std::vec::Vec;
 
@@ -15,10 +15,10 @@ use std::vec::Vec;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CacheState {
     /// Block state account with account state
-    pub accounts: HashMap<Address, CacheAccount>,
+    pub accounts: TrustedHashMap<Address, CacheAccount>,
     /// created contracts
     /// TODO add bytecode counter for number of bytecodes added/removed.
-    pub contracts: HashMap<B256, Bytecode>,
+    pub contracts: TrustedHashMap<B256, Bytecode>,
     /// Has EIP-161 state clear enabled (Spurious Dragon hardfork).
     pub has_state_clear: bool,
 }

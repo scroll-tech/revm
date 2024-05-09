@@ -31,17 +31,26 @@ pub use env::*;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "std")] {
-        pub use std::collections::{hash_map, hash_set, HashSet};
+        pub use std::collections::{hash_map, hash_set, HashMap, HashSet};
+
         cfg_if::cfg_if! {
             if #[cfg(feature = "fxhash")] {
-                pub use rustc_hash::FxHashMap as HashMap;
+                pub use rustc_hash::{
+                    FxHashMap as TrustedHashMap,
+                    FxHashSet as TrustedHashSet,
+                };
             } else {
-                pub use std::collections::HashMap;
+                pub use std::collections::{HashMap as TrustedHashMap, HashSet as TrustedHashSet};
             }
         }
+
         use hashbrown as _;
     } else {
         pub use hashbrown::{hash_map, hash_set, HashMap, HashSet};
+        pub use hashbrown::{HashMap as TrustedHashMap, HashSet as TrustedHashSet};
+
+        #[cfg(feature = "fxhash")]
+        use rustc_hash as _;
     }
 }
 

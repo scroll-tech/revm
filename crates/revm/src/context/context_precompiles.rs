@@ -1,6 +1,6 @@
 use crate::{
     precompile::{Precompile, PrecompileResult},
-    primitives::{db::Database, Address, Bytes, HashMap},
+    primitives::{db::Database, Address, Bytes, TrustedHashMap},
 };
 use core::ops::{Deref, DerefMut};
 use dyn_clone::DynClone;
@@ -33,7 +33,7 @@ impl<DB: Database> Clone for ContextPrecompile<DB> {
 
 #[derive(Clone)]
 pub struct ContextPrecompiles<DB: Database> {
-    inner: HashMap<Address, ContextPrecompile<DB>>,
+    inner: TrustedHashMap<Address, ContextPrecompile<DB>>,
 }
 
 impl<DB: Database> ContextPrecompiles<DB> {
@@ -83,7 +83,7 @@ impl<DB: Database> Default for ContextPrecompiles<DB> {
 }
 
 impl<DB: Database> Deref for ContextPrecompiles<DB> {
-    type Target = HashMap<Address, ContextPrecompile<DB>>;
+    type Target = TrustedHashMap<Address, ContextPrecompile<DB>>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner

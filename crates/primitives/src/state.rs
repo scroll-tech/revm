@@ -1,4 +1,4 @@
-use crate::{Address, Bytecode, HashMap, B256, KECCAK_EMPTY, U256};
+use crate::{Address, Bytecode, HashMap, TrustedHashMap, B256, KECCAK_EMPTY, U256};
 use bitflags::bitflags;
 use core::hash::{Hash, Hasher};
 
@@ -6,10 +6,10 @@ use core::hash::{Hash, Hasher};
 use crate::POSEIDON_EMPTY;
 
 /// EVM State is a mapping from addresses to accounts.
-pub type State = HashMap<Address, Account>;
+pub type State = TrustedHashMap<Address, Account>;
 
 /// Structure used for EIP-1153 transient storage.
-pub type TransientStorage = HashMap<(Address, U256), U256>;
+pub type TransientStorage = TrustedHashMap<(Address, U256), U256>;
 
 /// An account's Storage is a mapping from 256-bit integer keys to [StorageSlot]s.
 pub type Storage = HashMap<U256, StorageSlot>;

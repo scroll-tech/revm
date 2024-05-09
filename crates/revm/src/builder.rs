@@ -487,7 +487,10 @@ mod test {
         let code = Bytecode::new_raw([0xEF, 0x00].into());
         #[cfg(feature = "scroll")]
         let poseidon_code_hash = code.poseidon_hash_slow();
+        #[cfg(feature = "scroll")]
         let keccak_code_hash = code.keccak_hash_slow();
+        #[cfg(not(feature = "scroll"))]
+        let keccak_code_hash = code.hash_slow();
         let to_addr = address!("ffffffffffffffffffffffffffffffffffffffff");
 
         // initialize the custom context and make sure it's zero
@@ -551,7 +554,10 @@ mod test {
         let code = Bytecode::new_raw([0xEF, 0x00].into());
         #[cfg(feature = "scroll")]
         let poseidon_code_hash = code.poseidon_hash_slow();
+        #[cfg(feature = "scroll")]
         let keccak_code_hash = code.keccak_hash_slow();
+        #[cfg(not(feature = "scroll"))]
+        let keccak_code_hash = code.hash_slow();
         let to_addr = address!("ffffffffffffffffffffffffffffffffffffffff");
 
         let mut evm = Evm::builder()

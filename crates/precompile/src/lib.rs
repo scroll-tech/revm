@@ -26,7 +26,7 @@ use once_cell::race::OnceBox;
 pub use revm_primitives as primitives;
 pub use revm_primitives::{
     precompile::{PrecompileError as Error, *},
-    Address, Bytes, HashMap, Log, B256,
+    Address, Bytes, HashMap, Log, TrustedHashMap, B256,
 };
 use std::{boxed::Box, vec::Vec};
 
@@ -53,7 +53,7 @@ impl PrecompileOutput {
 #[derive(Clone, Default, Debug)]
 pub struct Precompiles {
     /// Precompiles.
-    pub inner: HashMap<Address, Precompile>,
+    pub inner: TrustedHashMap<Address, Precompile>,
 }
 
 impl Precompiles {

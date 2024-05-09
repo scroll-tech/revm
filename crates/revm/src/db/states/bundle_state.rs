@@ -6,7 +6,8 @@ use super::{
 use core::{mem, ops::RangeInclusive};
 use revm_interpreter::primitives::{
     hash_map::{self, Entry},
-    AccountInfo, Address, Bytecode, HashMap, HashSet, StorageSlot, B256, KECCAK_EMPTY, U256,
+    AccountInfo, Address, Bytecode, HashMap, HashSet, StorageSlot, TrustedHashMap, B256,
+    KECCAK_EMPTY, U256,
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -17,16 +18,16 @@ use std::{
 #[derive(Debug)]
 pub struct BundleBuilder {
     states: HashSet<Address>,
-    state_original: HashMap<Address, AccountInfo>,
-    state_present: HashMap<Address, AccountInfo>,
-    state_storage: HashMap<Address, HashMap<U256, (U256, U256)>>,
+    state_original: TrustedHashMap<Address, AccountInfo>,
+    state_present: TrustedHashMap<Address, AccountInfo>,
+    state_storage: TrustedHashMap<Address, HashMap<U256, (U256, U256)>>,
 
     reverts: BTreeSet<(u64, Address)>,
     revert_range: RangeInclusive<u64>,
-    revert_account: HashMap<(u64, Address), Option<Option<AccountInfo>>>,
+    revert_account: TrustedHashMap<(u64, Address), Option<Option<AccountInfo>>>,
     revert_storage: HashMap<(u64, Address), Vec<(U256, U256)>>,
 
-    contracts: HashMap<B256, Bytecode>,
+    contracts: TrustedHashMap<B256, Bytecode>,
 }
 
 /// Option for [`BundleState`] when converting it to the plain state.
@@ -55,14 +56,14 @@ impl Default for BundleBuilder {
     fn default() -> Self {
         BundleBuilder {
             states: HashSet::new(),
-            state_original: HashMap::new(),
-            state_present: HashMap::new(),
-            state_storage: HashMap::new(),
+            state_original: TrustedHashMap::default(),
+            state_present: TrustedHashMap::default(),
+            state_storage: TrustedHashMap::default(),
             reverts: BTreeSet::new(),
             revert_range: 0..=0,
-            revert_account: HashMap::new(),
+            revert_account: TrustedHashMap::default(),
             revert_storage: HashMap::new(),
-            contracts: HashMap::new(),
+            contracts: TrustedHashMap::default(),
         }
     }
 }
@@ -260,9 +261,9 @@ impl BundleRetention {
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct BundleState {
     /// Account state.
-    pub state: HashMap<Address, BundleAccount>,
+    pub state: TrustedHashMap<Address, BundleAccount>,
     /// All created contracts in this block.
-    pub contracts: HashMap<B256, Bytecode>,
+    pub contracts: TrustedHashMap<B256, Bytecode>,
     /// Changes to revert.
     ///
     /// Note: Inside vector is *not* sorted by address.
@@ -366,7 +367,7 @@ impl BundleState {
     }
 
     /// Return reference to the state.
-    pub fn state(&self) -> &HashMap<Address, BundleAccount> {
+    pub fn state(&self) -> &TrustedHashMap<Address, BundleAccount> {
         &self.state
     }
 
@@ -518,7 +519,7 @@ impl BundleState {
     /// Extend the bundle with other state
     ///
     /// Update the `other` state only if `other` is not flagged as destroyed.
-    pub fn extend_state(&mut self, other_state: HashMap<Address, BundleAccount>) {
+    pub fn extend_state(&mut self, other_state: TrustedHashMap<Address, BundleAccount>) {
         for (address, other_account) in other_state {
             match self.state.entry(address) {
                 hash_map::Entry::Occupied(mut entry) => {

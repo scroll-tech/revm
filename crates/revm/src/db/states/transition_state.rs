@@ -1,17 +1,18 @@
 use super::TransitionAccount;
-use revm_interpreter::primitives::{hash_map::Entry, Address, HashMap};
+use revm_interpreter::primitives::{hash_map::Entry, Address};
+use revm_precompile::TrustedHashMap;
 use std::vec::Vec;
 
 #[derive(Clone, Default, Debug, PartialEq, Eq)]
 pub struct TransitionState {
     /// Block state account with account state
-    pub transitions: HashMap<Address, TransitionAccount>,
+    pub transitions: TrustedHashMap<Address, TransitionAccount>,
 }
 
 impl TransitionState {
     /// Create new transition state with one transition.
     pub fn single(address: Address, transition: TransitionAccount) -> Self {
-        let mut transitions = HashMap::new();
+        let mut transitions = TrustedHashMap::default();
         transitions.insert(address, transition);
         TransitionState { transitions }
     }
