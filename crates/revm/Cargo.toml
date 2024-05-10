@@ -60,6 +60,7 @@ serde-json = ["serde", "dep:serde_json"]
 arbitrary = ["revm-interpreter/arbitrary"]
 asm-keccak = ["revm-interpreter/asm-keccak", "revm-precompile/asm-keccak"]
 portable = ["revm-precompile/portable", "revm-interpreter/portable"]
+faster-hash = ["revm-interpreter/faster-hash", "revm-precompile/faster-hash"]
 
 test-utils = []
 

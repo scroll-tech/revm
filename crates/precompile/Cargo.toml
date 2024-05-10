@@ -81,12 +81,15 @@ portable = ["revm-primitives/portable", "c-kzg?/portable"]
 # In Linux it passes. If you don't require to build wasm on win/mac, it is safe to use it and it is enabled by default.
 secp256k1 = ["dep:secp256k1"]
 
+faster-hash = ["revm-primitives/faster-hash"]
+
 all = [
     "std",
     "asm-keccak",
     "c-kzg",
     "portable",
     "secp256k1",
+    "faster-hash"
 ]
 
 [[bench]]
