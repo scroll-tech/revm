@@ -396,7 +396,7 @@ mod tests {
                 nonce: 0,
                 balance: bal,
                 #[cfg(not(feature = "scroll"))]
-                code_hash: by.clone().keccak_hash_slow(),
+                code_hash: by.clone().hash_slow(),
                 #[cfg(feature = "scroll")]
                 code_hash: by.clone().poseidon_hash_slow(),
                 #[cfg(feature = "scroll")]

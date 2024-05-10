@@ -51,7 +51,7 @@ impl L1BlockInfo {
         }))
     }
 
-    /// Calculate the gas cost of a transaction based on L1 block data posted on L2, depending on the [SpecId] passed.
+    /// Calculate the gas cost of a transaction based on L1 block data posted on L2.
     pub fn calculate_tx_l1_cost(&self, input: &[u8]) -> U256 {
         let tx_l1_gas = self.data_gas(input);
         tx_l1_gas
