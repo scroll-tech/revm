@@ -100,3 +100,12 @@ optional_beneficiary_reward = []
 
 # See comments in `revm-precompile`
 c-kzg = ["dep:c-kzg", "dep:once_cell", "dep:derive_more"]
+
+all = [
+    "std",
+    "serde",
+    "arbitrary",
+    "asm-keccak",
+    "portable",
+    "dev",
+]

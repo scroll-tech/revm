@@ -83,6 +83,15 @@ secp256k1 = ["dep:secp256k1"]
 
 faster-hash = ["revm-primitives/faster-hash"]
 
+all = [
+    "std",
+    "asm-keccak",
+    "c-kzg",
+    "portable",
+    "secp256k1",
+    "faster-hash"
+]
+
 [[bench]]
 name = "bench"
 path = "benches/bench.rs"
