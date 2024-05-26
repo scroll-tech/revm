@@ -224,7 +224,7 @@ pub(crate) mod test_utils {
     use crate::{
         db::{CacheDB, EmptyDB},
         journaled_state::JournaledState,
-        primitives::{address, Address, Bytes, Env, HashSet, SpecId, B256, U256},
+        primitives::{address, Address, Bytes, Env, HashSet, SpecId, U256},
         InnerEvmContext,
     };
     use std::boxed::Box;
@@ -268,10 +268,7 @@ pub(crate) mod test_utils {
             crate::primitives::AccountInfo {
                 nonce: 0,
                 balance,
-                code_hash: B256::default(),
-                #[cfg(feature = "scroll")]
-                keccak_code_hash: B256::default(),
-                code: None,
+                ..Default::default()
             },
         );
         create_cache_db_evm_context(env, db)
@@ -395,6 +392,8 @@ mod tests {
             crate::primitives::AccountInfo {
                 nonce: 0,
                 balance: bal,
+                #[cfg(feature = "scroll")]
+                code_size: by.len(),
                 #[cfg(not(feature = "scroll"))]
                 code_hash: by.clone().hash_slow(),
                 #[cfg(feature = "scroll")]
