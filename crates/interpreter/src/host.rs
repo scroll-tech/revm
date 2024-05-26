@@ -32,6 +32,10 @@ pub trait Host {
     fn code_hash(&mut self, address: Address) -> Option<(B256, bool)>;
 
     #[cfg(feature = "scroll")]
+    /// Get code size of `address` and if the account is cold.
+    fn code_size(&mut self, address: Address) -> Option<(usize, bool)>;
+
+    #[cfg(feature = "scroll")]
     /// Get keccak code hash of `address` and if the account is cold.
     fn keccak_code_hash(&mut self, address: Address) -> Option<(B256, bool)>;
 

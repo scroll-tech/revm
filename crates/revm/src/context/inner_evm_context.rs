@@ -165,6 +165,14 @@ impl<DB: Database> InnerEvmContext<DB> {
             .map(|(a, is_cold)| (a.info.code.clone().unwrap(), is_cold))
     }
 
+    #[inline]
+    #[cfg(feature = "scroll")]
+    pub fn code_size(&mut self, address: Address) -> Result<(usize, bool), EVMError<DB::Error>> {
+        self.journaled_state
+            .load_account(address, &mut self.db)
+            .map(|(acc, is_cold)| (acc.info.code_size, is_cold))
+    }
+
     /// Get code hash of address.
     #[inline]
     pub fn code_hash(&mut self, address: Address) -> Result<(B256, bool), EVMError<DB::Error>> {

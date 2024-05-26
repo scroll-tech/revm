@@ -419,6 +419,8 @@ impl Database for BenchmarkDB {
             return Ok(Some(AccountInfo {
                 nonce: 1,
                 balance: U256::from(10000000),
+                #[cfg(feature = "scroll")]
+                code_size: self.0.len(),
                 code: Some(self.0.clone()),
                 code_hash: self.1,
                 #[cfg(feature = "scroll")]
@@ -429,13 +431,7 @@ impl Database for BenchmarkDB {
             return Ok(Some(AccountInfo {
                 nonce: 0,
                 balance: U256::from(10000000),
-                code: None,
-                #[cfg(not(feature = "scroll"))]
-                code_hash: KECCAK_EMPTY,
-                #[cfg(feature = "scroll")]
-                code_hash: POSEIDON_EMPTY,
-                #[cfg(feature = "scroll")]
-                keccak_code_hash: KECCAK_EMPTY,
+                ..Default::default()
             }));
         }
         Ok(None)

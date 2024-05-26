@@ -44,6 +44,7 @@ pub fn selfbalance<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mu
     push!(interpreter, balance);
 }
 
+#[cfg(not(feature = "scroll"))]
 pub fn extcodesize<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_address!(interpreter, address);
     let Some((code, is_cold)) = host.code(address) else {
@@ -66,6 +67,25 @@ pub fn extcodesize<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mu
     }
 
     push!(interpreter, U256::from(code.len()));
+}
+
+#[cfg(feature = "scroll")]
+pub fn extcodesize<H: Host, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
+    pop_address!(interpreter, address);
+    let Some((code_size, is_cold)) = host.code_size(address) else {
+        interpreter.instruction_result = InstructionResult::FatalExternalError;
+        return;
+    };
+    gas!(
+        interpreter,
+        if is_cold {
+            COLD_ACCOUNT_ACCESS_COST
+        } else {
+            WARM_STORAGE_READ_COST
+        }
+    );
+
+    push!(interpreter, U256::from(code_size));
 }
 
 /// EIP-1052: EXTCODEHASH opcode
