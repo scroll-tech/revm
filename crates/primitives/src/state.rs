@@ -218,7 +218,7 @@ impl Default for AccountInfo {
             code_hash: POSEIDON_EMPTY,
             #[cfg(feature = "scroll")]
             keccak_code_hash: KECCAK_EMPTY,
-            code: Some(Bytecode::new()),
+            code: Some(Bytecode::default()),
             nonce: 0,
         }
     }

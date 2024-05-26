@@ -5,6 +5,8 @@ use crate::{
 };
 use std::vec::Vec;
 
+use super::LoadAccountResult;
+
 #[cfg(feature = "scroll")]
 use revm_primitives::POSEIDON_EMPTY;
 
@@ -47,8 +49,8 @@ impl Host for DummyHost {
     }
 
     #[inline]
-    fn load_account(&mut self, _address: Address) -> Option<(bool, bool)> {
-        Some((true, true))
+    fn load_account(&mut self, _address: Address) -> Option<LoadAccountResult> {
+        Some(LoadAccountResult::default())
     }
 
     #[inline]

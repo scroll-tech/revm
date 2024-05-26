@@ -48,10 +48,10 @@ impl<ExtDB> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
         let mut contracts = HashMap::new();
         #[cfg(not(feature = "scroll"))]
-        contracts.insert(KECCAK_EMPTY, Bytecode::new());
+        contracts.insert(KECCAK_EMPTY, Bytecode::default());
         #[cfg(feature = "scroll")]
-        contracts.insert(POSEIDON_EMPTY, Bytecode::new());
-        contracts.insert(B256::ZERO, Bytecode::new());
+        contracts.insert(POSEIDON_EMPTY, Bytecode::default());
+        contracts.insert(B256::ZERO, Bytecode::default());
         Self {
             accounts: HashMap::new(),
             contracts,

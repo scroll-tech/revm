@@ -1,9 +1,7 @@
 //! # revm-precompile
 //!
 //! Implementations of EVM precompiled contracts.
-#![warn(rustdoc::all)]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
-#![deny(unused_must_use, rust_2018_idioms)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[macro_use]
@@ -11,6 +9,8 @@
 extern crate alloc as std;
 
 pub mod blake2;
+#[cfg(feature = "blst")]
+pub mod bls12_381;
 pub mod bn128;
 pub mod hash;
 pub mod identity;
@@ -67,6 +67,7 @@ impl Precompiles {
             #[cfg(feature = "scroll")]
             PrecompileSpecId::BERNOULLI => Self::bernoulli(),
             PrecompileSpecId::CANCUN => Self::cancun(),
+            PrecompileSpecId::PRAGUE => Self::prague(),
             PrecompileSpecId::LATEST => Self::latest(),
         }
     }
@@ -158,6 +159,24 @@ impl Precompiles {
         })
     }
 
+    /// Returns precompiles for Prague spec.
+    pub fn prague() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let precompiles = Self::cancun().clone();
+
+            // Don't include BLS12-381 precompiles in no_std builds.
+            #[cfg(feature = "blst")]
+            let precompiles = {
+                let mut precompiles = precompiles;
+                precompiles.extend(bls12_381::precompiles());
+                precompiles
+            };
+
+            Box::new(precompiles)
+        })
+    }
+
     /// Returns precompiles for Scroll
     #[cfg(feature = "scroll")]
     pub fn bernoulli() -> &'static Self {
@@ -181,7 +200,7 @@ impl Precompiles {
 
     /// Returns the precompiles for the latest spec.
     pub fn latest() -> &'static Self {
-        Self::cancun()
+        Self::prague()
     }
 
     /// Returns an iterator over the precompiles addresses.
@@ -256,6 +275,7 @@ pub enum PrecompileSpecId {
     #[cfg(feature = "scroll")]
     BERNOULLI,
     CANCUN,
+    PRAGUE,
     LATEST,
 }
 
@@ -271,6 +291,7 @@ impl PrecompileSpecId {
             ISTANBUL | MUIR_GLACIER => Self::ISTANBUL,
             BERLIN | LONDON | ARROW_GLACIER | GRAY_GLACIER | MERGE | SHANGHAI => Self::BERLIN,
             CANCUN => Self::CANCUN,
+            PRAGUE => Self::PRAGUE,
             LATEST => Self::LATEST,
             #[cfg(feature = "optimism")]
             BEDROCK | REGOLITH | CANYON => Self::BERLIN,
