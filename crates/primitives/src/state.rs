@@ -193,6 +193,9 @@ pub struct AccountInfo {
     pub balance: U256,
     /// Account nonce.
     pub nonce: u64,
+    #[cfg(feature = "scroll")]
+    /// code size,
+    pub code_size: usize,
     /// code hash,
     pub code_hash: B256,
     #[cfg(feature = "scroll")]
@@ -207,6 +210,8 @@ impl Default for AccountInfo {
     fn default() -> Self {
         Self {
             balance: U256::ZERO,
+            #[cfg(feature = "scroll")]
+            code_size: 0,
             #[cfg(not(feature = "scroll"))]
             code_hash: KECCAK_EMPTY,
             #[cfg(feature = "scroll")]
@@ -253,6 +258,8 @@ impl AccountInfo {
         Self {
             balance,
             nonce,
+            #[cfg(feature = "scroll")]
+            code_size: code.len(),
             code: Some(code),
             code_hash,
             #[cfg(feature = "scroll")]
