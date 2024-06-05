@@ -163,6 +163,7 @@ impl JournaledState {
         }
         #[cfg(feature = "scroll")]
         {
+            account.info.code_size = code.len();
             account.info.code_hash = code.poseidon_hash_slow();
             account.info.keccak_code_hash = code.keccak_hash_slow();
         }
