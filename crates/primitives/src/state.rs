@@ -332,7 +332,7 @@ impl AccountInfo {
 
                 self.code_hash == POSEIDON_EMPTY
             } else {
-                self.code_hash = KECCAK_EMPTY
+                self.code_hash == KECCAK_EMPTY
             }
         }
     }
@@ -353,7 +353,7 @@ impl AccountInfo {
                         self.code_hash = code.poseidon_hash_slow();
                         self.keccak_code_hash = code.keccak_hash_slow();
                     } else {
-                        self.code_hash = code.keccak_hash_slow();
+                        self.code_hash = code.hash_slow();
                     }
                 }
 

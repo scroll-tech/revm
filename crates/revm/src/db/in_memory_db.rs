@@ -89,7 +89,7 @@ impl<ExtDB> CacheDB<ExtDB> {
             }
         }
         if account.code_hash == B256::ZERO {
-            account.set_code_empty();
+            account.set_code_rehash_slow(None);
         }
     }
 
