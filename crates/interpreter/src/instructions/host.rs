@@ -164,6 +164,8 @@ pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
 
 #[cfg(feature = "scroll")]
 pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
+    use revm_primitives::BLOCK_HASH_HISTORY;
+
     gas!(interpreter, gas::BLOCKHASH);
     pop_top!(interpreter, number);
 
@@ -172,11 +174,12 @@ pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
     match block_number.checked_sub(*number) {
         Some(diff) if !diff.is_zero() => {
             let diff = as_usize_saturated!(diff);
+            let block_number = as_u64_or_fail!(interpreter, number);
 
-            if SPEC::enabled(BERNOULLI) {
+            if SPEC::enabled(BERNOULLI) && diff <= BLOCK_HASH_HISTORY {
                 let mut hasher = crate::primitives::Keccak256::new();
                 hasher.update(host.env().cfg.chain_id.to_be_bytes());
-                hasher.update(diff.to_be_bytes());
+                hasher.update(block_number.to_be_bytes());
                 *number = U256::from_be_bytes(*hasher.finalize());
                 return;
             }

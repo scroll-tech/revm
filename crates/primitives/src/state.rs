@@ -233,6 +233,7 @@ impl PartialEq for AccountInfo {
 
         #[cfg(all(debug_assertions, feature = "scroll"))]
         if eq {
+            assert_eq!(self.code_size, other.code_size);
             assert_eq!(self.keccak_code_hash, other.keccak_code_hash);
         }
         eq
@@ -281,6 +282,15 @@ impl AccountInfo {
     /// - nonce is zero
     pub fn is_empty(&self) -> bool {
         let code_empty = self.is_empty_code_hash() || self.code_hash == B256::ZERO;
+
+        #[cfg(all(feature = "scroll", debug_assertions))]
+        if code_empty {
+            assert_eq!(
+                self.code_size, 0,
+                "code size should be zero if code hash is empty"
+            );
+        }
+
         code_empty && self.balance == U256::ZERO && self.nonce == 0
     }
 
@@ -312,19 +322,57 @@ impl AccountInfo {
     /// Returns true if the code hash is the Keccak256 hash of the empty string `""`.
     #[inline]
     pub fn is_empty_code_hash(&self) -> bool {
-        #[cfg(feature = "scroll")]
-        {
-            self.code_hash == POSEIDON_EMPTY
-        }
-        #[cfg(not(feature = "scroll"))]
-        {
-            self.code_hash == KECCAK_EMPTY
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "scroll")] {
+                #[cfg(debug_assertions)]
+                if self.code_hash == POSEIDON_EMPTY {
+                    assert_eq!(self.code_size, 0);
+                    assert_eq!(self.keccak_code_hash, KECCAK_EMPTY);
+                }
+
+                self.code_hash == POSEIDON_EMPTY
+            } else {
+                self.code_hash = KECCAK_EMPTY
+            }
         }
     }
 
     /// Take bytecode from account. Code will be set to None.
     pub fn take_bytecode(&mut self) -> Option<Bytecode> {
         self.code.take()
+    }
+
+    /// Re-hash the code, set to empty if code is None,
+    /// otherwise update the code hash.
+    pub fn set_code_rehash_slow(&mut self, code: Option<Bytecode>) {
+        match code {
+            Some(code) => {
+                cfg_if::cfg_if! {
+                    if #[cfg(feature = "scroll")] {
+                        self.code_size = code.len();
+                        self.code_hash = code.poseidon_hash_slow();
+                        self.keccak_code_hash = code.keccak_hash_slow();
+                    } else {
+                        self.code_hash = code.keccak_hash_slow();
+                    }
+                }
+
+                self.code = Some(code);
+            }
+            None => {
+                cfg_if::cfg_if! {
+                    if #[cfg(feature = "scroll")] {
+                        self.code_size = 0;
+                        self.code_hash = POSEIDON_EMPTY;
+                        self.keccak_code_hash = KECCAK_EMPTY;
+                    } else {
+                        self.code_hash = KECCAK_EMPTY;
+                    }
+                }
+
+                self.code = None;
+            }
+        }
     }
 
     pub fn from_balance(balance: U256) -> Self {

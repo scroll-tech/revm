@@ -157,17 +157,7 @@ impl JournaledState {
             .unwrap()
             .push(JournalEntry::CodeChange { address });
 
-        #[cfg(not(feature = "scroll"))]
-        {
-            account.info.code_hash = code.hash_slow();
-        }
-        #[cfg(feature = "scroll")]
-        {
-            account.info.code_size = code.len();
-            account.info.code_hash = code.poseidon_hash_slow();
-            account.info.keccak_code_hash = code.keccak_hash_slow();
-        }
-        account.info.code = Some(code);
+        account.info.set_code_rehash_slow(Some(code));
     }
 
     #[inline]
@@ -409,16 +399,7 @@ impl JournaledState {
                 }
                 JournalEntry::CodeChange { address } => {
                     let acc = state.get_mut(&address).unwrap();
-                    #[cfg(not(feature = "scroll"))]
-                    {
-                        acc.info.code_hash = KECCAK_EMPTY;
-                    }
-                    #[cfg(feature = "scroll")]
-                    {
-                        acc.info.code_hash = POSEIDON_EMPTY;
-                        acc.info.keccak_code_hash = KECCAK_EMPTY;
-                    }
-                    acc.info.code = None;
+                    acc.info.set_code_empty();
                 }
             }
         }
