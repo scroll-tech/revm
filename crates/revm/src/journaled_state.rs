@@ -1,15 +1,12 @@
 use crate::interpreter::{InstructionResult, SelfDestructResult};
 use crate::primitives::{
     db::Database, hash_map::Entry, Account, Address, Bytecode, EVMError, HashMap, HashSet, Log,
-    SpecId::*, State, StorageSlot, TransientStorage, KECCAK_EMPTY, PRECOMPILE3, U256,
+    SpecId::*, State, StorageSlot, TransientStorage, PRECOMPILE3, U256,
 };
 use core::mem;
 use revm_interpreter::primitives::SpecId;
 use revm_interpreter::{LoadAccountResult, SStoreResult};
 use std::vec::Vec;
-
-#[cfg(feature = "scroll")]
-use crate::primitives::POSEIDON_EMPTY;
 
 /// JournalState is internal EVM state that is used to contain state and track changes to that state.
 /// It contains journal of changes that happened to state so that they can be reverted.
@@ -157,17 +154,7 @@ impl JournaledState {
             .unwrap()
             .push(JournalEntry::CodeChange { address });
 
-        #[cfg(not(feature = "scroll"))]
-        {
-            account.info.code_hash = code.hash_slow();
-        }
-        #[cfg(feature = "scroll")]
-        {
-            account.info.code_size = code.len();
-            account.info.code_hash = code.poseidon_hash_slow();
-            account.info.keccak_code_hash = code.keccak_hash_slow();
-        }
-        account.info.code = Some(code);
+        account.info.set_code_rehash_slow(Some(code));
     }
 
     #[inline]
@@ -409,16 +396,7 @@ impl JournaledState {
                 }
                 JournalEntry::CodeChange { address } => {
                     let acc = state.get_mut(&address).unwrap();
-                    #[cfg(not(feature = "scroll"))]
-                    {
-                        acc.info.code_hash = KECCAK_EMPTY;
-                    }
-                    #[cfg(feature = "scroll")]
-                    {
-                        acc.info.code_hash = POSEIDON_EMPTY;
-                        acc.info.keccak_code_hash = KECCAK_EMPTY;
-                    }
-                    acc.info.code = None;
+                    acc.info.set_code_rehash_slow(None);
                 }
             }
         }
@@ -632,12 +610,7 @@ impl JournaledState {
     ) -> Result<(&mut Account, bool), EVMError<DB::Error>> {
         let (acc, is_cold) = self.load_account(address, db)?;
         if acc.info.code.is_none() {
-            #[cfg(not(feature = "scroll"))]
-            let is_empty = acc.info.code_hash == KECCAK_EMPTY;
-            #[cfg(feature = "scroll")]
-            let is_empty = acc.info.code_hash == POSEIDON_EMPTY;
-
-            if is_empty {
+            if acc.info.is_empty_code_hash() {
                 let empty = Bytecode::default();
                 acc.info.code = Some(empty);
             } else {

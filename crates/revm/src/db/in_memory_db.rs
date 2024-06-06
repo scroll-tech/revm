@@ -75,6 +75,7 @@ impl<ExtDB> CacheDB<ExtDB> {
                 }
                 #[cfg(feature = "scroll")]
                 {
+                    account.code_size = code.len();
                     if account.code_hash == POSEIDON_EMPTY {
                         account.code_hash = code.poseidon_hash_slow();
                     }
@@ -88,16 +89,7 @@ impl<ExtDB> CacheDB<ExtDB> {
             }
         }
         if account.code_hash == B256::ZERO {
-            #[cfg(not(feature = "scroll"))]
-            {
-                account.code_hash = KECCAK_EMPTY;
-            }
-            #[cfg(feature = "scroll")]
-            {
-                debug_assert_eq!(account.keccak_code_hash, B256::ZERO);
-                account.code_hash = POSEIDON_EMPTY;
-                account.keccak_code_hash = KECCAK_EMPTY;
-            }
+            account.set_code_rehash_slow(None);
         }
     }
 
