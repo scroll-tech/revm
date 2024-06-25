@@ -33,7 +33,6 @@ pub fn load_accounts<SPEC: Spec, EXT, DB: Database>(
     let l1_block_info =
         crate::scroll::L1BlockInfo::try_fetch(&mut context.evm.inner.db, SPEC::SPEC_ID)
             .map_err(EVMError::Database)?;
-    println!("L1 block info: {:?}", l1_block_info);
     context.evm.inner.l1_block_info = Some(l1_block_info);
 
     mainnet::load_accounts::<SPEC, EXT, DB>(context)

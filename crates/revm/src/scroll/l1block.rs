@@ -118,7 +118,6 @@ impl L1BlockInfo {
         } else {
             self.calculate_tx_l1_cost_curie(input, spec_id)
         };
-        println!("l1fee: {:?}", l1fee);
         l1fee
     }
 }
