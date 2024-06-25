@@ -30,8 +30,10 @@ pub fn scroll_handle_register<DB: Database, EXT>(handler: &mut EvmHandler<'_, EX
 pub fn load_accounts<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
 ) -> Result<(), EVMError<DB::Error>> {
-    let l1_block_info = crate::scroll::L1BlockInfo::try_fetch(&mut context.evm.inner.db)
-        .map_err(EVMError::Database)?;
+    let l1_block_info =
+        crate::scroll::L1BlockInfo::try_fetch(&mut context.evm.inner.db, SPEC::SPEC_ID)
+            .map_err(EVMError::Database)?;
+    println!("L1 block info: {:?}", l1_block_info);
     context.evm.inner.l1_block_info = Some(l1_block_info);
 
     mainnet::load_accounts::<SPEC, EXT, DB>(context)
@@ -66,7 +68,7 @@ pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
             .l1_block_info
             .as_ref()
             .expect("L1BlockInfo should be loaded")
-            .calculate_tx_l1_cost(rlp_bytes);
+            .calculate_tx_l1_cost(rlp_bytes, SPEC::SPEC_ID);
         if tx_l1_cost.gt(&caller_account.info.balance) {
             return Err(EVMError::Transaction(
                 InvalidTransaction::LackOfFundForMaxFee {
@@ -120,7 +122,7 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
             ));
         };
 
-        let l1_cost = l1_block_info.calculate_tx_l1_cost(rlp_bytes);
+        let l1_cost = l1_block_info.calculate_tx_l1_cost(rlp_bytes, SPEC::SPEC_ID);
 
         coinbase_account.mark_touch();
         coinbase_account.info.balance = coinbase_account

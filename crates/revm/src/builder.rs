@@ -39,7 +39,7 @@ impl<'a> Default for EvmBuilder<'a, SetGenericStage, (), EmptyDB> {
 
             } else if #[cfg(all(feature = "scroll-default-handler",
                 not(feature = "negate-scroll-default-handler")))] {
-                    let mut handler_cfg = HandlerCfg::new(SpecId::BERNOULLI);
+                    let mut handler_cfg = HandlerCfg::new(SpecId::CURIE);
                     // set is_scroll to true by default.
                     handler_cfg.is_scroll = true;
 

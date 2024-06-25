@@ -48,7 +48,7 @@ pub fn gasprice<H: Host + ?Sized>(interpreter: &mut Interpreter, host: &mut H) {
 /// EIP-3198: BASEFEE opcode
 pub fn basefee<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     #[cfg(feature = "scroll")]
-    if SPEC::enabled(BERNOULLI) {
+    if !SPEC::enabled(CURIE) {
         interpreter.instruction_result = crate::InstructionResult::NotActivated;
         return;
     }
@@ -64,6 +64,14 @@ pub fn origin<H: Host + ?Sized>(interpreter: &mut Interpreter, host: &mut H) {
 
 // EIP-4844: Shard Blob Transactions
 pub fn blob_hash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "scroll")] {
+            check!(interpreter, CURIE);
+        } else {
+            check!(interpreter, CANCUN);
+        }
+    }
+
     check!(interpreter, CANCUN);
     gas!(interpreter, gas::VERYLOW);
     pop_top!(interpreter, index);
@@ -76,7 +84,14 @@ pub fn blob_hash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
 
 /// EIP-7516: BLOBBASEFEE opcode
 pub fn blob_basefee<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
-    check!(interpreter, CANCUN);
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "scroll")] {
+            check!(interpreter, CURIE);
+        } else {
+            check!(interpreter, CANCUN);
+        }
+    }
+
     gas!(interpreter, gas::BASE);
     push!(
         interpreter,

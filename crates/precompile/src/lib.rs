@@ -298,7 +298,7 @@ impl PrecompileSpecId {
             #[cfg(feature = "optimism")]
             ECOTONE => Self::CANCUN,
             #[cfg(feature = "scroll")]
-            BERNOULLI => Self::BERNOULLI,
+            BERNOULLI | CURIE => Self::BERNOULLI,
         }
     }
 }

@@ -231,7 +231,14 @@ pub fn sstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
 /// EIP-1153: Transient storage opcodes
 /// Store value to transient storage
 pub fn tstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
-    check!(interpreter, CANCUN);
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "scroll")] {
+            check!(interpreter, CURIE);
+        } else {
+            check!(interpreter, CANCUN);
+        }
+    }
+
     require_non_staticcall!(interpreter);
     gas!(interpreter, gas::WARM_STORAGE_READ_COST);
 
@@ -243,7 +250,14 @@ pub fn tstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
 /// EIP-1153: Transient storage opcodes
 /// Load value from transient storage
 pub fn tload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
-    check!(interpreter, CANCUN);
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "scroll")] {
+            check!(interpreter, CURIE);
+        } else {
+            check!(interpreter, CANCUN);
+        }
+    }
+
     gas!(interpreter, gas::WARM_STORAGE_READ_COST);
 
     pop_top!(interpreter, index);
