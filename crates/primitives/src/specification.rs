@@ -341,6 +341,7 @@ macro_rules! spec_to_generic {
                 use $crate::BernoulliSpec as SPEC;
                 $e
             }
+            #[cfg(feature = "scroll")]
             $crate::SpecId::CURIE => {
                 use $crate::CurieSpec as SPEC;
                 $e
