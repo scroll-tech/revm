@@ -94,8 +94,9 @@ pub enum SpecId {
     MERGE = 15,
     SHANGHAI = 16,
     BERNOULLI = 17,
-    CANCUN = 18,
-    PRAGUE = 19,
+    CURIE = 18,
+    CANCUN = 19,
+    PRAGUE = 20,
     #[default]
     LATEST = u8::MAX,
 }
@@ -185,6 +186,8 @@ impl From<SpecId> for &'static str {
             SpecId::ECOTONE => "Ecotone",
             #[cfg(feature = "scroll")]
             SpecId::BERNOULLI => "Bernoulli",
+            #[cfg(feature = "scroll")]
+            SpecId::CURIE => "Curie",
             SpecId::LATEST => "Latest",
         }
     }
@@ -247,6 +250,8 @@ spec!(ECOTONE, EcotoneSpec);
 // Scroll Hardforks
 #[cfg(feature = "scroll")]
 spec!(BERNOULLI, BernoulliSpec);
+#[cfg(feature = "scroll")]
+spec!(CURIE, CurieSpec);
 
 #[macro_export]
 macro_rules! spec_to_generic {
@@ -336,6 +341,10 @@ macro_rules! spec_to_generic {
                 use $crate::BernoulliSpec as SPEC;
                 $e
             }
+            $crate::SpecId::CURIE => {
+                use $crate::CurieSpec as SPEC;
+                $e
+            }
         }
     }};
 }
@@ -374,6 +383,8 @@ mod tests {
         #[cfg(feature = "scroll")]
         spec_to_generic!(BERNOULLI, assert_eq!(SPEC::SPEC_ID, BERNOULLI));
         spec_to_generic!(CANCUN, assert_eq!(SPEC::SPEC_ID, CANCUN));
+        #[cfg(feature = "scroll")]
+        spec_to_generic!(CURIE, assert_eq!(SPEC::SPEC_ID, CURIE));
         spec_to_generic!(PRAGUE, assert_eq!(SPEC::SPEC_ID, PRAGUE));
         spec_to_generic!(LATEST, assert_eq!(SPEC::SPEC_ID, LATEST));
     }

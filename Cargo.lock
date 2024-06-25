@@ -3039,6 +3039,7 @@ name = "revm-interpreter"
 version = "5.0.0"
 dependencies = [
  "bincode",
+ "cfg-if",
  "paste",
  "phf",
  "revm-primitives",

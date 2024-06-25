@@ -36,7 +36,14 @@ pub fn msize<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
 
 // EIP-5656: MCOPY - Memory copying instruction
 pub fn mcopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, _host: &mut H) {
-    check!(interpreter, CANCUN);
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "scroll")] {
+            check!(interpreter, CURIE);
+        } else {
+            check!(interpreter, CANCUN);
+        }
+    }
+
     pop!(interpreter, dst, src, len);
 
     // into usize or fail
