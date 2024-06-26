@@ -1683,28 +1683,6 @@ dependencies = [
 
 [[package]]
 name = "halo2curves"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6b1142bd1059aacde1b477e0c80c142910f1ceae67fc619311d6a17428007ab"
-dependencies = [
- "blake2b_simd",
- "ff",
- "group",
- "lazy_static",
- "num-bigint",
- "num-traits",
- "pasta_curves",
- "paste",
- "rand",
- "rand_core",
- "serde",
- "serde_arrays",
- "static_assertions",
- "subtle",
-]
-
-[[package]]
-name = "halo2curves"
 version = "0.3.3"
 source = "git+https://github.com/scroll-tech/halo2curves.git?branch=feat/sp1#acae565b82093989f112557ab0f59f3d53a4d83a"
 dependencies = [
@@ -2701,11 +2679,12 @@ checksum = "7170ef9988bc169ba16dd36a7fa041e5c4cbeb6a35b76d4c03daded371eae7c0"
 [[package]]
 name = "poseidon-base"
 version = "0.1.0"
-source = "git+https://github.com/scroll-tech/poseidon-circuit.git?branch=main#1133859759f9a6abe0707a27f82ea79c17503f4a"
+source = "git+https://github.com/scroll-tech/poseidon-circuit.git?branch=feat/sp1#cb43e4bb400e9e0b30776abd02b04fce9e12a2fb"
 dependencies = [
  "bitvec",
- "halo2curves 0.1.0",
+ "halo2curves",
  "lazy_static",
+ "subtle",
 ]
 
 [[package]]
@@ -3096,7 +3075,7 @@ dependencies = [
  "derive_more",
  "dyn-clone",
  "enumn",
- "halo2curves 0.3.3",
+ "halo2curves",
  "hashbrown",
  "hex",
  "once_cell",
@@ -3512,15 +3491,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c9f6e76df036c77cd94996771fb40db98187f096dd0b9af39c6c6e452ba966a"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde_arrays"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38636132857f68ec3d5f3eb121166d2af33cb55174c4d5ff645db6165cbef0fd"
-dependencies = [
- "serde",
 ]
 
 [[package]]

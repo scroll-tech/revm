@@ -48,7 +48,7 @@ serde = { version = "1.0", default-features = false, features = [
 
 # scroll
 halo2curves = { git = "https://github.com/scroll-tech/halo2curves.git", branch = "feat/sp1", optional = true }
-poseidon-base = { git = "https://github.com/scroll-tech/poseidon-circuit.git", branch = "main", optional = true }
+poseidon-base = { git = "https://github.com/scroll-tech/poseidon-circuit.git", branch = "feat/sp1", optional = true }
 
 [build-dependencies]
 hex = { version = "0.4", default-features = false }
