@@ -1406,8 +1406,7 @@ dependencies = [
 [[package]]
 name = "ff"
 version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
+source = "git+https://github.com/scroll-tech/ff?branch=feat/sp1#244b1098f6be1d19c5fd3f0ec60117ac2940e6ca"
 dependencies = [
  "bitvec",
  "rand_core",
@@ -1700,6 +1699,24 @@ dependencies = [
  "rand_core",
  "serde",
  "serde_arrays",
+ "static_assertions",
+ "subtle",
+]
+
+[[package]]
+name = "halo2curves"
+version = "0.3.3"
+source = "git+https://github.com/scroll-tech/halo2curves.git?branch=feat/sp1#acae565b82093989f112557ab0f59f3d53a4d83a"
+dependencies = [
+ "ff",
+ "group",
+ "lazy_static",
+ "num-bigint",
+ "num-traits",
+ "pasta_curves",
+ "paste",
+ "rand",
+ "rand_core",
  "static_assertions",
  "subtle",
 ]
@@ -2687,7 +2704,7 @@ version = "0.1.0"
 source = "git+https://github.com/scroll-tech/poseidon-circuit.git?branch=main#1133859759f9a6abe0707a27f82ea79c17503f4a"
 dependencies = [
  "bitvec",
- "halo2curves",
+ "halo2curves 0.1.0",
  "lazy_static",
 ]
 
@@ -3079,7 +3096,7 @@ dependencies = [
  "derive_more",
  "dyn-clone",
  "enumn",
- "halo2curves",
+ "halo2curves 0.3.3",
  "hashbrown",
  "hex",
  "once_cell",
