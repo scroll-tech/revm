@@ -531,7 +531,6 @@ mod scroll_tests {
         assert!(!BernoulliSpec::enabled(SpecId::LATEST));
     }
 
-
     #[test]
     fn test_curie_post_merge_hardforks() {
         assert!(CurieSpec::enabled(SpecId::MERGE));
