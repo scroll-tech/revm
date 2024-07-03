@@ -9,13 +9,19 @@ use revm_primitives::PrecompileError;
 pub const SHA256: PrecompileWithAddress =
     PrecompileWithAddress(crate::u64_to_address(2), Precompile::Standard(sha256_run));
 
+#[cfg(feature = "scroll")]
+pub const SHA256_PRE_BERNOULLI: PrecompileWithAddress = PrecompileWithAddress(
+    crate::u64_to_address(2),
+    Precompile::Standard(|_input: &Bytes, _gas_limit: u64| Err(PrecompileError::NotImplemented)),
+);
+
 pub const RIPEMD160: PrecompileWithAddress = PrecompileWithAddress(
     crate::u64_to_address(3),
     Precompile::Standard(ripemd160_run),
 );
 
 #[cfg(feature = "scroll")]
-pub const RIPEMD160_BERNOULLI: PrecompileWithAddress = PrecompileWithAddress(
+pub const RIPEMD160_PRE_BERNOULLI: PrecompileWithAddress = PrecompileWithAddress(
     crate::u64_to_address(3),
     Precompile::Standard(|_input: &Bytes, _gas_limit: u64| Err(PrecompileError::NotImplemented)),
 );
