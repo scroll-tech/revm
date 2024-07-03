@@ -516,10 +516,11 @@ mod scroll_tests {
     #[test]
     fn test_pre_bernoulli_post_merge_hardforks() {
         assert!(PreBernoulliSpec::enabled(SpecId::MERGE));
-        assert!(BernoulliSpec::enabled(SpecId::SHANGHAI));
-        assert!(!BernoulliSpec::enabled(SpecId::BERNOULLI));
-        assert!(!BernoulliSpec::enabled(SpecId::CANCUN));
-        assert!(!BernoulliSpec::enabled(SpecId::LATEST));
+        assert!(PreBernoulliSpec::enabled(SpecId::SHANGHAI));
+        assert!(!PreBernoulliSpec::enabled(SpecId::BERNOULLI));
+        assert!(!PreBernoulliSpec::enabled(SpecId::CURIE));
+        assert!(!PreBernoulliSpec::enabled(SpecId::CANCUN));
+        assert!(!PreBernoulliSpec::enabled(SpecId::LATEST));
     }
 
     #[test]
@@ -527,6 +528,7 @@ mod scroll_tests {
         assert!(BernoulliSpec::enabled(SpecId::MERGE));
         assert!(BernoulliSpec::enabled(SpecId::SHANGHAI));
         assert!(BernoulliSpec::enabled(SpecId::PRE_BERNOULLI));
+        assert!(!BernoulliSpec::enabled(SpecId::CURIE));
         assert!(!BernoulliSpec::enabled(SpecId::CANCUN));
         assert!(!BernoulliSpec::enabled(SpecId::LATEST));
     }
