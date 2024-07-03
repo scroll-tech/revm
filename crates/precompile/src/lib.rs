@@ -65,6 +65,8 @@ impl Precompiles {
             PrecompileSpecId::ISTANBUL => Self::istanbul(),
             PrecompileSpecId::BERLIN => Self::berlin(),
             #[cfg(feature = "scroll")]
+            PrecompileSpecId::PRE_BERNOULLI => Self::pre_bernoulli(),
+            #[cfg(feature = "scroll")]
             PrecompileSpecId::BERNOULLI => Self::bernoulli(),
             PrecompileSpecId::CANCUN => Self::cancun(),
             PrecompileSpecId::PRAGUE => Self::prague(),
@@ -179,20 +181,33 @@ impl Precompiles {
 
     /// Returns precompiles for Scroll
     #[cfg(feature = "scroll")]
-    pub fn bernoulli() -> &'static Self {
+    pub fn pre_bernoulli() -> &'static Self {
         static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Precompiles::default();
             precompiles.extend([
-                secp256k1::ECRECOVER,      // 0x01
-                hash::SHA256,              // 0x02
-                hash::RIPEMD160_BERNOULLI, // 0x03
-                identity::FUN,             // 0x04
-                modexp::BERNOULLI,         // 0x05
-                bn128::add::ISTANBUL,      // 0x06
-                bn128::mul::ISTANBUL,      // 0x07
-                bn128::pair::BERNOULLI,    // 0x08
-                blake2::BERNOULLI,         // 0x09
+                secp256k1::ECRECOVER,          // 0x01
+                hash::SHA256_PRE_BERNOULLI,    // 0x02
+                hash::RIPEMD160_PRE_BERNOULLI, // 0x03
+                identity::FUN,                 // 0x04
+                modexp::BERNOULLI,             // 0x05
+                bn128::add::ISTANBUL,          // 0x06
+                bn128::mul::ISTANBUL,          // 0x07
+                bn128::pair::BERNOULLI,        // 0x08
+                blake2::BERNOULLI,             // 0x09
+            ]);
+            Box::new(precompiles)
+        })
+    }
+
+    /// Returns precompiles for Scroll
+    #[cfg(feature = "scroll")]
+    pub fn bernoulli() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let mut precompiles = Self::pre_bernoulli().clone();
+            precompiles.extend([
+                hash::SHA256, // 0x02
             ]);
             Box::new(precompiles)
         })
@@ -266,12 +281,15 @@ impl From<PrecompileWithAddress> for (Address, Precompile) {
     }
 }
 
+#[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub enum PrecompileSpecId {
     HOMESTEAD,
     BYZANTIUM,
     ISTANBUL,
     BERLIN,
+    #[cfg(feature = "scroll")]
+    PRE_BERNOULLI,
     #[cfg(feature = "scroll")]
     BERNOULLI,
     CANCUN,
@@ -297,6 +315,8 @@ impl PrecompileSpecId {
             BEDROCK | REGOLITH | CANYON => Self::BERLIN,
             #[cfg(feature = "optimism")]
             ECOTONE => Self::CANCUN,
+            #[cfg(feature = "scroll")]
+            PRE_BERNOULLI => Self::PRE_BERNOULLI,
             #[cfg(feature = "scroll")]
             BERNOULLI | CURIE => Self::BERNOULLI,
         }

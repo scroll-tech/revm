@@ -93,10 +93,20 @@ pub enum SpecId {
     GRAY_GLACIER = 14,
     MERGE = 15,
     SHANGHAI = 16,
-    BERNOULLI = 17,
-    CURIE = 18,
-    CANCUN = 19,
-    PRAGUE = 20,
+    /// The scroll network initially started with Shanghai with some features disabled.
+    PRE_BERNOULLI = 17,
+    /// Bernoulli update introduces:
+    ///   - Enable `SHA-256` precompile.
+    ///   - Use `EIP-4844` blobs for Data Availability (not part of layer2).
+    BERNOULLI = 18,
+    /// Curie update introduces:
+    ///   - Support `EIP-1559` transactions.
+    ///   - Support the `BASEFEE`, `MCOPY`, `TLOAD`, `TSTORE` opcodes.
+    /// Although the Curie update include new opcodes in Cancun, the most important change
+    /// `EIP-4844` is not included. So we sort it before Cancun.
+    CURIE = 19,
+    CANCUN = 20,
+    PRAGUE = 21,
     #[default]
     LATEST = u8::MAX,
 }
@@ -148,7 +158,11 @@ impl From<&str> for SpecId {
             #[cfg(feature = "optimism")]
             "Ecotone" => SpecId::ECOTONE,
             #[cfg(feature = "scroll")]
+            "PreBernoulli" => SpecId::PRE_BERNOULLI,
+            #[cfg(feature = "scroll")]
             "Bernoulli" => SpecId::BERNOULLI,
+            #[cfg(feature = "scroll")]
+            "Curie" => SpecId::CURIE,
             _ => Self::LATEST,
         }
     }
@@ -184,6 +198,8 @@ impl From<SpecId> for &'static str {
             SpecId::CANYON => "Canyon",
             #[cfg(feature = "optimism")]
             SpecId::ECOTONE => "Ecotone",
+            #[cfg(feature = "scroll")]
+            SpecId::PRE_BERNOULLI => "PreBernoulli",
             #[cfg(feature = "scroll")]
             SpecId::BERNOULLI => "Bernoulli",
             #[cfg(feature = "scroll")]
@@ -248,6 +264,8 @@ spec!(CANYON, CanyonSpec);
 spec!(ECOTONE, EcotoneSpec);
 
 // Scroll Hardforks
+#[cfg(feature = "scroll")]
+spec!(PRE_BERNOULLI, PreBernoulliSpec);
 #[cfg(feature = "scroll")]
 spec!(BERNOULLI, BernoulliSpec);
 #[cfg(feature = "scroll")]
@@ -337,6 +355,11 @@ macro_rules! spec_to_generic {
                 $e
             }
             #[cfg(feature = "scroll")]
+            $crate::SpecId::PRE_BERNOULLI => {
+                use $crate::PreBernoulliSpec as SPEC;
+                $e
+            }
+            #[cfg(feature = "scroll")]
             $crate::SpecId::BERNOULLI => {
                 use $crate::BernoulliSpec as SPEC;
                 $e
@@ -381,6 +404,8 @@ mod tests {
         spec_to_generic!(SHANGHAI, assert_eq!(SPEC::SPEC_ID, SHANGHAI));
         #[cfg(feature = "optimism")]
         spec_to_generic!(CANYON, assert_eq!(SPEC::SPEC_ID, CANYON));
+        #[cfg(feature = "scroll")]
+        spec_to_generic!(PRE_BERNOULLI, assert_eq!(SPEC::SPEC_ID, PRE_BERNOULLI));
         #[cfg(feature = "scroll")]
         spec_to_generic!(BERNOULLI, assert_eq!(SPEC::SPEC_ID, BERNOULLI));
         spec_to_generic!(CANCUN, assert_eq!(SPEC::SPEC_ID, CANCUN));
@@ -489,10 +514,32 @@ mod scroll_tests {
     use super::*;
 
     #[test]
+    fn test_pre_bernoulli_post_merge_hardforks() {
+        assert!(PreBernoulliSpec::enabled(SpecId::MERGE));
+        assert!(PreBernoulliSpec::enabled(SpecId::SHANGHAI));
+        assert!(!PreBernoulliSpec::enabled(SpecId::BERNOULLI));
+        assert!(!PreBernoulliSpec::enabled(SpecId::CURIE));
+        assert!(!PreBernoulliSpec::enabled(SpecId::CANCUN));
+        assert!(!PreBernoulliSpec::enabled(SpecId::LATEST));
+    }
+
+    #[test]
     fn test_bernoulli_post_merge_hardforks() {
         assert!(BernoulliSpec::enabled(SpecId::MERGE));
         assert!(BernoulliSpec::enabled(SpecId::SHANGHAI));
+        assert!(BernoulliSpec::enabled(SpecId::PRE_BERNOULLI));
+        assert!(!BernoulliSpec::enabled(SpecId::CURIE));
         assert!(!BernoulliSpec::enabled(SpecId::CANCUN));
         assert!(!BernoulliSpec::enabled(SpecId::LATEST));
+    }
+
+    #[test]
+    fn test_curie_post_merge_hardforks() {
+        assert!(CurieSpec::enabled(SpecId::MERGE));
+        assert!(CurieSpec::enabled(SpecId::SHANGHAI));
+        assert!(CurieSpec::enabled(SpecId::PRE_BERNOULLI));
+        assert!(CurieSpec::enabled(SpecId::BERNOULLI));
+        assert!(!CurieSpec::enabled(SpecId::CANCUN));
+        assert!(!CurieSpec::enabled(SpecId::LATEST));
     }
 }

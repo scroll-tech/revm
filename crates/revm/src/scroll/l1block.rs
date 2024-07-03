@@ -93,7 +93,7 @@ impl L1BlockInfo {
         }
     }
 
-    fn calculate_tx_l1_cost_bernoulli(&self, input: &[u8], spec_id: SpecId) -> U256 {
+    fn calculate_tx_l1_cost_pre_bernoulli(&self, input: &[u8], spec_id: SpecId) -> U256 {
         let tx_l1_gas = self.data_gas(input, spec_id);
         tx_l1_gas
             .saturating_mul(self.l1_base_fee)
@@ -113,11 +113,10 @@ impl L1BlockInfo {
 
     /// Calculate the gas cost of a transaction based on L1 block data posted on L2.
     pub fn calculate_tx_l1_cost(&self, input: &[u8], spec_id: SpecId) -> U256 {
-        let l1fee = if !spec_id.is_enabled_in(SpecId::CURIE) {
-            self.calculate_tx_l1_cost_bernoulli(input, spec_id)
+        if !spec_id.is_enabled_in(SpecId::CURIE) {
+            self.calculate_tx_l1_cost_pre_bernoulli(input, spec_id)
         } else {
             self.calculate_tx_l1_cost_curie(input, spec_id)
-        };
-        l1fee
+        }
     }
 }
