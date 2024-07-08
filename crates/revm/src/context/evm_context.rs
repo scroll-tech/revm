@@ -308,7 +308,7 @@ mod tests {
     use crate::{
         db::{CacheDB, EmptyDB},
         primitives::{address, Bytecode},
-        Frame, JournalEntry,
+        Frame,
     };
     use std::boxed::Box;
     use test_utils::*;
@@ -352,7 +352,7 @@ mod tests {
             result.interpreter_result().result,
             InstructionResult::OutOfFunds
         );
-        let checkpointed = vec![vec![JournalEntry::AccountLoaded { address: contract }]];
+        let checkpointed = vec![vec![]];
         assert_eq!(evm_context.journaled_state.journal, checkpointed);
         assert_eq!(evm_context.journaled_state.depth, 0);
     }
