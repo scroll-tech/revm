@@ -23,6 +23,8 @@ pub enum SpecName {
     Merge,
     Shanghai,
     Cancun,
+    Prague,
+    PragueEOF,
     #[serde(other)]
     Unknown,
 }
@@ -44,6 +46,8 @@ impl SpecName {
             Self::Merge => SpecId::MERGE,
             Self::Shanghai => SpecId::SHANGHAI,
             Self::Cancun => SpecId::CANCUN,
+            Self::Prague => SpecId::PRAGUE,
+            Self::PragueEOF => SpecId::PRAGUE_EOF,
             Self::ByzantiumToConstantinopleAt5 | Self::Constantinople => {
                 panic!("Overridden with PETERSBURG")
             }

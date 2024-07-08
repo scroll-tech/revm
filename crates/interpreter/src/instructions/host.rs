@@ -118,48 +118,19 @@ pub fn extcodecopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     // Note: this can't panic because we resized memory to fit.
     interpreter
         .shared_memory
-        .set_data(memory_offset, code_offset, len, &code.original_bytes());
+        .set_data(memory_offset, code_offset, len, &code);
 }
 
 #[cfg(not(feature = "scroll"))]
 pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
-    use revm_primitives::{BLOCKHASH_SERVE_WINDOW, BLOCKHASH_STORAGE_ADDRESS, BLOCK_HASH_HISTORY};
-
     gas!(interpreter, gas::BLOCKHASH);
     pop_top!(interpreter, number);
 
-    let block_number = host.env().block.number;
-
-    match block_number.checked_sub(*number) {
-        Some(diff) if !diff.is_zero() => {
-            let diff = as_usize_saturated!(diff);
-
-            // blockhash should push zero if number is same as current block number.
-            if SPEC::enabled(PRAGUE) && diff <= BLOCKHASH_SERVE_WINDOW {
-                let value = sload!(
-                    interpreter,
-                    host,
-                    BLOCKHASH_STORAGE_ADDRESS,
-                    number.wrapping_rem(U256::from(BLOCKHASH_SERVE_WINDOW))
-                );
-                *number = value;
-                return;
-            } else if diff <= BLOCK_HASH_HISTORY {
-                let Some(hash) = host.block_hash(*number) else {
-                    interpreter.instruction_result = InstructionResult::FatalExternalError;
-                    return;
-                };
-                *number = U256::from_be_bytes(hash.0);
-                return;
-            }
-        }
-        _ => {
-            // If blockhash is requested for the current block, the hash should be 0, so we fall
-            // through.
-        }
-    }
-
-    *number = U256::ZERO;
+    let Some(hash) = host.block_hash(*number) else {
+        interpreter.instruction_result = InstructionResult::FatalExternalError;
+        return;
+    };
+    *number = U256::from_be_bytes(hash.0);
 }
 
 #[cfg(feature = "scroll")]
@@ -195,12 +166,11 @@ pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
 
 pub fn sload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_top!(interpreter, index);
-    let value = sload!(
-        interpreter,
-        host,
-        interpreter.contract.target_address,
-        *index
-    );
+    let Some((value, is_cold)) = host.sload(interpreter.contract.target_address, *index) else {
+        interpreter.instruction_result = InstructionResult::FatalExternalError;
+        return;
+    };
+    gas!(interpreter, gas::sload_cost(SPEC::SPEC_ID, is_cold));
     *index = value;
 }
 
