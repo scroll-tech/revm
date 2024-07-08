@@ -162,13 +162,6 @@ impl<DB: Database> EvmContext<DB> {
             return return_result(InstructionResult::CallTooDeep);
         }
 
-        let (account, _) = self
-            .inner
-            .journaled_state
-            .load_code(inputs.bytecode_address, &mut self.inner.db)?;
-        let code_hash = account.info.code_hash();
-        let bytecode = account.info.code.clone().unwrap_or_default();
-
         // Create subroutine checkpoint
         let checkpoint = self.journaled_state.checkpoint();
 
@@ -193,6 +186,13 @@ impl<DB: Database> EvmContext<DB> {
             }
             _ => {}
         };
+
+        let (account, _) = self
+            .inner
+            .journaled_state
+            .load_code(inputs.bytecode_address, &mut self.inner.db)?;
+        let code_hash = account.info.code_hash();
+        let bytecode = account.info.code.clone().unwrap_or_default();
 
         if let Some(result) = self.call_precompile(inputs.bytecode_address, &inputs.input, gas) {
             if matches!(result.result, return_ok!()) {
