@@ -187,13 +187,6 @@ impl<DB: Database> EvmContext<DB> {
             _ => {}
         };
 
-        let (account, _) = self
-            .inner
-            .journaled_state
-            .load_code(inputs.bytecode_address, &mut self.inner.db)?;
-        let code_hash = account.info.code_hash();
-        let bytecode = account.info.code.clone().unwrap_or_default();
-
         if let Some(result) = self.call_precompile(inputs.bytecode_address, &inputs.input, gas) {
             if matches!(result.result, return_ok!()) {
                 self.journaled_state.checkpoint_commit();
@@ -204,18 +197,31 @@ impl<DB: Database> EvmContext<DB> {
                 result,
                 inputs.return_memory_offset.clone(),
             ))
-        } else if !bytecode.is_empty() {
-            let contract =
-                Contract::new_with_context(inputs.input.clone(), bytecode, Some(code_hash), inputs);
-            // Create interpreter and executes call and push new CallStackFrame.
-            Ok(FrameOrResult::new_call_frame(
-                inputs.return_memory_offset.clone(),
-                checkpoint,
-                Interpreter::new(contract, gas.limit(), inputs.is_static),
-            ))
         } else {
-            self.journaled_state.checkpoint_commit();
-            return_result(InstructionResult::Stop)
+            let (account, _) = self
+                .inner
+                .journaled_state
+                .load_code(inputs.bytecode_address, &mut self.inner.db)?;
+            let code_hash = account.info.code_hash();
+            let bytecode = account.info.code.clone().unwrap_or_default();
+
+            if !bytecode.is_empty() {
+                let contract = Contract::new_with_context(
+                    inputs.input.clone(),
+                    bytecode,
+                    Some(code_hash),
+                    inputs,
+                );
+                // Create interpreter and executes call and push new CallStackFrame.
+                Ok(FrameOrResult::new_call_frame(
+                    inputs.return_memory_offset.clone(),
+                    checkpoint,
+                    Interpreter::new(contract, gas.limit(), inputs.is_static),
+                ))
+            } else {
+                self.journaled_state.checkpoint_commit();
+                return_result(InstructionResult::Stop)
+            }
         }
     }
 }
