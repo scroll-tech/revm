@@ -5,19 +5,15 @@ mod constants;
 
 pub use calc::*;
 pub use constants::*;
-use revm_primitives::{Spec, SpecId::LONDON};
 
 /// Represents the state of gas during execution.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Gas {
     /// The initial gas limit. This is constant throughout execution.
     limit: u64,
     /// The remaining gas.
     remaining: u64,
-    /// The remaining gas, without memory expansion.
-    remaining_nomem: u64,
-    /// The **last** memory expansion cost.
-    memory: u64,
     /// Refunded gas. This is used only at the end of execution.
     refunded: i64,
 }
@@ -29,8 +25,16 @@ impl Gas {
         Self {
             limit,
             remaining: limit,
-            remaining_nomem: limit,
-            memory: 0,
+            refunded: 0,
+        }
+    }
+
+    /// Creates a new `Gas` struct with the given gas limit, but without any gas remaining.
+    #[inline]
+    pub const fn new_spent(limit: u64) -> Self {
+        Self {
+            limit,
+            remaining: 0,
             refunded: 0,
         }
     }
@@ -43,8 +47,11 @@ impl Gas {
 
     /// Returns the **last** memory expansion cost.
     #[inline]
+    #[deprecated = "memory expansion cost is not tracked anymore; \
+                    calculate it using `SharedMemory::current_expansion_cost` instead"]
+    #[doc(hidden)]
     pub const fn memory(&self) -> u64 {
-        self.memory
+        0
     }
 
     /// Returns the total amount of gas that was refunded.
@@ -75,8 +82,13 @@ impl Gas {
     /// Erases a gas cost from the totals.
     #[inline]
     pub fn erase_cost(&mut self, returned: u64) {
-        self.remaining_nomem += returned;
         self.remaining += returned;
+    }
+
+    /// Spends all remaining gas.
+    #[inline]
+    pub fn spend_all(&mut self) {
+        self.remaining = 0;
     }
 
     /// Records a refund value.
@@ -94,8 +106,8 @@ impl Gas {
     ///
     /// Related to EIP-3529: Reduction in refunds
     #[inline]
-    pub fn set_final_refund<SPEC: Spec>(&mut self) {
-        let max_refund_quotient = if SPEC::enabled(LONDON) { 5 } else { 2 };
+    pub fn set_final_refund(&mut self, is_london: bool) {
+        let max_refund_quotient = if is_london { 5 } else { 2 };
         self.refunded = (self.refunded() as u64).min(self.spent() / max_refund_quotient) as i64;
     }
 
@@ -108,31 +120,14 @@ impl Gas {
     /// Records an explicit cost.
     ///
     /// Returns `false` if the gas limit is exceeded.
-    #[inline(always)]
+    #[inline]
+    #[must_use]
     pub fn record_cost(&mut self, cost: u64) -> bool {
         let (remaining, overflow) = self.remaining.overflowing_sub(cost);
-        if overflow {
-            return false;
-        }
-
-        self.remaining_nomem -= cost;
-        self.remaining = remaining;
-        true
-    }
-
-    /// Records memory expansion gas.
-    ///
-    /// Used in [`resize_memory!`](crate::resize_memory).
-    #[inline]
-    pub fn record_memory(&mut self, gas_memory: u64) -> bool {
-        if gas_memory > self.memory {
-            let (remaining, overflow) = self.remaining_nomem.overflowing_sub(gas_memory);
-            if overflow {
-                return false;
-            }
-            self.memory = gas_memory;
+        let success = !overflow;
+        if success {
             self.remaining = remaining;
         }
-        true
+        success
     }
 }

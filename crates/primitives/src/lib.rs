@@ -1,9 +1,7 @@
 //! # revm-primitives
 //!
 //! EVM primitive types.
-#![warn(rustdoc::all)]
-#![warn(unreachable_pub, unused_crate_dependencies)]
-#![deny(unused_must_use, rust_2018_idioms)]
+#![cfg_attr(not(test), warn(unused_crate_dependencies))]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(not(feature = "std"))]
@@ -13,6 +11,7 @@ mod bytecode;
 mod constants;
 pub mod db;
 pub mod env;
+
 #[cfg(feature = "c-kzg")]
 pub mod kzg;
 pub mod precompile;
@@ -30,9 +29,7 @@ pub use constants::*;
 pub use env::*;
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "faster-hash")] {
-        pub use hashbrown::{hash_map, hash_set, HashMap, HashSet};
-    } else if #[cfg(feature = "std")] {
+    if #[cfg(all(not(feature = "hashbrown"), feature = "std"))] {
         pub use std::collections::{hash_map, hash_set, HashMap, HashSet};
         use hashbrown as _;
     } else {

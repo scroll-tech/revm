@@ -1,9 +1,7 @@
 //! # revm-precompile
 //!
 //! Implementations of EVM precompiled contracts.
-#![warn(rustdoc::all)]
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
-#![deny(unused_must_use, rust_2018_idioms)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[macro_use]
@@ -11,6 +9,8 @@
 extern crate alloc as std;
 
 pub mod blake2;
+#[cfg(feature = "blst")]
+pub mod bls12_381;
 pub mod bn128;
 pub mod hash;
 pub mod identity;
@@ -65,8 +65,11 @@ impl Precompiles {
             PrecompileSpecId::ISTANBUL => Self::istanbul(),
             PrecompileSpecId::BERLIN => Self::berlin(),
             #[cfg(feature = "scroll")]
+            PrecompileSpecId::PRE_BERNOULLI => Self::pre_bernoulli(),
+            #[cfg(feature = "scroll")]
             PrecompileSpecId::BERNOULLI => Self::bernoulli(),
             PrecompileSpecId::CANCUN => Self::cancun(),
+            PrecompileSpecId::PRAGUE => Self::prague(),
             PrecompileSpecId::LATEST => Self::latest(),
         }
     }
@@ -158,22 +161,53 @@ impl Precompiles {
         })
     }
 
+    /// Returns precompiles for Prague spec.
+    pub fn prague() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let precompiles = Self::cancun().clone();
+
+            // Don't include BLS12-381 precompiles in no_std builds.
+            #[cfg(feature = "blst")]
+            let precompiles = {
+                let mut precompiles = precompiles;
+                precompiles.extend(bls12_381::precompiles());
+                precompiles
+            };
+
+            Box::new(precompiles)
+        })
+    }
+
+    /// Returns precompiles for Scroll
+    #[cfg(feature = "scroll")]
+    pub fn pre_bernoulli() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let mut precompiles = Precompiles::default();
+            precompiles.extend([
+                secp256k1::ECRECOVER,          // 0x01
+                hash::SHA256_PRE_BERNOULLI,    // 0x02
+                hash::RIPEMD160_PRE_BERNOULLI, // 0x03
+                identity::FUN,                 // 0x04
+                modexp::BERNOULLI,             // 0x05
+                bn128::add::ISTANBUL,          // 0x06
+                bn128::mul::ISTANBUL,          // 0x07
+                bn128::pair::BERNOULLI,        // 0x08
+                blake2::BERNOULLI,             // 0x09
+            ]);
+            Box::new(precompiles)
+        })
+    }
+
     /// Returns precompiles for Scroll
     #[cfg(feature = "scroll")]
     pub fn bernoulli() -> &'static Self {
         static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
         INSTANCE.get_or_init(|| {
-            let mut precompiles = Precompiles::default();
+            let mut precompiles = Self::pre_bernoulli().clone();
             precompiles.extend([
-                secp256k1::ECRECOVER,      // 0x01
-                hash::SHA256,              // 0x02
-                hash::RIPEMD160_BERNOULLI, // 0x03
-                identity::FUN,             // 0x04
-                modexp::BERNOULLI,         // 0x05
-                bn128::add::ISTANBUL,      // 0x06
-                bn128::mul::ISTANBUL,      // 0x07
-                bn128::pair::BERNOULLI,    // 0x08
-                blake2::BERNOULLI,         // 0x09
+                hash::SHA256, // 0x02
             ]);
             Box::new(precompiles)
         })
@@ -181,7 +215,7 @@ impl Precompiles {
 
     /// Returns the precompiles for the latest spec.
     pub fn latest() -> &'static Self {
-        Self::cancun()
+        Self::prague()
     }
 
     /// Returns an iterator over the precompiles addresses.
@@ -247,6 +281,7 @@ impl From<PrecompileWithAddress> for (Address, Precompile) {
     }
 }
 
+#[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub enum PrecompileSpecId {
     HOMESTEAD,
@@ -254,8 +289,11 @@ pub enum PrecompileSpecId {
     ISTANBUL,
     BERLIN,
     #[cfg(feature = "scroll")]
+    PRE_BERNOULLI,
+    #[cfg(feature = "scroll")]
     BERNOULLI,
     CANCUN,
+    PRAGUE,
     LATEST,
 }
 
@@ -271,13 +309,16 @@ impl PrecompileSpecId {
             ISTANBUL | MUIR_GLACIER => Self::ISTANBUL,
             BERLIN | LONDON | ARROW_GLACIER | GRAY_GLACIER | MERGE | SHANGHAI => Self::BERLIN,
             CANCUN => Self::CANCUN,
+            PRAGUE => Self::PRAGUE,
             LATEST => Self::LATEST,
             #[cfg(feature = "optimism")]
             BEDROCK | REGOLITH | CANYON => Self::BERLIN,
             #[cfg(feature = "optimism")]
             ECOTONE => Self::CANCUN,
             #[cfg(feature = "scroll")]
-            BERNOULLI => Self::BERNOULLI,
+            PRE_BERNOULLI => Self::PRE_BERNOULLI,
+            #[cfg(feature = "scroll")]
+            BERNOULLI | CURIE => Self::BERNOULLI,
         }
     }
 }

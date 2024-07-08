@@ -82,8 +82,7 @@ pub fn last_frame_return<SPEC: Spec, EXT, DB: Database>(
     let remaining = gas.remaining();
     let refunded = gas.refunded();
     // Spend the gas limit. Gas is reimbursed when the tx returns successfully.
-    *gas = Gas::new(tx_gas_limit);
-    gas.record_cost(tx_gas_limit);
+    *gas = Gas::new_spent(tx_gas_limit);
 
     match instruction_result {
         return_ok!() => {
@@ -133,7 +132,7 @@ pub fn last_frame_return<SPEC: Spec, EXT, DB: Database>(
     // Prior to Regolith, deposit transactions did not receive gas refunds.
     let is_gas_refund_disabled = env.cfg.is_gas_refund_disabled() || (is_deposit && !is_regolith);
     if !is_gas_refund_disabled {
-        gas.set_final_refund::<SPEC>();
+        gas.set_final_refund(SPEC::SPEC_ID.is_enabled_in(SpecId::LONDON));
     }
     Ok(())
 }
