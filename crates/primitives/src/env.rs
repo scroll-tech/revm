@@ -135,13 +135,16 @@ impl Env {
 
         // Check if the transaction's chain id is correct
         if let Some(tx_chain_id) = self.tx.chain_id {
-            #[cfg(not(feature = "scroll"))]
-            if tx_chain_id != self.cfg.chain_id {
-                return Err(InvalidTransaction::InvalidChainId);
-            }
-            #[cfg(feature = "scroll")]
-            if !self.tx.scroll.is_l1_msg && tx_chain_id != self.cfg.chain_id {
-                return Err(InvalidTransaction::InvalidChainId);
+            cfg_if::cfg_if! {
+                if #[cfg(not(feature = "scroll"))] {
+                    if tx_chain_id != self.cfg.chain_id {
+                        return Err(InvalidTransaction::InvalidChainId);
+                    }
+                } else {
+                    if !self.tx.scroll.is_l1_msg && tx_chain_id != self.cfg.chain_id {
+                        return Err(InvalidTransaction::InvalidChainId);
+                    }
+                }
             }
         }
 
@@ -212,13 +215,16 @@ impl Env {
         // EIP-3607: Reject transactions from senders with deployed code
         // This EIP is introduced after london but there was no collision in past
         // so we can leave it enabled always
-        #[cfg(not(feature = "scroll"))]
-        if !self.cfg.is_eip3607_disabled() && account.info.code_hash != KECCAK_EMPTY {
-            return Err(InvalidTransaction::RejectCallerWithCode);
-        }
-        #[cfg(feature = "scroll")]
-        if !self.cfg.is_eip3607_disabled() && account.info.code_hash != POSEIDON_EMPTY {
-            return Err(InvalidTransaction::RejectCallerWithCode);
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                if !self.cfg.is_eip3607_disabled() && account.info.code_hash != KECCAK_EMPTY {
+                    return Err(InvalidTransaction::RejectCallerWithCode);
+                }
+            } else {
+                if !self.cfg.is_eip3607_disabled() && account.info.code_hash != POSEIDON_EMPTY {
+                    return Err(InvalidTransaction::RejectCallerWithCode);
+                }
+            }
         }
 
         // Check that the transaction's nonce is correct

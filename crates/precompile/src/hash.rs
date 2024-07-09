@@ -1,5 +1,6 @@
 use super::calc_linear_cost_u32;
 use crate::{Error, Precompile, PrecompileResult, PrecompileWithAddress};
+use core::convert::Into;
 use revm_primitives::{Bytes, PrecompileOutput};
 use sha2::Digest;
 
@@ -12,7 +13,9 @@ pub const SHA256: PrecompileWithAddress =
 #[cfg(feature = "scroll")]
 pub const SHA256_PRE_BERNOULLI: PrecompileWithAddress = PrecompileWithAddress(
     crate::u64_to_address(2),
-    Precompile::Standard(|_input: &Bytes, _gas_limit: u64| Err(PrecompileError::NotImplemented)),
+    Precompile::Standard(|_input: &Bytes, _gas_limit: u64| {
+        Err(PrecompileError::NotImplemented.into())
+    }),
 );
 
 pub const RIPEMD160: PrecompileWithAddress = PrecompileWithAddress(
@@ -23,7 +26,9 @@ pub const RIPEMD160: PrecompileWithAddress = PrecompileWithAddress(
 #[cfg(feature = "scroll")]
 pub const RIPEMD160_PRE_BERNOULLI: PrecompileWithAddress = PrecompileWithAddress(
     crate::u64_to_address(3),
-    Precompile::Standard(|_input: &Bytes, _gas_limit: u64| Err(PrecompileError::NotImplemented)),
+    Precompile::Standard(|_input: &Bytes, _gas_limit: u64| {
+        Err(PrecompileError::NotImplemented.into())
+    }),
 );
 
 /// See: <https://ethereum.github.io/yellowpaper/paper.pdf>

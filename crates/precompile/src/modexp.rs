@@ -46,13 +46,13 @@ pub fn bernoilli_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
 
     // modexp temporarily only accepts inputs of 32 bytes (256 bits) or less
     if base_len > SCROLL_LEN_LIMIT {
-        return Err(Error::ModexpBaseOverflow);
+        return Err(Error::ModexpBaseOverflow.into());
     }
     if exp_len > SCROLL_LEN_LIMIT {
-        return Err(Error::ModexpExpOverflow);
+        return Err(Error::ModexpExpOverflow.into());
     }
     if mod_len > SCROLL_LEN_LIMIT {
-        return Err(Error::ModexpModOverflow);
+        return Err(Error::ModexpModOverflow.into());
     }
 
     run_inner(input, gas_limit, 200, |a, b, c, d| {

@@ -284,7 +284,7 @@ spec!(BERNOULLI, BernoulliSpec);
 #[cfg(feature = "scroll")]
 spec!(CURIE, CurieSpec);
 
-#[cfg(not(all(feature = "optimism", feature = "scroll")))]
+#[cfg(not(any(feature = "optimism", feature = "scroll")))]
 #[macro_export]
 macro_rules! spec_to_generic {
     ($spec_id:expr, $e:expr) => {{

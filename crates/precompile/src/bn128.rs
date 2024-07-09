@@ -61,7 +61,7 @@ pub mod pair {
             super::ADDRESS,
             Precompile::Standard(|input, gas_limit| {
                 if input.len() > N_PAIRING_PER_OP * N_BYTES_PER_PAIR {
-                    return Err(crate::PrecompileError::NotImplemented);
+                    return Err(crate::PrecompileError::NotImplemented.into());
                 }
                 super::run_pair(
                     input,

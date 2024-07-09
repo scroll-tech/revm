@@ -47,10 +47,13 @@ impl<ExtDB: Default> Default for CacheDB<ExtDB> {
 impl<ExtDB> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
         let mut contracts = HashMap::new();
-        #[cfg(not(feature = "scroll"))]
-        contracts.insert(KECCAK_EMPTY, Bytecode::default());
-        #[cfg(feature = "scroll")]
-        contracts.insert(POSEIDON_EMPTY, Bytecode::default());
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                contracts.insert(KECCAK_EMPTY, Bytecode::default());
+            } else {
+                contracts.insert(POSEIDON_EMPTY, Bytecode::default());
+            }
+        }
         contracts.insert(B256::ZERO, Bytecode::default());
         Self {
             accounts: HashMap::new(),
@@ -69,18 +72,19 @@ impl<ExtDB> CacheDB<ExtDB> {
     pub fn insert_contract(&mut self, account: &mut AccountInfo) {
         if let Some(code) = &account.code {
             if !code.is_empty() {
-                #[cfg(not(feature = "scroll"))]
-                if account.code_hash == KECCAK_EMPTY {
-                    account.code_hash = code.hash_slow();
-                }
-                #[cfg(feature = "scroll")]
-                {
-                    account.code_size = code.len();
-                    if account.code_hash == POSEIDON_EMPTY {
-                        account.code_hash = code.poseidon_hash_slow();
-                    }
-                    if account.keccak_code_hash == KECCAK_EMPTY {
-                        account.keccak_code_hash = code.keccak_hash_slow();
+                cfg_if::cfg_if! {
+                    if #[cfg(not(feature = "scroll"))] {
+                        if account.code_hash == KECCAK_EMPTY {
+                            account.code_hash = code.hash_slow();
+                        }
+                    } else {
+                        account.code_size = code.len();
+                        if account.code_hash == POSEIDON_EMPTY {
+                            account.code_hash = code.poseidon_hash_slow();
+                        }
+                        if account.keccak_code_hash == KECCAK_EMPTY {
+                            account.keccak_code_hash = code.keccak_hash_slow();
+                        }
                     }
                 }
                 self.contracts
@@ -389,16 +393,15 @@ pub struct BenchmarkDB(pub Bytecode, B256, B256);
 
 impl BenchmarkDB {
     pub fn new_bytecode(bytecode: Bytecode) -> Self {
-        #[cfg(not(feature = "scroll"))]
-        {
-            let hash = bytecode.hash_slow();
-            Self(bytecode, hash)
-        }
-        #[cfg(feature = "scroll")]
-        {
-            let poseidon_hash = bytecode.poseidon_hash_slow();
-            let keccak_hash = bytecode.keccak_hash_slow();
-            Self(bytecode, poseidon_hash, keccak_hash)
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                let hash = bytecode.hash_slow();
+                Self(bytecode, hash)
+            } else {
+                let poseidon_hash = bytecode.poseidon_hash_slow();
+                let keccak_hash = bytecode.keccak_hash_slow();
+                Self(bytecode, poseidon_hash, keccak_hash)
+            }
         }
     }
 }
