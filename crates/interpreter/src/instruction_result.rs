@@ -20,6 +20,8 @@ pub enum InstructionResult {
     CreateInitCodeStartingEF00,
     /// Invalid EOF initcode,
     InvalidEOFInitCode,
+    /// ExtDelegateCall calling a non EOF contract.
+    InvalidExtDelegateCallTarget,
 
     // Actions
     CallOrCreate = 0x20,
@@ -33,7 +35,7 @@ pub enum InstructionResult {
     OpcodeNotFound,
     CallNotAllowedInsideStatic,
     StateChangeDuringStaticCall,
-    InvalidEFOpcode,
+    InvalidFEOpcode,
     InvalidJump,
     NotActivated,
     StackUnderflow,
@@ -59,8 +61,10 @@ pub enum InstructionResult {
     EOFFunctionStackOverflow,
     /// Aux data overflow, new aux data is larger tha u16 max size.
     EofAuxDataOverflow,
-    /// Aud data is smaller then already present data size.
+    /// Aux data is smaller then already present data size.
     EofAuxDataTooSmall,
+    /// EXT*CALL target address needs to be padded with 0s.
+    InvalidEXTCALLTarget,
 }
 
 impl From<SuccessReason> for InstructionResult {
@@ -85,7 +89,7 @@ impl From<HaltReason> for InstructionResult {
                 OutOfGasError::Precompile => Self::PrecompileOOG,
             },
             HaltReason::OpcodeNotFound => Self::OpcodeNotFound,
-            HaltReason::InvalidEFOpcode => Self::InvalidEFOpcode,
+            HaltReason::InvalidFEOpcode => Self::InvalidFEOpcode,
             HaltReason::InvalidJump => Self::InvalidJump,
             HaltReason::NotActivated => Self::NotActivated,
             HaltReason::StackOverflow => Self::StackOverflow,
@@ -130,6 +134,7 @@ macro_rules! return_revert {
             | InstructionResult::OutOfFunds
             | InstructionResult::InvalidEOFInitCode
             | InstructionResult::CreateInitCodeStartingEF00
+            | InstructionResult::InvalidExtDelegateCallTarget
     };
 }
 
@@ -144,7 +149,7 @@ macro_rules! return_error {
             | InstructionResult::OpcodeNotFound
             | InstructionResult::CallNotAllowedInsideStatic
             | InstructionResult::StateChangeDuringStaticCall
-            | InstructionResult::InvalidEFOpcode
+            | InstructionResult::InvalidFEOpcode
             | InstructionResult::InvalidJump
             | InstructionResult::NotActivated
             | InstructionResult::StackUnderflow
@@ -163,6 +168,7 @@ macro_rules! return_error {
             | InstructionResult::EOFFunctionStackOverflow
             | InstructionResult::EofAuxDataTooSmall
             | InstructionResult::EofAuxDataOverflow
+            | InstructionResult::InvalidEXTCALLTarget
     };
 }
 
@@ -195,6 +201,10 @@ pub enum InternalResult {
     InternalCallOrCreate,
     /// Internal CREATE/CREATE starts with 0xEF00
     CreateInitCodeStartingEF00,
+    /// Check for target address validity is only done inside subcall.
+    InvalidEXTCALLTarget,
+    /// Internal to ExtDelegateCall
+    InvalidExtDelegateCallTarget,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -276,7 +286,7 @@ impl From<InstructionResult> for SuccessOrHalt {
             InstructionResult::StateChangeDuringStaticCall => {
                 Self::Halt(HaltReason::StateChangeDuringStaticCall)
             }
-            InstructionResult::InvalidEFOpcode => Self::Halt(HaltReason::InvalidEFOpcode),
+            InstructionResult::InvalidFEOpcode => Self::Halt(HaltReason::InvalidFEOpcode),
             InstructionResult::InvalidJump => Self::Halt(HaltReason::InvalidJump),
             InstructionResult::NotActivated => Self::Halt(HaltReason::NotActivated),
             InstructionResult::StackUnderflow => Self::Halt(HaltReason::StackUnderflow),
@@ -303,6 +313,12 @@ impl From<InstructionResult> for SuccessOrHalt {
             InstructionResult::ReturnContract => Self::Success(SuccessReason::EofReturnContract),
             InstructionResult::EofAuxDataOverflow => Self::Halt(HaltReason::EofAuxDataOverflow),
             InstructionResult::EofAuxDataTooSmall => Self::Halt(HaltReason::EofAuxDataTooSmall),
+            InstructionResult::InvalidEXTCALLTarget => {
+                Self::Internal(InternalResult::InvalidEXTCALLTarget)
+            }
+            InstructionResult::InvalidExtDelegateCallTarget => {
+                Self::Internal(InternalResult::InvalidExtDelegateCallTarget)
+            }
         }
     }
 }
@@ -357,7 +373,7 @@ mod tests {
             InstructionResult::OpcodeNotFound,
             InstructionResult::CallNotAllowedInsideStatic,
             InstructionResult::StateChangeDuringStaticCall,
-            InstructionResult::InvalidEFOpcode,
+            InstructionResult::InvalidFEOpcode,
             InstructionResult::InvalidJump,
             InstructionResult::NotActivated,
             InstructionResult::StackUnderflow,

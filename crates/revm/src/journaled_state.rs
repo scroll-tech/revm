@@ -1,11 +1,12 @@
-use crate::interpreter::{InstructionResult, SelfDestructResult};
-use crate::primitives::{
-    db::Database, hash_map::Entry, Account, Address, Bytecode, EVMError, EvmState, EvmStorageSlot,
-    HashMap, HashSet, Log, SpecId::*, TransientStorage, PRECOMPILE3, U256,
+use crate::{
+    interpreter::{InstructionResult, LoadAccountResult, SStoreResult, SelfDestructResult},
+    primitives::{
+        db::Database, hash_map::Entry, Account, Address, Bytecode, EVMError, EvmState,
+        EvmStorageSlot, HashMap, HashSet, Log, SpecId, SpecId::*, TransientStorage, B256,
+        PRECOMPILE3, U256,
+    },
 };
 use core::mem;
-use revm_interpreter::primitives::SpecId;
-use revm_interpreter::{LoadAccountResult, SStoreResult};
 use std::vec::Vec;
 
 /// JournalState is internal EVM state that is used to contain state and track changes to that state.
@@ -142,10 +143,17 @@ impl JournaledState {
         self.depth as u64
     }
 
-    /// use it only if you know that acc is warm
-    /// Assume account is warm
+    /// Set code and its hash to the account.
+    ///
+    /// Note: Assume account is warm and that hash is calculated from code.
     #[inline]
-    pub fn set_code(&mut self, address: Address, code: Bytecode) {
+    pub fn set_code_with_hash(
+        &mut self,
+        address: Address,
+        code: Bytecode,
+        hash: B256,
+        #[cfg(feature = "scroll")] keccak_code_hash: B256,
+    ) {
         let account = self.state.get_mut(&address).unwrap();
         Self::touch_account(self.journal.last_mut().unwrap(), &address, account);
 
@@ -154,7 +162,29 @@ impl JournaledState {
             .unwrap()
             .push(JournalEntry::CodeChange { address });
 
-        account.info.set_code_rehash_slow(Some(code));
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                account.info.set_code_with_hash(code, hash)
+            } else {
+                account.info.set_code_with_hash(code, hash, keccak_code_hash)
+            }
+        }
+    }
+
+    /// use it only if you know that acc is warm
+    /// Assume account is warm
+    #[inline]
+    pub fn set_code(&mut self, address: Address, code: Bytecode) {
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                let hash = code.hash_slow();
+                self.set_code_with_hash(address, code, hash)
+            } else {
+                let hash = code.poseidon_hash_slow();
+                let keccak_code_hash = code.keccak_hash_slow();
+                self.set_code_with_hash(address, code, hash, keccak_code_hash)
+            }
+        }
     }
 
     #[inline]
@@ -528,7 +558,7 @@ impl JournaledState {
     pub fn initial_account_load<DB: Database>(
         &mut self,
         address: Address,
-        slots: &[U256],
+        storage_keys: impl IntoIterator<Item = U256>,
         db: &mut DB,
     ) -> Result<&mut Account, EVMError<DB::Error>> {
         // load or get account.
@@ -542,9 +572,11 @@ impl JournaledState {
             ),
         };
         // preload storages.
-        for slot in slots {
-            if let Entry::Vacant(entry) = account.storage.entry(*slot) {
-                let storage = db.storage(address, *slot).map_err(EVMError::Database)?;
+        for storage_key in storage_keys.into_iter() {
+            if let Entry::Vacant(entry) = account.storage.entry(storage_key) {
+                let storage = db
+                    .storage(address, storage_key)
+                    .map_err(EVMError::Database)?;
                 entry.insert(EvmStorageSlot::new(storage));
             }
         }

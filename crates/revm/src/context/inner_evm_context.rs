@@ -8,14 +8,14 @@ use crate::{
     },
     journaled_state::JournaledState,
     primitives::{
-        keccak256, Account, Address, AnalysisKind, Bytecode, Bytes, CreateScheme, EVMError, Env,
-        Eof, HashSet, Spec,
+        keccak256, AccessListItem, Account, Address, AnalysisKind, Bytecode, Bytes, CreateScheme,
+        EVMError, Env, Eof, HashSet, Spec,
         SpecId::{self, *},
         B256, EOF_MAGIC_BYTES, EOF_MAGIC_HASH, U256,
     },
     FrameOrResult, JournalCheckpoint, CALL_STACK_LIMIT,
 };
-use std::{boxed::Box, sync::Arc};
+use std::{boxed::Box, sync::Arc, vec::Vec};
 
 /// EVM contexts contains data that EVM needs for execution.
 #[derive(Debug)]
@@ -29,6 +29,8 @@ pub struct InnerEvmContext<DB: Database> {
     pub db: DB,
     /// Error that happened during execution.
     pub error: Result<(), EVMError<DB::Error>>,
+    /// EIP-7702 Authorization list of accounts that needs to be cleared.
+    pub valid_authorizations: Vec<Address>,
     /// Used as temporary value holder to store L1 block info.
     #[cfg(feature = "optimism")]
     pub l1_block_info: Option<crate::optimism::L1BlockInfo>,
@@ -47,6 +49,7 @@ where
             journaled_state: self.journaled_state.clone(),
             db: self.db.clone(),
             error: self.error.clone(),
+            valid_authorizations: self.valid_authorizations.clone(),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: self.l1_block_info.clone(),
         }
@@ -60,6 +63,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: JournaledState::new(SpecId::LATEST, HashSet::new()),
             db,
             error: Ok(()),
+            valid_authorizations: Default::default(),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: None,
         }
@@ -73,6 +77,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: JournaledState::new(SpecId::LATEST, HashSet::new()),
             db,
             error: Ok(()),
+            valid_authorizations: Default::default(),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: None,
         }
@@ -88,6 +93,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: self.journaled_state,
             db,
             error: Ok(()),
+            valid_authorizations: Default::default(),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: self.l1_block_info,
         }
@@ -104,9 +110,16 @@ impl<DB: Database> InnerEvmContext<DB> {
     /// Loading of accounts/storages is needed to make them warm.
     #[inline]
     pub fn load_access_list(&mut self) -> Result<(), EVMError<DB::Error>> {
-        for (address, slots) in self.env.tx.access_list.iter() {
-            self.journaled_state
-                .initial_account_load(*address, slots, &mut self.db)?;
+        for AccessListItem {
+            address,
+            storage_keys,
+        } in self.env.tx.access_list.iter()
+        {
+            self.journaled_state.initial_account_load(
+                *address,
+                storage_keys.iter().map(|i| U256::from_be_bytes(i.0)),
+                &mut self.db,
+            )?;
         }
         Ok(())
     }
@@ -125,7 +138,7 @@ impl<DB: Database> InnerEvmContext<DB> {
 
     /// Fetch block hash from database.
     #[inline]
-    pub fn block_hash(&mut self, number: U256) -> Result<B256, EVMError<DB::Error>> {
+    pub fn block_hash(&mut self, number: u64) -> Result<B256, EVMError<DB::Error>> {
         self.db.block_hash(number).map_err(EVMError::Database)
     }
 
@@ -357,6 +370,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             Bytecode::Eof(Arc::new(initcode.clone())),
             None,
             created_address,
+            None,
             inputs.caller,
             inputs.value,
         );
@@ -441,7 +455,8 @@ impl<DB: Database> InnerEvmContext<DB> {
         }
 
         // Prague EOF
-        if spec_id.is_enabled_in(PRAGUE_EOF) && inputs.init_code.get(..2) == Some(&[0xEF, 00]) {
+        if spec_id.is_enabled_in(PRAGUE_EOF) && inputs.init_code.get(..2) == Some(&EOF_MAGIC_BYTES)
+        {
             return return_error(InstructionResult::CreateInitCodeStartingEF00);
         }
 
@@ -495,6 +510,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             bytecode,
             Some(init_code_hash),
             created_address,
+            None,
             inputs.caller,
             inputs.value,
         );

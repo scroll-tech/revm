@@ -368,6 +368,23 @@ impl AccountInfo {
         self.code.take()
     }
 
+    /// Set code and its hash to the account.
+    pub fn set_code_with_hash(
+        &mut self,
+        code: Bytecode,
+        hash: B256,
+        #[cfg(feature = "scroll")] keccak_code_hash: B256,
+    ) {
+        #[cfg(feature = "scroll")]
+        {
+            self.code_size = code.len();
+            self.keccak_code_hash = keccak_code_hash;
+        }
+
+        self.code = Some(code);
+        self.code_hash = hash;
+    }
+
     /// Re-hash the code, set to empty if code is None,
     /// otherwise update the code hash.
     pub fn set_code_rehash_slow(&mut self, code: Option<Bytecode>) {
@@ -405,6 +422,34 @@ impl AccountInfo {
         AccountInfo {
             balance,
             ..Default::default()
+        }
+    }
+
+    pub fn from_bytecode(bytecode: Bytecode) -> Self {
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                let hash = bytecode.hash_slow();
+
+                AccountInfo {
+                    balance: U256::ZERO,
+                    nonce: 1,
+                    code: Some(bytecode),
+                    code_hash: hash,
+                }
+            } else {
+                let code_size = bytecode.len();
+                let code_hash = bytecode.poseidon_hash_slow();
+                let keccak_code_hash = bytecode.keccak_hash_slow();
+
+                AccountInfo {
+                    balance: U256::ZERO,
+                    nonce: 1,
+                    code_size,
+                    code: Some(bytecode),
+                    code_hash,
+                    keccak_code_hash,
+                }
+            }
         }
     }
 }
