@@ -1,12 +1,14 @@
 pub mod eip7702;
 pub mod handler_cfg;
 
-pub use eip7702::AuthorizationList;
+pub use eip7702::{
+    Authorization, AuthorizationList, RecoveredAuthorization, Signature, SignedAuthorization,
+};
 pub use handler_cfg::{CfgEnvWithHandlerCfg, EnvWithHandlerCfg, HandlerCfg};
 
 use crate::{
     calc_blob_gasprice, AccessListItem, Account, Address, Bytes, InvalidHeader, InvalidTransaction,
-    Spec, SpecId, B256, GAS_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE,
+    Spec, SpecId, B256, GAS_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_CODE_SIZE, MAX_INITCODE_SIZE,
     U256, VERSIONED_HASH_VERSION_KZG,
 };
 use alloy_primitives::TxKind;
@@ -296,7 +298,7 @@ pub struct CfgEnv {
     /// Chain ID is introduced EIP-155
     pub chain_id: u64,
     /// KZG Settings for point evaluation precompile. By default, this is loaded from the ethereum mainnet trusted setup.
-    #[cfg(feature = "c-kzg")]
+    #[cfg(any(feature = "c-kzg", feature = "kzg-rs"))]
     #[cfg_attr(feature = "serde", serde(skip))]
     pub kzg_settings: crate::kzg::EnvKzgSettings,
     /// Bytecode that is created with CREATE/CREATE2 is by default analysed and jumptable is created.
@@ -344,6 +346,12 @@ pub struct CfgEnv {
 }
 
 impl CfgEnv {
+    /// Returns max code size from [`Self::limit_contract_code_size`] if set
+    /// or default [`MAX_CODE_SIZE`] value.
+    pub fn max_code_size(&self) -> usize {
+        self.limit_contract_code_size.unwrap_or(MAX_CODE_SIZE)
+    }
+
     pub fn with_chain_id(mut self, chain_id: u64) -> Self {
         self.chain_id = chain_id;
         self
@@ -416,7 +424,7 @@ impl Default for CfgEnv {
             chain_id: 1,
             perf_analyse_created_bytecodes: AnalysisKind::default(),
             limit_contract_code_size: None,
-            #[cfg(feature = "c-kzg")]
+            #[cfg(any(feature = "c-kzg", feature = "kzg-rs"))]
             kzg_settings: crate::kzg::EnvKzgSettings::Default,
             #[cfg(feature = "memory_limit")]
             memory_limit: (1 << 32) - 1,
