@@ -66,17 +66,15 @@ impl Gas {
         self.limit - self.remaining
     }
 
-    #[doc(hidden)]
-    #[inline]
-    #[deprecated(note = "use `spent` instead")]
-    pub const fn spend(&self) -> u64 {
-        self.spent()
-    }
-
     /// Returns the amount of gas remaining.
     #[inline]
     pub const fn remaining(&self) -> u64 {
         self.remaining
+    }
+
+    /// Return remaining gas after subtracting 63/64 parts.
+    pub const fn remaining_63_of_64_parts(&self) -> u64 {
+        self.remaining - self.remaining / 64
     }
 
     /// Erases a gas cost from the totals.
@@ -121,7 +119,7 @@ impl Gas {
     ///
     /// Returns `false` if the gas limit is exceeded.
     #[inline]
-    #[must_use]
+    #[must_use = "prefer using `gas!` instead to return an out-of-gas error on failure"]
     pub fn record_cost(&mut self, cost: u64) -> bool {
         let (remaining, overflow) = self.remaining.overflowing_sub(cost);
         let success = !overflow;

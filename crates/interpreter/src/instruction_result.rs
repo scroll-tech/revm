@@ -16,6 +16,12 @@ pub enum InstructionResult {
     Revert = 0x10, // revert opcode
     CallTooDeep,
     OutOfFunds,
+    /// Revert if CREATE/CREATE2 starts with 0xEF00
+    CreateInitCodeStartingEF00,
+    /// Invalid EOF initcode,
+    InvalidEOFInitCode,
+    /// ExtDelegateCall calling a non EOF contract.
+    InvalidExtDelegateCallTarget,
 
     // Actions
     CallOrCreate = 0x20,
@@ -53,6 +59,12 @@ pub enum InstructionResult {
     EOFOpcodeDisabledInLegacy,
     /// EOF function stack overflow
     EOFFunctionStackOverflow,
+    /// Aux data overflow, new aux data is larger tha u16 max size.
+    EofAuxDataOverflow,
+    /// Aux data is smaller then already present data size.
+    EofAuxDataTooSmall,
+    /// EXT*CALL target address needs to be padded with 0s.
+    InvalidEXTCALLTarget,
 }
 
 impl From<SuccessReason> for InstructionResult {
@@ -61,6 +73,7 @@ impl From<SuccessReason> for InstructionResult {
             SuccessReason::Return => InstructionResult::Return,
             SuccessReason::Stop => InstructionResult::Stop,
             SuccessReason::SelfDestruct => InstructionResult::SelfDestruct,
+            SuccessReason::EofReturnContract => InstructionResult::ReturnContract,
         }
     }
 }
@@ -93,6 +106,9 @@ impl From<HaltReason> for InstructionResult {
             HaltReason::CallNotAllowedInsideStatic => Self::CallNotAllowedInsideStatic,
             HaltReason::OutOfFunds => Self::OutOfFunds,
             HaltReason::CallTooDeep => Self::CallTooDeep,
+            HaltReason::EofAuxDataOverflow => Self::EofAuxDataOverflow,
+            HaltReason::EofAuxDataTooSmall => Self::EofAuxDataTooSmall,
+            HaltReason::EOFFunctionStackOverflow => Self::EOFFunctionStackOverflow,
             #[cfg(feature = "optimism")]
             HaltReason::FailedDeposit => Self::FatalExternalError,
         }
@@ -113,7 +129,12 @@ macro_rules! return_ok {
 #[macro_export]
 macro_rules! return_revert {
     () => {
-        InstructionResult::Revert | InstructionResult::CallTooDeep | InstructionResult::OutOfFunds
+        InstructionResult::Revert
+            | InstructionResult::CallTooDeep
+            | InstructionResult::OutOfFunds
+            | InstructionResult::InvalidEOFInitCode
+            | InstructionResult::CreateInitCodeStartingEF00
+            | InstructionResult::InvalidExtDelegateCallTarget
     };
 }
 
@@ -145,6 +166,9 @@ macro_rules! return_error {
             | InstructionResult::ReturnContractInNotInitEOF
             | InstructionResult::EOFOpcodeDisabledInLegacy
             | InstructionResult::EOFFunctionStackOverflow
+            | InstructionResult::EofAuxDataTooSmall
+            | InstructionResult::EofAuxDataOverflow
+            | InstructionResult::InvalidEXTCALLTarget
     };
 }
 
@@ -168,16 +192,28 @@ impl InstructionResult {
     }
 }
 
+/// Internal result that are not ex
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum InternalResult {
+    /// Internal instruction that signals Interpreter should continue running.
+    InternalContinue,
+    /// Internal instruction that signals call or create.
+    InternalCallOrCreate,
+    /// Internal CREATE/CREATE starts with 0xEF00
+    CreateInitCodeStartingEF00,
+    /// Check for target address validity is only done inside subcall.
+    InvalidEXTCALLTarget,
+    /// Internal to ExtDelegateCall
+    InvalidExtDelegateCallTarget,
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum SuccessOrHalt {
     Success(SuccessReason),
     Revert,
     Halt(HaltReason),
     FatalExternalError,
-    /// Internal instruction that signals Interpreter should continue running.
-    InternalContinue,
-    /// Internal instruction that signals call or create.
-    InternalCallOrCreate,
+    Internal(InternalResult),
 }
 
 impl SuccessOrHalt {
@@ -221,12 +257,13 @@ impl SuccessOrHalt {
 impl From<InstructionResult> for SuccessOrHalt {
     fn from(result: InstructionResult) -> Self {
         match result {
-            InstructionResult::Continue => Self::InternalContinue, // used only in interpreter loop
+            InstructionResult::Continue => Self::Internal(InternalResult::InternalContinue), // used only in interpreter loop
             InstructionResult::Stop => Self::Success(SuccessReason::Stop),
             InstructionResult::Return => Self::Success(SuccessReason::Return),
             InstructionResult::SelfDestruct => Self::Success(SuccessReason::SelfDestruct),
             InstructionResult::Revert => Self::Revert,
-            InstructionResult::CallOrCreate => Self::InternalCallOrCreate, // used only in interpreter loop
+            InstructionResult::CreateInitCodeStartingEF00 => Self::Revert,
+            InstructionResult::CallOrCreate => Self::Internal(InternalResult::InternalCallOrCreate), // used only in interpreter loop
             InstructionResult::CallTooDeep => Self::Halt(HaltReason::CallTooDeep), // not gonna happen for first call
             InstructionResult::OutOfFunds => Self::Halt(HaltReason::OutOfFunds), // Check for first call is done separately.
             InstructionResult::OutOfGas => Self::Halt(HaltReason::OutOfGas(OutOfGasError::Basic)),
@@ -266,11 +303,21 @@ impl From<InstructionResult> for SuccessOrHalt {
             InstructionResult::CreateInitCodeSizeLimit => {
                 Self::Halt(HaltReason::CreateInitCodeSizeLimit)
             }
+            // TODO (EOF) add proper Revert subtype.
+            InstructionResult::InvalidEOFInitCode => Self::Revert,
             InstructionResult::FatalExternalError => Self::FatalExternalError,
             InstructionResult::EOFOpcodeDisabledInLegacy => Self::Halt(HaltReason::OpcodeNotFound),
-            InstructionResult::EOFFunctionStackOverflow => Self::FatalExternalError,
-            InstructionResult::ReturnContract => {
-                panic!("Unexpected EOF internal Return Contract")
+            InstructionResult::EOFFunctionStackOverflow => {
+                Self::Halt(HaltReason::EOFFunctionStackOverflow)
+            }
+            InstructionResult::ReturnContract => Self::Success(SuccessReason::EofReturnContract),
+            InstructionResult::EofAuxDataOverflow => Self::Halt(HaltReason::EofAuxDataOverflow),
+            InstructionResult::EofAuxDataTooSmall => Self::Halt(HaltReason::EofAuxDataTooSmall),
+            InstructionResult::InvalidEXTCALLTarget => {
+                Self::Internal(InternalResult::InvalidEXTCALLTarget)
+            }
+            InstructionResult::InvalidExtDelegateCallTarget => {
+                Self::Internal(InternalResult::InvalidExtDelegateCallTarget)
             }
         }
     }

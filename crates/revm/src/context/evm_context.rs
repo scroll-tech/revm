@@ -1,4 +1,5 @@
 use revm_interpreter::CallValue;
+use revm_precompile::PrecompileErrors;
 
 use super::inner_evm_context::InnerEvmContext;
 use crate::{
@@ -6,7 +7,7 @@ use crate::{
     interpreter::{
         return_ok, CallInputs, Contract, Gas, InstructionResult, Interpreter, InterpreterResult,
     },
-    primitives::{Address, Bytes, EVMError, Env, HashSet, U256},
+    primitives::{Address, Bytes, EVMError, Env, EOF_MAGIC_BYTES, U256},
     ContextPrecompiles, FrameOrResult, CALL_STACK_LIMIT,
 };
 use core::{
@@ -95,8 +96,7 @@ impl<DB: Database> EvmContext<DB> {
     #[inline]
     pub fn set_precompiles(&mut self, precompiles: ContextPrecompiles<DB>) {
         // set warm loaded addresses.
-        self.journaled_state.warm_preloaded_addresses =
-            precompiles.addresses().copied().collect::<HashSet<_>>();
+        self.journaled_state.warm_preloaded_addresses = precompiles.addresses_set();
         self.precompiles = precompiles;
     }
 
@@ -104,13 +104,16 @@ impl<DB: Database> EvmContext<DB> {
     #[inline]
     fn call_precompile(
         &mut self,
-        address: Address,
+        address: &Address,
         input_data: &Bytes,
         gas: Gas,
-    ) -> Option<InterpreterResult> {
-        let out = self
-            .precompiles
-            .call(address, input_data, gas.limit(), &mut self.inner)?;
+    ) -> Result<Option<InterpreterResult>, EVMError<DB::Error>> {
+        let Some(outcome) =
+            self.precompiles
+                .call(address, input_data, gas.limit(), &mut self.inner)
+        else {
+            return Ok(None);
+        };
 
         let mut result = InterpreterResult {
             result: InstructionResult::Return,
@@ -118,24 +121,25 @@ impl<DB: Database> EvmContext<DB> {
             output: Bytes::new(),
         };
 
-        match out {
-            Ok((gas_used, data)) => {
-                if result.gas.record_cost(gas_used) {
+        match outcome {
+            Ok(output) => {
+                if result.gas.record_cost(output.gas_used) {
                     result.result = InstructionResult::Return;
-                    result.output = data;
+                    result.output = output.bytes;
                 } else {
                     result.result = InstructionResult::PrecompileOOG;
                 }
             }
-            Err(e) => {
-                result.result = if e == crate::precompile::Error::OutOfGas {
+            Err(PrecompileErrors::Error(e)) => {
+                result.result = if e.is_oog() {
                     InstructionResult::PrecompileOOG
                 } else {
                     InstructionResult::PrecompileError
                 };
             }
+            Err(PrecompileErrors::Fatal { msg }) => return Err(EVMError::Precompile(msg)),
         }
-        Some(result)
+        Ok(Some(result))
     }
 
     /// Make call frame
@@ -162,12 +166,11 @@ impl<DB: Database> EvmContext<DB> {
             return return_result(InstructionResult::CallTooDeep);
         }
 
-        let (account, _) = self
+        // Make account warm and loaded
+        let _ = self
             .inner
             .journaled_state
-            .load_code(inputs.bytecode_address, &mut self.inner.db)?;
-        let code_hash = account.info.code_hash();
-        let bytecode = account.info.code.clone().unwrap_or_default();
+            .load_account(inputs.bytecode_address, &mut self.inner.db)?;
 
         // Create subroutine checkpoint
         let checkpoint = self.journaled_state.checkpoint();
@@ -194,7 +197,7 @@ impl<DB: Database> EvmContext<DB> {
             _ => {}
         };
 
-        if let Some(result) = self.call_precompile(inputs.bytecode_address, &inputs.input, gas) {
+        if let Some(result) = self.call_precompile(&inputs.bytecode_address, &inputs.input, gas)? {
             if matches!(result.result, return_ok!()) {
                 self.journaled_state.checkpoint_commit();
             } else {
@@ -204,18 +207,38 @@ impl<DB: Database> EvmContext<DB> {
                 result,
                 inputs.return_memory_offset.clone(),
             ))
-        } else if !bytecode.is_empty() {
-            let contract =
-                Contract::new_with_context(inputs.input.clone(), bytecode, Some(code_hash), inputs);
+        } else {
+            let (account, _) = self
+                .inner
+                .journaled_state
+                .load_code(inputs.bytecode_address, &mut self.inner.db)?;
+            let code_hash = account.info.code_hash();
+            let bytecode = account.info.code.clone().unwrap_or_default();
+
+            // ExtDelegateCall is not allowed to call non-EOF contracts.
+            if inputs.scheme.is_ext_delegate_call()
+                && bytecode.bytes_slice().get(..2) != Some(&EOF_MAGIC_BYTES)
+            {
+                return return_result(InstructionResult::InvalidExtDelegateCallTarget);
+            }
+
+            if bytecode.is_empty() {
+                self.journaled_state.checkpoint_commit();
+                return return_result(InstructionResult::Stop);
+            }
+
+            let contract = Contract::new_with_context(
+                inputs.input.clone(),
+                bytecode,
+                Some(code_hash),
+                inputs,
+            );
             // Create interpreter and executes call and push new CallStackFrame.
             Ok(FrameOrResult::new_call_frame(
                 inputs.return_memory_offset.clone(),
                 checkpoint,
                 Interpreter::new(contract, gas.limit(), inputs.is_static),
             ))
-        } else {
-            self.journaled_state.checkpoint_commit();
-            return_result(InstructionResult::Stop)
         }
     }
 }
@@ -227,7 +250,7 @@ pub(crate) mod test_utils {
     use crate::{
         db::{CacheDB, EmptyDB},
         journaled_state::JournaledState,
-        primitives::{address, SpecId},
+        primitives::{address, HashSet, SpecId},
     };
 
     /// Mock caller address.
@@ -279,6 +302,7 @@ pub(crate) mod test_utils {
                 journaled_state: JournaledState::new(SpecId::CANCUN, HashSet::new()),
                 db,
                 error: Ok(()),
+                valid_authorizations: Vec::new(),
                 #[cfg(any(feature = "optimism", feature = "scroll"))]
                 l1_block_info: None,
             },
@@ -294,6 +318,7 @@ pub(crate) mod test_utils {
                 journaled_state: JournaledState::new(SpecId::CANCUN, HashSet::new()),
                 db,
                 error: Ok(()),
+                valid_authorizations: Default::default(),
                 #[cfg(any(feature = "optimism", feature = "scroll"))]
                 l1_block_info: None,
             },
@@ -352,7 +377,7 @@ mod tests {
             result.interpreter_result().result,
             InstructionResult::OutOfFunds
         );
-        let checkpointed = vec![vec![JournalEntry::AccountLoaded { address: contract }]];
+        let checkpointed = vec![vec![JournalEntry::AccountWarmed { address: contract }]];
         assert_eq!(evm_context.journaled_state.journal, checkpointed);
         assert_eq!(evm_context.journaled_state.depth, 0);
     }

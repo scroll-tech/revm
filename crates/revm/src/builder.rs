@@ -469,11 +469,12 @@ mod test {
         inspector::inspector_handle_register,
         inspectors::NoOpInspector,
         primitives::{
-            address, AccountInfo, Address, Bytecode, Bytes, PrecompileResult, TransactTo, U256,
+            address, AccountInfo, Address, Bytecode, Bytes, PrecompileResult, TxKind, U256,
         },
         Context, ContextPrecompile, ContextStatefulPrecompile, Evm, InMemoryDB, InnerEvmContext,
     };
     use revm_interpreter::{gas, Host, Interpreter};
+    use revm_precompile::PrecompileOutput;
     use std::{cell::RefCell, rc::Rc, sync::Arc};
 
     /// Custom evm context
@@ -508,7 +509,7 @@ mod test {
                     AccountInfo::new(U256::ZERO, 0, poseidon_code_hash, keccak_code_hash, code);
                 db.insert_account_info(to_addr, acc)
             })
-            .modify_tx_env(|tx| tx.transact_to = TransactTo::Call(to_addr))
+            .modify_tx_env(|tx| tx.transact_to = TxKind::Call(to_addr))
             // we need to use handle register box to capture the custom context in the handle
             // register
             .append_handler_register_box(Box::new(move |handler| {
@@ -567,7 +568,7 @@ mod test {
                     AccountInfo::new(U256::ZERO, 0, poseidon_code_hash, keccak_code_hash, code);
                 db.insert_account_info(to_addr, acc)
             })
-            .modify_tx_env(|tx| tx.transact_to = TransactTo::Call(to_addr))
+            .modify_tx_env(|tx| tx.transact_to = TxKind::Call(to_addr))
             .append_handler_register(|handler| {
                 handler.instruction_table.insert(0xEF, custom_instruction)
             })
@@ -659,7 +660,7 @@ mod test {
                 _gas_price: u64,
                 _context: &mut InnerEvmContext<EmptyDB>,
             ) -> PrecompileResult {
-                Ok((10, Bytes::new()))
+                Ok(PrecompileOutput::new(10, Bytes::new()))
             }
         }
 

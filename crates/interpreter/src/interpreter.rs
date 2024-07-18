@@ -9,7 +9,6 @@ pub use contract::Contract;
 pub use shared_memory::{num_words, SharedMemory, EMPTY_SHARED_MEMORY};
 pub use stack::{Stack, STACK_LIMIT};
 
-use crate::EOFCreateOutcome;
 use crate::{
     gas, primitives::Bytes, push, push_b256, return_ok, return_revert, CallOutcome, CreateOutcome,
     FunctionStack, Gas, Host, InstructionResult, InterpreterAction,
@@ -17,6 +16,7 @@ use crate::{
 use core::cmp::min;
 use revm_primitives::{Bytecode, Eof, U256};
 use std::borrow::ToOwned;
+use std::sync::Arc;
 
 /// EVM bytecode interpreter.
 #[derive(Debug)]
@@ -64,20 +64,8 @@ pub struct Interpreter {
 
 impl Default for Interpreter {
     fn default() -> Self {
-        Self::new(Contract::default(), 0, false)
+        Self::new(Contract::default(), u64::MAX, false)
     }
-}
-
-/// The result of an interpreter operation.
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-pub struct InterpreterResult {
-    /// The result of the instruction execution.
-    pub result: InstructionResult,
-    /// The output of the instruction execution.
-    pub output: Bytes,
-    /// The gas usage information.
-    pub gas: Gas,
 }
 
 impl Interpreter {
@@ -112,7 +100,7 @@ impl Interpreter {
     }
 
     #[inline]
-    pub fn eof(&self) -> Option<&Eof> {
+    pub fn eof(&self) -> Option<&Arc<Eof>> {
         self.contract.bytecode.eof()
     }
 
@@ -125,6 +113,7 @@ impl Interpreter {
                 bytecode,
                 None,
                 crate::primitives::Address::default(),
+                None,
                 crate::primitives::Address::default(),
                 U256::ZERO,
             ),
@@ -137,7 +126,7 @@ impl Interpreter {
     pub(crate) fn load_eof_code(&mut self, idx: usize, pc: usize) {
         // SAFETY: eof flag is true only if bytecode is Eof.
         let Bytecode::Eof(eof) = &self.contract.bytecode else {
-            panic!("Expected EOF bytecode")
+            panic!("Expected EOF code section")
         };
         let Some(code) = eof.body.code(idx) else {
             panic!("Code not found")
@@ -203,7 +192,8 @@ impl Interpreter {
         }
     }
 
-    pub fn insert_eofcreate_outcome(&mut self, create_outcome: EOFCreateOutcome) {
+    pub fn insert_eofcreate_outcome(&mut self, create_outcome: CreateOutcome) {
+        self.instruction_result = InstructionResult::Continue;
         let instruction_result = create_outcome.instruction_result();
 
         self.return_data_buffer = if *instruction_result == InstructionResult::Revert {
@@ -216,7 +206,10 @@ impl Interpreter {
 
         match instruction_result {
             InstructionResult::ReturnContract => {
-                push_b256!(self, create_outcome.address.into_word());
+                push_b256!(
+                    self,
+                    create_outcome.address.expect("EOF Address").into_word()
+                );
                 self.gas.erase_cost(create_outcome.gas().remaining());
                 self.gas.record_refund(create_outcome.gas().refunded());
             }
@@ -261,32 +254,53 @@ impl Interpreter {
         call_outcome: CallOutcome,
     ) {
         self.instruction_result = InstructionResult::Continue;
-        self.return_data_buffer.clone_from(call_outcome.output());
 
         let out_offset = call_outcome.memory_start();
         let out_len = call_outcome.memory_length();
+        let out_ins_result = *call_outcome.instruction_result();
+        let out_gas = call_outcome.gas();
+        self.return_data_buffer = call_outcome.result.output;
 
         let target_len = min(out_len, self.return_data_buffer.len());
-        match call_outcome.instruction_result() {
+        match out_ins_result {
             return_ok!() => {
                 // return unspend gas.
-                let remaining = call_outcome.gas().remaining();
-                let refunded = call_outcome.gas().refunded();
-                self.gas.erase_cost(remaining);
-                self.gas.record_refund(refunded);
+                self.gas.erase_cost(out_gas.remaining());
+                self.gas.record_refund(out_gas.refunded());
                 shared_memory.set(out_offset, &self.return_data_buffer[..target_len]);
-                push!(self, U256::from(1));
+                push!(
+                    self,
+                    if self.is_eof {
+                        U256::ZERO
+                    } else {
+                        U256::from(1)
+                    }
+                );
             }
             return_revert!() => {
-                self.gas.erase_cost(call_outcome.gas().remaining());
+                self.gas.erase_cost(out_gas.remaining());
                 shared_memory.set(out_offset, &self.return_data_buffer[..target_len]);
-                push!(self, U256::ZERO);
+                push!(
+                    self,
+                    if self.is_eof {
+                        U256::from(1)
+                    } else {
+                        U256::ZERO
+                    }
+                );
             }
             InstructionResult::FatalExternalError => {
                 panic!("Fatal external error in insert_call_outcome");
             }
             _ => {
-                push!(self, U256::ZERO);
+                push!(
+                    self,
+                    if self.is_eof {
+                        U256::from(2)
+                    } else {
+                        U256::ZERO
+                    }
+                );
             }
         }
     }
@@ -388,7 +402,28 @@ impl Interpreter {
     }
 }
 
+/// The result of an interpreter operation.
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+pub struct InterpreterResult {
+    /// The result of the instruction execution.
+    pub result: InstructionResult,
+    /// The output of the instruction execution.
+    pub output: Bytes,
+    /// The gas usage information.
+    pub gas: Gas,
+}
+
 impl InterpreterResult {
+    /// Returns a new `InterpreterResult` with the given values.
+    pub fn new(result: InstructionResult, output: Bytes, gas: Gas) -> Self {
+        Self {
+            result,
+            output,
+            gas,
+        }
+    }
+
     /// Returns whether the instruction result is a success.
     #[inline]
     pub const fn is_ok(&self) -> bool {
@@ -435,13 +470,13 @@ mod tests {
         let mut interp = Interpreter::new(Contract::default(), u64::MAX, false);
 
         let mut host = crate::DummyHost::default();
-        let table: InstructionTable<DummyHost> =
-            crate::opcode::make_instruction_table::<DummyHost, CancunSpec>();
-        let _ = interp.run(EMPTY_SHARED_MEMORY, &table, &mut host);
+        let table: &InstructionTable<DummyHost> =
+            &crate::opcode::make_instruction_table::<DummyHost, CancunSpec>();
+        let _ = interp.run(EMPTY_SHARED_MEMORY, table, &mut host);
 
         let host: &mut dyn Host = &mut host as &mut dyn Host;
-        let table: InstructionTable<dyn Host> =
-            crate::opcode::make_instruction_table::<dyn Host, CancunSpec>();
-        let _ = interp.run(EMPTY_SHARED_MEMORY, &table, host);
+        let table: &InstructionTable<dyn Host> =
+            &crate::opcode::make_instruction_table::<dyn Host, CancunSpec>();
+        let _ = interp.run(EMPTY_SHARED_MEMORY, table, host);
     }
 }

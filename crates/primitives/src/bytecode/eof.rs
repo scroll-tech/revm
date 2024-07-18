@@ -7,9 +7,19 @@ pub use body::EofBody;
 pub use header::EofHeader;
 pub use types_section::TypesSection;
 
-use crate::Bytes;
+use crate::{b256, bytes, Bytes, B256};
 use core::cmp::min;
 use std::{vec, vec::Vec};
+
+/// Hash of EF00 bytes that is used for EXTCODEHASH when called from legacy bytecode.
+pub const EOF_MAGIC_HASH: B256 =
+    b256!("9dbf3648db8210552e9c4f75c6a1c3057c0ca432043bd648be15fe7be05646f5");
+
+/// EOF Magic in u16 form.
+pub const EOF_MAGIC: u16 = 0xEF00;
+
+/// EOF magic number in array form.
+pub static EOF_MAGIC_BYTES: Bytes = bytes!("ef00");
 
 /// EOF - Ethereum Object Format.
 ///
@@ -74,6 +84,26 @@ impl Eof {
         self.header.encode(&mut buffer);
         self.body.encode(&mut buffer);
         buffer.into()
+    }
+
+    /// Decode EOF that have additional dangling bytes.
+    /// Assume that data section is fully filled.
+    pub fn decode_dangling(mut eof: Bytes) -> Result<(Self, Bytes), EofDecodeError> {
+        let (header, _) = EofHeader::decode(&eof)?;
+        let eof_size = header.body_size() + header.size();
+        if eof_size > eof.len() {
+            return Err(EofDecodeError::MissingInput);
+        }
+        let dangling_data = eof.split_off(eof_size);
+        let body = EofBody::decode(&eof, &header)?;
+        Ok((
+            Self {
+                header,
+                body,
+                raw: eof,
+            },
+            dangling_data,
+        ))
     }
 
     /// Decode EOF from raw bytes.
@@ -141,6 +171,42 @@ mod test {
     }
 
     #[test]
+    fn decode_eof_dangling() {
+        let test_cases = [
+            (
+                bytes!("ef000101000402000100010400000000800000fe"),
+                bytes!("010203"),
+                false,
+            ),
+            (
+                bytes!("ef000101000402000100010400000000800000fe"),
+                bytes!(""),
+                false,
+            ),
+            (
+                bytes!("ef000101000402000100010400000000800000"),
+                bytes!(""),
+                true,
+            ),
+        ];
+
+        for (eof_bytes, dangling_data, is_err) in test_cases {
+            let mut raw = eof_bytes.to_vec();
+            raw.extend(&dangling_data);
+            let raw = Bytes::from(raw);
+
+            let result = Eof::decode_dangling(raw.clone());
+            assert_eq!(result.is_err(), is_err);
+            if is_err {
+                continue;
+            }
+            let (decoded_eof, decoded_dangling) = result.unwrap();
+            assert_eq!(eof_bytes, decoded_eof.encode_slow());
+            assert_eq!(decoded_dangling, dangling_data);
+        }
+    }
+
+    #[test]
     fn data_slice() {
         let bytes = bytes!("ef000101000402000100010400000000800000fe");
         let mut eof = Eof::decode(bytes.clone()).unwrap();
@@ -149,8 +215,10 @@ mod test {
         assert_eq!(eof.data_slice(0, 4), &[0x01, 0x02, 0x03, 0x04]);
         assert_eq!(eof.data_slice(0, 5), &[0x01, 0x02, 0x03, 0x04]);
         assert_eq!(eof.data_slice(1, 2), &[0x02, 0x03]);
-        assert_eq!(eof.data_slice(10, 2), &[]);
-        assert_eq!(eof.data_slice(1, 0), &[]);
-        assert_eq!(eof.data_slice(10, 0), &[]);
+
+        const EMPTY: &[u8] = &[];
+        assert_eq!(eof.data_slice(10, 2), EMPTY);
+        assert_eq!(eof.data_slice(1, 0), EMPTY);
+        assert_eq!(eof.data_slice(10, 0), EMPTY);
     }
 }

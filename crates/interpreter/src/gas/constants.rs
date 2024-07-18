@@ -5,7 +5,7 @@ pub const VERYLOW: u64 = 3;
 pub const DATA_LOADN_GAS: u64 = 3;
 
 pub const CONDITION_JUMP_GAS: u64 = 4;
-pub const RETF_GAS: u64 = 4;
+pub const RETF_GAS: u64 = 3;
 pub const DATA_LOAD_GAS: u64 = 4;
 
 pub const LOW: u64 = 5;
@@ -46,6 +46,9 @@ pub const COLD_SLOAD_COST: u64 = 2100;
 pub const COLD_ACCOUNT_ACCESS_COST: u64 = 2600;
 pub const WARM_STORAGE_READ_COST: u64 = 100;
 pub const WARM_SSTORE_RESET: u64 = SSTORE_RESET - COLD_SLOAD_COST;
+
+/// EIP-7702
+pub const PER_CONTRACT_CODE_BASE_COST: u64 = 2400;
 
 /// EIP-3860 : Limit and meter initcode
 pub const INITCODE_WORD_COST: u64 = 2;

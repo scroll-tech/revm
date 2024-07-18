@@ -47,10 +47,13 @@ impl<ExtDB: Default> Default for CacheDB<ExtDB> {
 impl<ExtDB> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
         let mut contracts = HashMap::new();
-        #[cfg(not(feature = "scroll"))]
-        contracts.insert(KECCAK_EMPTY, Bytecode::default());
-        #[cfg(feature = "scroll")]
-        contracts.insert(POSEIDON_EMPTY, Bytecode::default());
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                contracts.insert(KECCAK_EMPTY, Bytecode::default());
+            } else {
+                contracts.insert(POSEIDON_EMPTY, Bytecode::default());
+            }
+        }
         contracts.insert(B256::ZERO, Bytecode::default());
         Self {
             accounts: HashMap::new(),
@@ -69,18 +72,19 @@ impl<ExtDB> CacheDB<ExtDB> {
     pub fn insert_contract(&mut self, account: &mut AccountInfo) {
         if let Some(code) = &account.code {
             if !code.is_empty() {
-                #[cfg(not(feature = "scroll"))]
-                if account.code_hash == KECCAK_EMPTY {
-                    account.code_hash = code.hash_slow();
-                }
-                #[cfg(feature = "scroll")]
-                {
-                    account.code_size = code.len();
-                    if account.code_hash == POSEIDON_EMPTY {
-                        account.code_hash = code.poseidon_hash_slow();
-                    }
-                    if account.keccak_code_hash == KECCAK_EMPTY {
-                        account.keccak_code_hash = code.keccak_hash_slow();
+                cfg_if::cfg_if! {
+                    if #[cfg(not(feature = "scroll"))] {
+                        if account.code_hash == KECCAK_EMPTY {
+                            account.code_hash = code.hash_slow();
+                        }
+                    } else {
+                        account.code_size = code.len();
+                        if account.code_hash == POSEIDON_EMPTY {
+                            account.code_hash = code.poseidon_hash_slow();
+                        }
+                        if account.keccak_code_hash == KECCAK_EMPTY {
+                            account.keccak_code_hash = code.keccak_hash_slow();
+                        }
                     }
                 }
                 self.contracts
@@ -251,8 +255,8 @@ impl<ExtDB: DatabaseRef> Database for CacheDB<ExtDB> {
         }
     }
 
-    fn block_hash(&mut self, number: U256) -> Result<B256, Self::Error> {
-        match self.block_hashes.entry(number) {
+    fn block_hash(&mut self, number: u64) -> Result<B256, Self::Error> {
+        match self.block_hashes.entry(U256::from(number)) {
             Entry::Occupied(entry) => Ok(*entry.get()),
             Entry::Vacant(entry) => {
                 let hash = self.db.block_hash_ref(number)?;
@@ -299,8 +303,8 @@ impl<ExtDB: DatabaseRef> DatabaseRef for CacheDB<ExtDB> {
         }
     }
 
-    fn block_hash_ref(&self, number: U256) -> Result<B256, Self::Error> {
-        match self.block_hashes.get(&number) {
+    fn block_hash_ref(&self, number: u64) -> Result<B256, Self::Error> {
+        match self.block_hashes.get(&U256::from(number)) {
             Some(entry) => Ok(*entry),
             None => self.db.block_hash_ref(number),
         }
@@ -389,16 +393,15 @@ pub struct BenchmarkDB(pub Bytecode, B256, B256);
 
 impl BenchmarkDB {
     pub fn new_bytecode(bytecode: Bytecode) -> Self {
-        #[cfg(not(feature = "scroll"))]
-        {
-            let hash = bytecode.hash_slow();
-            Self(bytecode, hash)
-        }
-        #[cfg(feature = "scroll")]
-        {
-            let poseidon_hash = bytecode.poseidon_hash_slow();
-            let keccak_hash = bytecode.keccak_hash_slow();
-            Self(bytecode, poseidon_hash, keccak_hash)
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                let hash = bytecode.hash_slow();
+                Self(bytecode, hash)
+            } else {
+                let poseidon_hash = bytecode.poseidon_hash_slow();
+                let keccak_hash = bytecode.keccak_hash_slow();
+                Self(bytecode, poseidon_hash, keccak_hash)
+            }
         }
     }
 }
@@ -440,7 +443,7 @@ impl Database for BenchmarkDB {
     }
 
     // History related
-    fn block_hash(&mut self, _number: U256) -> Result<B256, Self::Error> {
+    fn block_hash(&mut self, _number: u64) -> Result<B256, Self::Error> {
         Ok(B256::default())
     }
 }

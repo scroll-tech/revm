@@ -1,10 +1,13 @@
 //! [Database] implementations.
 
+#[cfg(any(feature = "alloydb", feature = "ethersdb"))]
+mod utils;
+
 #[cfg(feature = "alloydb")]
-pub mod alloydb;
+mod alloydb;
 pub mod emptydb;
 #[cfg(feature = "ethersdb")]
-pub mod ethersdb;
+mod ethersdb;
 pub mod in_memory_db;
 pub mod states;
 

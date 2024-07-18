@@ -1,41 +1,18 @@
 mod call_helpers;
 
-pub use call_helpers::{
-    calc_call_gas, get_memory_input_and_out_ranges, resize_memory_and_return_range,
-};
-use revm_primitives::{keccak256, BerlinSpec};
+pub use call_helpers::{calc_call_gas, get_memory_input_and_out_ranges, resize_memory};
 
 use crate::{
-    analysis::validate_eof,
-    gas::{self, cost_per_word, BASE, EOF_CREATE_GAS, KECCAK256WORD},
-    instructions::utility::read_u16,
+    gas::{self, cost_per_word, EOF_CREATE_GAS, KECCAK256WORD},
     interpreter::Interpreter,
-    primitives::{Address, Bytes, Eof, Spec, SpecId::*, B256, U256},
-    CallInputs, CallScheme, CallValue, CreateInputs, CreateScheme, EOFCreateInput, Host,
+    primitives::{
+        eof::EofHeader, keccak256, Address, BerlinSpec, Bytes, Eof, Spec, SpecId::*, B256, U256,
+    },
+    CallInputs, CallScheme, CallValue, CreateInputs, CreateScheme, EOFCreateInputs, Host,
     InstructionResult, InterpreterAction, InterpreterResult, LoadAccountResult, MAX_INITCODE_SIZE,
 };
-use core::{cmp::max, ops::Range};
+use core::cmp::max;
 use std::boxed::Box;
-
-/// Resize memory and return memory range if successful.
-/// Return `None` if there is not enough gas. And if `len`
-/// is zero return `Some(usize::MAX..usize::MAX)`.
-pub fn resize_memory(
-    interpreter: &mut Interpreter,
-    offset: U256,
-    len: U256,
-) -> Option<Range<usize>> {
-    let len = as_usize_or_fail_ret!(interpreter, len, None);
-    if len != 0 {
-        let offset = as_usize_or_fail_ret!(interpreter, offset, None);
-        resize_memory!(interpreter, offset, len, None);
-        // range is checked in resize_memory! macro and it is bounded by usize.
-        Some(offset..offset + len)
-    } else {
-        //unrealistic value so we are sure it is not used
-        Some(usize::MAX..usize::MAX)
-    }
-}
 
 /// EOF Create instruction
 pub fn eofcreate<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
@@ -54,8 +31,18 @@ pub fn eofcreate<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H)
         .expect("EOF is checked");
 
     // resize memory and get return range.
-    let Some(return_range) = resize_memory(interpreter, data_offset, data_size) else {
+    let Some(input_range) = resize_memory(interpreter, data_offset, data_size) else {
         return;
+    };
+
+    let input = if !input_range.is_empty() {
+        interpreter
+            .shared_memory
+            .slice_range(input_range)
+            .to_vec()
+            .into()
+    } else {
+        Bytes::new()
     };
 
     let eof = Eof::decode(sub_container.clone()).expect("Subcontainer is verified");
@@ -73,106 +60,30 @@ pub fn eofcreate<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H)
 
     let created_address = interpreter
         .contract
-        .caller
+        .target_address
         .create2(salt.to_be_bytes(), keccak256(sub_container));
 
+    let gas_limit = interpreter.gas().remaining_63_of_64_parts();
+    gas!(interpreter, gas_limit);
     // Send container for execution container is preverified.
+    interpreter.instruction_result = InstructionResult::CallOrCreate;
     interpreter.next_action = InterpreterAction::EOFCreate {
-        inputs: Box::new(EOFCreateInput::new(
+        inputs: Box::new(EOFCreateInputs::new_opcode(
             interpreter.contract.target_address,
             created_address,
             value,
             eof,
-            interpreter.gas().remaining(),
-            return_range,
+            gas_limit,
+            input,
         )),
     };
 
     interpreter.instruction_pointer = unsafe { interpreter.instruction_pointer.offset(1) };
 }
 
-pub fn txcreate<H: Host + ?Sized>(interpreter: &mut Interpreter, host: &mut H) {
-    require_eof!(interpreter);
-    gas!(interpreter, EOF_CREATE_GAS);
-    pop!(
-        interpreter,
-        tx_initcode_hash,
-        value,
-        salt,
-        data_offset,
-        data_size
-    );
-    let tx_initcode_hash = B256::from(tx_initcode_hash);
-
-    // resize memory and get return range.
-    let Some(return_range) = resize_memory(interpreter, data_offset, data_size) else {
-        return;
-    };
-
-    // fetch initcode, if not found push ZERO.
-    let Some(initcode) = host
-        .env()
-        .tx
-        .eof_initcodes_hashed
-        .get(&tx_initcode_hash)
-        .cloned()
-    else {
-        push!(interpreter, U256::ZERO);
-        return;
-    };
-
-    // deduct gas for validation
-    gas_or_fail!(interpreter, cost_per_word(initcode.len() as u64, BASE));
-
-    // deduct gas for hash. TODO check order of actions.
-    gas_or_fail!(
-        interpreter,
-        cost_per_word(initcode.len() as u64, KECCAK256WORD)
-    );
-
-    let Ok(eof) = Eof::decode(initcode.clone()) else {
-        push!(interpreter, U256::ZERO);
-        return;
-    };
-
-    // Data section should be full, push zero to stack and return if not.
-    if !eof.body.is_data_filled {
-        push!(interpreter, U256::ZERO);
-        return;
-    }
-
-    // Validate initcode
-    if validate_eof(&eof).is_err() {
-        push!(interpreter, U256::ZERO);
-        return;
-    }
-
-    // Create new address. Gas for it is already deducted.
-    let created_address = interpreter
-        .contract
-        .caller
-        .create2(salt.to_be_bytes(), tx_initcode_hash);
-
-    let gas_limit = interpreter.gas().remaining();
-    // spend all gas. It will be reimbursed after frame returns.
-    gas!(interpreter, gas_limit);
-
-    interpreter.next_action = InterpreterAction::EOFCreate {
-        inputs: Box::new(EOFCreateInput::new(
-            interpreter.contract.target_address,
-            created_address,
-            value,
-            eof,
-            gas_limit,
-            return_range,
-        )),
-    };
-    interpreter.instruction_result = InstructionResult::CallOrCreate;
-}
-
 pub fn return_contract<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &mut H) {
     require_init_eof!(interpreter);
-    let deploy_container_index = unsafe { read_u16(interpreter.instruction_pointer) };
+    let deploy_container_index = unsafe { *interpreter.instruction_pointer };
     pop!(interpreter, aux_data_offset, aux_data_size);
     let aux_data_size = as_usize_or_fail!(interpreter, aux_data_size);
     // important: offset must be ignored if len is zeros
@@ -182,10 +93,11 @@ pub fn return_contract<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &
         .body
         .container_section
         .get(deploy_container_index as usize)
-        .expect("EOF is checked");
+        .expect("EOF is checked")
+        .clone();
 
     // convert to EOF so we can check data section size.
-    let new_eof = Eof::decode(container.clone()).expect("Container is verified");
+    let (eof_header, _) = EofHeader::decode(&container).expect("valid EOF header");
 
     let aux_slice = if aux_data_size != 0 {
         let aux_data_offset = as_usize_or_fail!(interpreter, aux_data_offset);
@@ -198,20 +110,27 @@ pub fn return_contract<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &
         &[]
     };
 
-    let new_data_size = new_eof.body.data_section.len() + aux_slice.len();
+    let static_aux_size = eof_header.eof_size() - container.len();
+
+    // data_size - static_aux_size give us current data `container` size.
+    // and with aux_slice len we can calculate new data size.
+    let new_data_size = eof_header.data_size as usize - static_aux_size + aux_slice.len();
     if new_data_size > 0xFFFF {
         // aux data is too big
-        interpreter.instruction_result = InstructionResult::FatalExternalError;
+        interpreter.instruction_result = InstructionResult::EofAuxDataOverflow;
         return;
     }
-    if new_data_size < new_eof.header.data_size as usize {
+    if new_data_size < eof_header.data_size as usize {
         // aux data is too small
-        interpreter.instruction_result = InstructionResult::FatalExternalError;
+        interpreter.instruction_result = InstructionResult::EofAuxDataTooSmall;
         return;
     }
+    let new_data_size = (new_data_size as u16).to_be_bytes();
 
-    // append data bytes
-    let output = [new_eof.raw(), aux_slice].concat().into();
+    let mut output = [&container, aux_slice].concat();
+    // set new data size in eof bytes as we know exact index.
+    output[eof_header.data_size_raw_i()..][..2].clone_from_slice(&new_data_size);
+    let output: Bytes = output.into();
 
     let result = InstructionResult::ReturnContract;
     interpreter.instruction_result = result;
@@ -227,8 +146,11 @@ pub fn return_contract<H: Host + ?Sized>(interpreter: &mut Interpreter, _host: &
 pub fn extcall_input(interpreter: &mut Interpreter) -> Option<Bytes> {
     pop_ret!(interpreter, input_offset, input_size, None);
 
-    let return_memory_offset =
-        resize_memory_and_return_range(interpreter, input_offset, input_size)?;
+    let return_memory_offset = resize_memory(interpreter, input_offset, input_size)?;
+
+    if return_memory_offset.is_empty() {
+        return Some(Bytes::new());
+    }
 
     Some(Bytes::copy_from_slice(
         interpreter
@@ -247,10 +169,6 @@ pub fn extcall_gas_calc<H: Host + ?Sized>(
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return None;
     };
-
-    if load_result.is_cold {
-        gas!(interpreter, gas::COLD_ACCOUNT_ACCESS_COST, None);
-    }
 
     // TODO(EOF) is_empty should only be checked on delegatecall
     let call_cost = gas::call_cost(
@@ -273,15 +191,33 @@ pub fn extcall_gas_calc<H: Host + ?Sized>(
         return None;
     }
 
-    // TODO check remaining gas more then N
-
     gas!(interpreter, gas_limit, None);
     Some(gas_limit)
 }
 
+/// Pop target address from stack and check if it is valid.
+///
+/// Valid address has first 12 bytes as zeroes.
+#[inline]
+pub fn pop_extcall_target_address(interpreter: &mut Interpreter) -> Option<Address> {
+    pop_ret!(interpreter, target_address, None);
+    let target_address = B256::from(target_address);
+    // Check if target is left padded with zeroes.
+    if target_address[..12].iter().any(|i| *i != 0) {
+        interpreter.instruction_result = InstructionResult::InvalidEXTCALLTarget;
+        return None;
+    }
+    // discard first 12 bytes.
+    Some(Address::from_word(target_address))
+}
+
 pub fn extcall<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     require_eof!(interpreter);
-    pop_address!(interpreter, target_address);
+
+    // pop target address
+    let Some(target_address) = pop_extcall_target_address(interpreter) else {
+        return;
+    };
 
     // input call
     let Some(input) = extcall_input(interpreter) else {
@@ -305,7 +241,7 @@ pub fn extcall<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host
             caller: interpreter.contract.target_address,
             bytecode_address: target_address,
             value: CallValue::Transfer(value),
-            scheme: CallScheme::Call,
+            scheme: CallScheme::ExtCall,
             is_static: interpreter.is_static,
             is_eof: true,
             return_memory_offset: 0..0,
@@ -314,9 +250,13 @@ pub fn extcall<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host
     interpreter.instruction_result = InstructionResult::CallOrCreate;
 }
 
-pub fn extdcall<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
+pub fn extdelegatecall<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     require_eof!(interpreter);
-    pop_address!(interpreter, target_address);
+
+    // pop target address
+    let Some(target_address) = pop_extcall_target_address(interpreter) else {
+        return;
+    };
 
     // input call
     let Some(input) = extcall_input(interpreter) else {
@@ -333,12 +273,11 @@ pub fn extdcall<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, hos
         inputs: Box::new(CallInputs {
             input,
             gas_limit,
-            target_address,
-            caller: interpreter.contract.target_address,
+            target_address: interpreter.contract.target_address,
+            caller: interpreter.contract.caller,
             bytecode_address: target_address,
             value: CallValue::Apparent(interpreter.contract.call_value),
-            // TODO(EOF) should be EofDelegateCall?
-            scheme: CallScheme::DelegateCall,
+            scheme: CallScheme::ExtDelegateCall,
             is_static: interpreter.is_static,
             is_eof: true,
             return_memory_offset: 0..0,
@@ -347,9 +286,13 @@ pub fn extdcall<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, hos
     interpreter.instruction_result = InstructionResult::CallOrCreate;
 }
 
-pub fn extscall<H: Host + ?Sized>(interpreter: &mut Interpreter, host: &mut H) {
+pub fn extstaticcall<H: Host + ?Sized>(interpreter: &mut Interpreter, host: &mut H) {
     require_eof!(interpreter);
-    pop_address!(interpreter, target_address);
+
+    // pop target address
+    let Some(target_address) = pop_extcall_target_address(interpreter) else {
+        return;
+    };
 
     // input call
     let Some(input) = extcall_input(interpreter) else {
@@ -369,8 +312,8 @@ pub fn extscall<H: Host + ?Sized>(interpreter: &mut Interpreter, host: &mut H) {
             caller: interpreter.contract.target_address,
             bytecode_address: target_address,
             value: CallValue::Transfer(U256::ZERO),
-            scheme: CallScheme::Call,
-            is_static: interpreter.is_static,
+            scheme: CallScheme::ExtStaticCall,
+            is_static: true,
             is_eof: true,
             return_memory_offset: 0..0,
         }),
@@ -469,7 +412,7 @@ pub fn call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
-    let Some(mut gas_limit) = calc_call_gas::<H, SPEC>(
+    let Some(mut gas_limit) = calc_call_gas::<SPEC>(
         interpreter,
         is_cold,
         has_transfer,
@@ -520,7 +463,7 @@ pub fn call_code<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
         return;
     };
 
-    let Some(mut gas_limit) = calc_call_gas::<H, SPEC>(
+    let Some(mut gas_limit) = calc_call_gas::<SPEC>(
         interpreter,
         is_cold,
         value != U256::ZERO,
@@ -571,7 +514,7 @@ pub fn delegate_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter
         return;
     };
     let Some(gas_limit) =
-        calc_call_gas::<H, SPEC>(interpreter, is_cold, false, false, local_gas_limit)
+        calc_call_gas::<SPEC>(interpreter, is_cold, false, false, local_gas_limit)
     else {
         return;
     };
@@ -613,7 +556,7 @@ pub fn static_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     };
 
     let Some(gas_limit) =
-        calc_call_gas::<H, SPEC>(interpreter, is_cold, false, false, local_gas_limit)
+        calc_call_gas::<SPEC>(interpreter, is_cold, false, false, local_gas_limit)
     else {
         return;
     };

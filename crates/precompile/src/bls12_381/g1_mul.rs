@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{u64_to_address, PrecompileWithAddress};
 use blst::{blst_p1, blst_p1_affine, blst_p1_from_affine, blst_p1_mult, blst_p1_to_affine};
-use revm_primitives::{Bytes, Precompile, PrecompileError, PrecompileResult};
+use revm_primitives::{Bytes, Precompile, PrecompileError, PrecompileOutput, PrecompileResult};
 
 /// [EIP-2537](https://eips.ethereum.org/EIPS/eip-2537#specification) BLS12_G1MUL precompile.
 pub const PRECOMPILE: PrecompileWithAddress =
@@ -23,19 +23,26 @@ pub(super) const INPUT_LENGTH: usize = 160;
 /// Output is an encoding of multiplication operation result - single G1 point
 /// (`128` bytes).
 /// See also: <https://eips.ethereum.org/EIPS/eip-2537#abi-for-g1-multiplication>
-pub fn g1_mul(input: &Bytes, gas_limit: u64) -> PrecompileResult {
+pub(super) fn g1_mul(input: &Bytes, gas_limit: u64) -> PrecompileResult {
     if BASE_GAS_FEE > gas_limit {
-        return Err(PrecompileError::OutOfGas);
+        return Err(PrecompileError::OutOfGas.into());
     }
     if input.len() != INPUT_LENGTH {
         return Err(PrecompileError::Other(format!(
             "G1MUL input should be {INPUT_LENGTH} bytes, was {}",
             input.len()
-        )));
+        ))
+        .into());
     }
 
-    let p0_aff = &extract_g1_input(&input[..G1_INPUT_ITEM_LENGTH])?;
+    // NB: Scalar multiplications, MSMs and pairings MUST perform a subgroup check.
+    //
+    // So we set the subgroup_check flag to `true`
+    let slice = &input[..G1_INPUT_ITEM_LENGTH];
+    let p0_aff = &extract_g1_input(slice, true)?;
+
     let mut p0 = blst_p1::default();
+
     // SAFETY: p0 and p0_aff are blst values.
     unsafe { blst_p1_from_affine(&mut p0, p0_aff) };
 
@@ -49,5 +56,5 @@ pub fn g1_mul(input: &Bytes, gas_limit: u64) -> PrecompileResult {
     unsafe { blst_p1_to_affine(&mut p_aff, &p) };
 
     let out = encode_g1_point(&p_aff);
-    Ok((BASE_GAS_FEE, out))
+    Ok(PrecompileOutput::new(BASE_GAS_FEE, out))
 }

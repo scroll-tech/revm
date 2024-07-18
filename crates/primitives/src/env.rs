@@ -1,12 +1,15 @@
+pub mod eip7702;
 pub mod handler_cfg;
 
+pub use eip7702::AuthorizationList;
 pub use handler_cfg::{CfgEnvWithHandlerCfg, EnvWithHandlerCfg, HandlerCfg};
 
 use crate::{
-    calc_blob_gasprice, Account, Address, Bytes, HashMap, InvalidHeader, InvalidTransaction, Spec,
-    SpecId, B256, GAS_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE, U256,
-    VERSIONED_HASH_VERSION_KZG,
+    calc_blob_gasprice, AccessListItem, Account, Address, Bytes, InvalidHeader, InvalidTransaction,
+    Spec, SpecId, B256, GAS_PER_BLOB, MAX_BLOB_NUMBER_PER_BLOCK, MAX_INITCODE_SIZE,
+    U256, VERSIONED_HASH_VERSION_KZG,
 };
+use alloy_primitives::TxKind;
 use core::cmp::{min, Ordering};
 use core::hash::Hash;
 use std::boxed::Box;
@@ -96,6 +99,33 @@ impl Env {
     /// Return initial spend gas (Gas needed to execute transaction).
     #[inline]
     pub fn validate_tx<SPEC: Spec>(&self) -> Result<(), InvalidTransaction> {
+        // Check if the transaction's chain id is correct
+        if let Some(tx_chain_id) = self.tx.chain_id {
+            cfg_if::cfg_if! {
+                if #[cfg(not(feature = "scroll"))] {
+                    if tx_chain_id != self.cfg.chain_id {
+                        return Err(InvalidTransaction::InvalidChainId);
+                    }
+                } else {
+                    if !self.tx.scroll.is_l1_msg && tx_chain_id != self.cfg.chain_id {
+                        return Err(InvalidTransaction::InvalidChainId);
+                    }
+                }
+            }
+        }
+
+        // Check if gas_limit is more than block_gas_limit
+        if !self.cfg.is_block_gas_limit_disabled()
+            && U256::from(self.tx.gas_limit) > self.block.gas_limit
+        {
+            return Err(InvalidTransaction::CallerGasLimitMoreThanBlock);
+        }
+
+        // Check that access list is empty for transactions before BERLIN
+        if !SPEC::enabled(SpecId::BERLIN) && !self.tx.access_list.is_empty() {
+            return Err(InvalidTransaction::AccessListNotSupported);
+        }
+
         // BASEFEE tx check
         if SPEC::enabled(SpecId::LONDON) {
             if let Some(priority_fee) = self.tx.gas_priority_fee {
@@ -113,13 +143,6 @@ impl Env {
             }
         }
 
-        // Check if gas_limit is more than block_gas_limit
-        if !self.cfg.is_block_gas_limit_disabled()
-            && U256::from(self.tx.gas_limit) > self.block.gas_limit
-        {
-            return Err(InvalidTransaction::CallerGasLimitMoreThanBlock);
-        }
-
         // EIP-3860: Limit and meter initcode
         if SPEC::enabled(SpecId::SHANGHAI) && self.tx.transact_to.is_create() {
             let max_initcode_size = self
@@ -132,105 +155,66 @@ impl Env {
             }
         }
 
-        // Check if the transaction's chain id is correct
-        if let Some(tx_chain_id) = self.tx.chain_id {
-            #[cfg(not(feature = "scroll"))]
-            if tx_chain_id != self.cfg.chain_id {
-                return Err(InvalidTransaction::InvalidChainId);
-            }
-            #[cfg(feature = "scroll")]
-            if !self.tx.scroll.is_l1_msg && tx_chain_id != self.cfg.chain_id {
-                return Err(InvalidTransaction::InvalidChainId);
-            }
-        }
-
-        // Check that access list is empty for transactions before BERLIN
-        if !SPEC::enabled(SpecId::BERLIN) && !self.tx.access_list.is_empty() {
-            return Err(InvalidTransaction::AccessListNotSupported);
-        }
-
-        // - For CANCUN and later, check that the gas price is not more than the tx max
         // - For before CANCUN, check that `blob_hashes` and `max_fee_per_blob_gas` are empty / not set
-        if SPEC::enabled(SpecId::CANCUN) {
-            // Presence of max_fee_per_blob_gas means that this is blob transaction.
-            if let Some(max) = self.tx.max_fee_per_blob_gas {
-                // ensure that the user was willing to at least pay the current blob gasprice
-                let price = self.block.get_blob_gasprice().expect("already checked");
-                if U256::from(price) > max {
-                    return Err(InvalidTransaction::BlobGasPriceGreaterThanMax);
-                }
+        if !SPEC::enabled(SpecId::CANCUN)
+            && (self.tx.max_fee_per_blob_gas.is_some() || !self.tx.blob_hashes.is_empty())
+        {
+            return Err(InvalidTransaction::BlobVersionedHashesNotSupported);
+        }
 
-                // there must be at least one blob
-                if self.tx.blob_hashes.is_empty() {
-                    return Err(InvalidTransaction::EmptyBlobs);
-                }
+        // Presence of max_fee_per_blob_gas means that this is blob transaction.
+        if let Some(max) = self.tx.max_fee_per_blob_gas {
+            // ensure that the user was willing to at least pay the current blob gasprice
+            let price = self.block.get_blob_gasprice().expect("already checked");
+            if U256::from(price) > max {
+                return Err(InvalidTransaction::BlobGasPriceGreaterThanMax);
+            }
 
-                // The field `to` deviates slightly from the semantics with the exception
-                // that it MUST NOT be nil and therefore must always represent
-                // a 20-byte address. This means that blob transactions cannot
-                // have the form of a create transaction.
-                if self.tx.transact_to.is_create() {
-                    return Err(InvalidTransaction::BlobCreateTransaction);
-                }
+            // there must be at least one blob
+            if self.tx.blob_hashes.is_empty() {
+                return Err(InvalidTransaction::EmptyBlobs);
+            }
 
-                // all versioned blob hashes must start with VERSIONED_HASH_VERSION_KZG
-                for blob in self.tx.blob_hashes.iter() {
-                    if blob[0] != VERSIONED_HASH_VERSION_KZG {
-                        return Err(InvalidTransaction::BlobVersionNotSupported);
-                    }
-                }
+            // The field `to` deviates slightly from the semantics with the exception
+            // that it MUST NOT be nil and therefore must always represent
+            // a 20-byte address. This means that blob transactions cannot
+            // have the form of a create transaction.
+            if self.tx.transact_to.is_create() {
+                return Err(InvalidTransaction::BlobCreateTransaction);
+            }
 
-                // ensure the total blob gas spent is at most equal to the limit
-                // assert blob_gas_used <= MAX_BLOB_GAS_PER_BLOCK
-                let num_blobs = self.tx.blob_hashes.len();
-                if num_blobs > MAX_BLOB_NUMBER_PER_BLOCK as usize {
-                    return Err(InvalidTransaction::TooManyBlobs {
-                        have: num_blobs,
-                        max: MAX_BLOB_NUMBER_PER_BLOCK as usize,
-                    });
+            // all versioned blob hashes must start with VERSIONED_HASH_VERSION_KZG
+            for blob in self.tx.blob_hashes.iter() {
+                if blob[0] != VERSIONED_HASH_VERSION_KZG {
+                    return Err(InvalidTransaction::BlobVersionNotSupported);
                 }
+            }
+
+            // ensure the total blob gas spent is at most equal to the limit
+            // assert blob_gas_used <= MAX_BLOB_GAS_PER_BLOCK
+            let num_blobs = self.tx.blob_hashes.len();
+            if num_blobs > MAX_BLOB_NUMBER_PER_BLOCK as usize {
+                return Err(InvalidTransaction::TooManyBlobs {
+                    have: num_blobs,
+                    max: MAX_BLOB_NUMBER_PER_BLOCK as usize,
+                });
             }
         } else {
+            // if max_fee_per_blob_gas is not set, then blob_hashes must be empty
             if !self.tx.blob_hashes.is_empty() {
                 return Err(InvalidTransaction::BlobVersionedHashesNotSupported);
             }
-            if self.tx.max_fee_per_blob_gas.is_some() {
-                return Err(InvalidTransaction::MaxFeePerBlobGasNotSupported);
-            }
         }
 
-        if SPEC::enabled(SpecId::PRAGUE) {
-            if !self.tx.eof_initcodes.is_empty() {
-                // If initcode is set other fields must be empty
-                if !self.tx.blob_hashes.is_empty() {
-                    return Err(InvalidTransaction::BlobVersionedHashesNotSupported);
-                }
-                // EOF Create tx extends EIP-1559 tx. It must have max_fee_per_blob_gas
-                if self.tx.max_fee_per_blob_gas.is_some() {
-                    return Err(InvalidTransaction::MaxFeePerBlobGasNotSupported);
-                }
-                // EOF Create must have a to address
-                if matches!(self.tx.transact_to, TransactTo::Call(_)) {
-                    return Err(InvalidTransaction::EofCrateShouldHaveToAddress);
-                }
-            } else {
-                // If initcode is set check its bounds.
-                if self.tx.eof_initcodes.len() > 256 {
-                    return Err(InvalidTransaction::EofInitcodesNumberLimit);
-                }
-                if self
-                    .tx
-                    .eof_initcodes_hashed
-                    .iter()
-                    .any(|(_, i)| i.len() >= MAX_INITCODE_SIZE)
-                {
-                    return Err(InvalidTransaction::EofInitcodesSizeLimit);
-                }
-            }
-        } else {
-            // Initcode set when not supported.
-            if !self.tx.eof_initcodes.is_empty() {
-                return Err(InvalidTransaction::EofInitcodesNotSupported);
+        // check if EIP-7702 transaction is enabled.
+        if !SPEC::enabled(SpecId::PRAGUE) && self.tx.authorization_list.is_some() {
+            return Err(InvalidTransaction::AuthorizationListNotSupported);
+        }
+
+        if self.tx.authorization_list.is_some() {
+            // Check if other fields are unset.
+            if self.tx.max_fee_per_blob_gas.is_some() || !self.tx.blob_hashes.is_empty() {
+                return Err(InvalidTransaction::AuthorizationListInvalidFields);
             }
         }
 
@@ -246,13 +230,16 @@ impl Env {
         // EIP-3607: Reject transactions from senders with deployed code
         // This EIP is introduced after london but there was no collision in past
         // so we can leave it enabled always
-        #[cfg(not(feature = "scroll"))]
-        if !self.cfg.is_eip3607_disabled() && account.info.code_hash != KECCAK_EMPTY {
-            return Err(InvalidTransaction::RejectCallerWithCode);
-        }
-        #[cfg(feature = "scroll")]
-        if !self.cfg.is_eip3607_disabled() && account.info.code_hash != POSEIDON_EMPTY {
-            return Err(InvalidTransaction::RejectCallerWithCode);
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                if !self.cfg.is_eip3607_disabled() && account.info.code_hash != KECCAK_EMPTY {
+                    return Err(InvalidTransaction::RejectCallerWithCode);
+                }
+            } else {
+                if !self.cfg.is_eip3607_disabled() && account.info.code_hash != POSEIDON_EMPTY {
+                    return Err(InvalidTransaction::RejectCallerWithCode);
+                }
+            }
         }
 
         // Check that the transaction's nonce is correct
@@ -553,11 +540,12 @@ pub struct TxEnv {
     /// The gas price of the transaction.
     pub gas_price: U256,
     /// The destination of the transaction.
-    pub transact_to: TransactTo,
+    pub transact_to: TxKind,
     /// The value sent to `transact_to`.
     pub value: U256,
     /// The data of the transaction.
     pub data: Bytes,
+
     /// The nonce of the transaction.
     ///
     /// Caution: If set to `None`, then nonce validation against the account's nonce is skipped: [InvalidTransaction::NonceTooHigh] and [InvalidTransaction::NonceTooLow]
@@ -575,7 +563,7 @@ pub struct TxEnv {
     /// Added in [EIP-2930].
     ///
     /// [EIP-2930]: https://eips.ethereum.org/EIPS/eip-2930
-    pub access_list: Vec<(Address, Vec<U256>)>,
+    pub access_list: Vec<AccessListItem>,
 
     /// The priority fee per gas.
     ///
@@ -599,19 +587,13 @@ pub struct TxEnv {
     /// [EIP-4844]: https://eips.ethereum.org/EIPS/eip-4844
     pub max_fee_per_blob_gas: Option<U256>,
 
-    /// EOF Initcodes for EOF CREATE transaction
+    /// List of authorizations, that contains the signature that authorizes this
+    /// caller to place the code to signer account.
     ///
-    /// Incorporated as part of the Prague upgrade via [EOF]
+    /// Set EOA account code for one transaction
     ///
-    /// [EOF]: https://eips.ethereum.org/EIPS/eip-4844
-    pub eof_initcodes: Vec<Bytes>,
-
-    /// Internal Temporary field that stores the hashes of the EOF initcodes.
-    ///
-    /// Those are always cleared after the transaction is executed.
-    /// And calculated/overwritten every time transaction starts.
-    /// They are calculated from the [`Self::eof_initcodes`] field.
-    pub eof_initcodes_hashed: HashMap<B256, Bytes>,
+    /// [EIP-Set EOA account code for one transaction](https://eips.ethereum.org/EIPS/eip-7702)
+    pub authorization_list: Option<AuthorizationList>,
 
     #[cfg_attr(feature = "serde", serde(flatten))]
     #[cfg(feature = "optimism")]
@@ -654,7 +636,7 @@ impl Default for TxEnv {
             gas_limit: u64::MAX,
             gas_price: U256::ZERO,
             gas_priority_fee: None,
-            transact_to: TransactTo::Call(Address::ZERO), // will do nothing
+            transact_to: TxKind::Call(Address::ZERO), // will do nothing
             value: U256::ZERO,
             data: Bytes::new(),
             chain_id: None,
@@ -662,8 +644,7 @@ impl Default for TxEnv {
             access_list: Vec::new(),
             blob_hashes: Vec::new(),
             max_fee_per_blob_gas: None,
-            eof_initcodes: Vec::new(),
-            eof_initcodes_hashed: HashMap::new(),
+            authorization_list: None,
             #[cfg(feature = "optimism")]
             optimism: OptimismFields::default(),
             #[cfg(feature = "scroll")]
@@ -742,40 +723,8 @@ pub struct ScrollFields {
     pub rlp_bytes: Option<Bytes>,
 }
 
-/// Transaction destination.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum TransactTo {
-    /// Simple call to an address.
-    Call(Address),
-    /// Contract creation.
-    Create,
-}
-
-impl TransactTo {
-    /// Calls the given address.
-    #[inline]
-    pub fn call(address: Address) -> Self {
-        Self::Call(address)
-    }
-
-    /// Creates a contract.
-    #[inline]
-    pub fn create() -> Self {
-        Self::Create
-    }
-    /// Returns `true` if the transaction is `Call`.
-    #[inline]
-    pub fn is_call(&self) -> bool {
-        matches!(self, Self::Call(_))
-    }
-
-    /// Returns `true` if the transaction is `Create` or `Create2`.
-    #[inline]
-    pub fn is_create(&self) -> bool {
-        matches!(self, Self::Create)
-    }
-}
+/// Transaction destination
+pub type TransactTo = TxKind;
 
 /// Create scheme.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
@@ -819,7 +768,10 @@ mod tests {
     #[test]
     fn test_validate_tx_access_list() {
         let mut env = Env::default();
-        env.tx.access_list = vec![(Address::ZERO, vec![])];
+        env.tx.access_list = vec![AccessListItem {
+            address: Address::ZERO,
+            storage_keys: vec![],
+        }];
         assert_eq!(
             env.validate_tx::<crate::FrontierSpec>(),
             Err(InvalidTransaction::AccessListNotSupported)

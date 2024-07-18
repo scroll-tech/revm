@@ -1,10 +1,9 @@
 use super::constants::*;
 use crate::{
     num_words,
-    primitives::{Address, Bytes, SpecId, U256},
+    primitives::{AccessListItem, SpecId, U256},
     SelfDestructResult,
 };
-use std::vec::Vec;
 
 /// `const` Option `?`.
 macro_rules! tri {
@@ -357,19 +356,12 @@ pub fn validate_initial_tx_gas(
     spec_id: SpecId,
     input: &[u8],
     is_create: bool,
-    access_list: &[(Address, Vec<U256>)],
-    initcodes: &[Bytes],
+    access_list: &[AccessListItem],
+    authorization_list_num: u64,
 ) -> u64 {
     let mut initial_gas = 0;
-    let mut zero_data_len = input.iter().filter(|v| **v == 0).count() as u64;
-    let mut non_zero_data_len = input.len() as u64 - zero_data_len;
-
-    // Enabling of initcode is checked in `validate_env` handler.
-    for initcode in initcodes {
-        let zeros = initcode.iter().filter(|v| **v == 0).count() as u64;
-        zero_data_len += zeros;
-        non_zero_data_len += initcode.len() as u64 - zeros;
-    }
+    let zero_data_len = input.iter().filter(|v| **v == 0).count() as u64;
+    let non_zero_data_len = input.len() as u64 - zero_data_len;
 
     // initdate stipend
     initial_gas += zero_data_len * TRANSACTION_ZERO_DATA;
@@ -383,11 +375,9 @@ pub fn validate_initial_tx_gas(
 
     // get number of access list account and storages.
     if spec_id.is_enabled_in(SpecId::BERLIN) {
-        let accessed_slots = access_list
-            .iter()
-            .fold(0, |slot_count, (_, slots)| slot_count + slots.len() as u64);
+        let accessed_slots: usize = access_list.iter().map(|item| item.storage_keys.len()).sum();
         initial_gas += access_list.len() as u64 * ACCESS_LIST_ADDRESS;
-        initial_gas += accessed_slots * ACCESS_LIST_STORAGE_KEY;
+        initial_gas += accessed_slots as u64 * ACCESS_LIST_STORAGE_KEY;
     }
 
     // base stipend
@@ -403,9 +393,14 @@ pub fn validate_initial_tx_gas(
     };
 
     // EIP-3860: Limit and meter initcode
-    // Initcode stipend for bytecode analysis
+    // Init code stipend for bytecode analysis
     if spec_id.is_enabled_in(SpecId::SHANGHAI) && is_create {
         initial_gas += initcode_cost(input.len() as u64)
+    }
+
+    //   EIP-7702
+    if spec_id.is_enabled_in(SpecId::PRAGUE) {
+        initial_gas += authorization_list_num * PER_CONTRACT_CODE_BASE_COST;
     }
 
     initial_gas

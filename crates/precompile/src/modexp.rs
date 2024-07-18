@@ -5,7 +5,7 @@ use crate::{
 };
 use aurora_engine_modexp::modexp;
 use core::cmp::{max, min};
-use revm_primitives::Bytes;
+use revm_primitives::{Bytes, PrecompileOutput};
 
 #[cfg(feature = "scroll")]
 const SCROLL_LEN_LIMIT: U256 = U256::from_limbs([32, 0, 0, 0]);
@@ -46,13 +46,13 @@ pub fn bernoilli_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
 
     // modexp temporarily only accepts inputs of 32 bytes (256 bits) or less
     if base_len > SCROLL_LEN_LIMIT {
-        return Err(Error::ModexpBaseOverflow);
+        return Err(Error::ModexpBaseOverflow.into());
     }
     if exp_len > SCROLL_LEN_LIMIT {
-        return Err(Error::ModexpExpOverflow);
+        return Err(Error::ModexpExpOverflow.into());
     }
     if mod_len > SCROLL_LEN_LIMIT {
-        return Err(Error::ModexpModOverflow);
+        return Err(Error::ModexpModOverflow.into());
     }
 
     run_inner(input, gas_limit, 200, |a, b, c, d| {
@@ -81,7 +81,7 @@ where
 {
     // If there is no minimum gas, return error.
     if min_gas > gas_limit {
-        return Err(Error::OutOfGas);
+        return Err(Error::OutOfGas.into());
     }
 
     // The format of input is:
@@ -97,20 +97,20 @@ where
 
     // cast base and modulus to usize, it does not make sense to handle larger values
     let Ok(base_len) = usize::try_from(base_len) else {
-        return Err(Error::ModexpBaseOverflow);
+        return Err(Error::ModexpBaseOverflow.into());
     };
     let Ok(mod_len) = usize::try_from(mod_len) else {
-        return Err(Error::ModexpModOverflow);
+        return Err(Error::ModexpModOverflow.into());
     };
 
     // Handle a special case when both the base and mod length are zero.
     if base_len == 0 && mod_len == 0 {
-        return Ok((min_gas, Bytes::new()));
+        return Ok(PrecompileOutput::new(min_gas, Bytes::new()));
     }
 
     // Cast exponent length to usize, since it does not make sense to handle larger values.
     let Ok(exp_len) = usize::try_from(exp_len) else {
-        return Err(Error::ModexpModOverflow);
+        return Err(Error::ModexpModOverflow.into());
     };
 
     // Used to extract ADJUSTED_EXPONENT_LENGTH.
@@ -130,7 +130,7 @@ where
     // Check if we have enough gas.
     let gas_cost = calc_gas(base_len as u64, exp_len as u64, mod_len as u64, &exp_highp);
     if gas_cost > gas_limit {
-        return Err(Error::OutOfGas);
+        return Err(Error::OutOfGas.into());
     }
 
     // Padding is needed if the input does not contain all 3 values.
@@ -144,7 +144,10 @@ where
     let output = modexp(base, exponent, modulus);
 
     // left pad the result to modulus length. bytes will always by less or equal to modulus length.
-    Ok((gas_cost, left_pad_vec(&output, mod_len).into_owned().into()))
+    Ok(PrecompileOutput::new(
+        gas_cost,
+        left_pad_vec(&output, mod_len).into_owned().into(),
+    ))
 }
 
 pub fn byzantium_gas_calc(base_len: u64, exp_len: u64, mod_len: u64, exp_highp: &U256) -> u64 {
@@ -381,11 +384,11 @@ mod tests {
             let res = byzantium_run(&input, 100_000_000).unwrap();
             let expected = hex::decode(test.expected).unwrap();
             assert_eq!(
-                res.0, test_gas,
+                res.gas_used, test_gas,
                 "used gas not matching for test: {}",
                 test.name
             );
-            assert_eq!(res.1, expected, "test:{}", test.name);
+            assert_eq!(res.bytes, expected, "test:{}", test.name);
         }
     }
 
@@ -396,11 +399,11 @@ mod tests {
             let res = berlin_run(&input, 100_000_000).unwrap();
             let expected = hex::decode(test.expected).unwrap();
             assert_eq!(
-                res.0, test_gas,
+                res.gas_used, test_gas,
                 "used gas not matching for test: {}",
                 test.name
             );
-            assert_eq!(res.1, expected, "test:{}", test.name);
+            assert_eq!(res.bytes, expected, "test:{}", test.name);
         }
     }
 
@@ -408,6 +411,6 @@ mod tests {
     fn test_berlin_modexp_empty_input() {
         let res = berlin_run(&Bytes::new(), 100_000).unwrap();
         let expected: Vec<u8> = Vec::new();
-        assert_eq!(res.1, expected)
+        assert_eq!(res.bytes, expected)
     }
 }

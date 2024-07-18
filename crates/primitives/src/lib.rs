@@ -19,9 +19,10 @@ pub mod result;
 pub mod specification;
 pub mod state;
 pub mod utilities;
+pub use alloy_eips::eip2930::{AccessList, AccessListItem};
 pub use alloy_primitives::{
     self, address, b256, bytes, fixed_bytes, hex, hex_literal, ruint, uint, Address, Bytes,
-    FixedBytes, Log, LogData, B256, I256, U256,
+    FixedBytes, Log, LogData, TxKind, B256, I256, U256,
 };
 pub use bitvec;
 pub use bytecode::*;
