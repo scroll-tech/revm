@@ -37,10 +37,8 @@ macro_rules! require_init_eof {
 #[macro_export]
 macro_rules! check {
     ($interp:expr, $min:ident) => {
-        if const {
-            !<SPEC as $crate::primitives::Spec>::SPEC_ID
-                .is_enabled_in($crate::primitives::SpecId::$min)
-        } {
+        // TODO: Force const-eval on the condition with a `const {}` block once they are stable
+        if !<SPEC as $crate::primitives::Spec>::enabled($crate::primitives::SpecId::$min) {
             $interp.instruction_result = $crate::InstructionResult::NotActivated;
             return;
         }
