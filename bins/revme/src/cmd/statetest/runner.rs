@@ -10,7 +10,7 @@ use revm::{
     inspectors::TracerEip3155,
     primitives::{
         calc_excess_blob_gas, keccak256, Bytecode, Bytes, EVMResultGeneric, Env, ExecutionResult,
-        SpecId, TransactTo, B256, U256,
+        SpecId, TxKind, B256,
     },
     Evm, State,
 };
@@ -104,6 +104,18 @@ fn skip_test(path: &Path) -> bool {
         | "basefeeExample.json"
         | "eip1559.json"
         | "mergeTest.json"
+
+        // Test with some storage check.
+        | "RevertInCreateInInit_Paris.json"
+        | "RevertInCreateInInit.json"
+        | "dynamicAccountOverwriteEmpty.json"
+        | "dynamicAccountOverwriteEmpty_Paris.json"
+        | "RevertInCreateInInitCreate2Paris.json"
+        | "create2collisionStorage.json"
+        | "RevertInCreateInInitCreate2.json"
+        | "create2collisionStorageParis.json"
+        | "InitCollision.json"
+        | "InitCollisionParis.json"
 
         // These tests are passing, but they take a lot of time to execute so we are going to skip them.
         | "loopExp.json"
@@ -245,17 +257,23 @@ pub fn execute_test_suite(
         // Create database and insert cache
         let mut cache_state = revm::CacheState::new(false);
         for (address, info) in unit.pre {
+            #[cfg(feature = "scroll")]
+            let code_size = info.code.len();
+            let keccak_code_hash = keccak256(&info.code);
+            #[cfg(feature = "scroll")]
+            let poseidon_code_hash = revm::primitives::poseidon(&info.code);
+            let bytecode = Bytecode::new_raw(info.code);
             let acc_info = revm::primitives::AccountInfo {
                 balance: info.balance,
                 #[cfg(feature = "scroll")]
-                code_size: info.code.len(),
+                code_size,
                 #[cfg(not(feature = "scroll"))]
-                code_hash: keccak256(&info.code),
+                code_hash: keccak_code_hash,
                 #[cfg(feature = "scroll")]
-                code_hash: revm::primitives::poseidon(&info.code),
+                code_hash: poseidon_code_hash,
                 #[cfg(feature = "scroll")]
-                keccak_code_hash: keccak256(&info.code),
-                code: Some(Bytecode::new_raw(info.code)),
+                keccak_code_hash,
+                code: Some(bytecode),
                 nonce: info.nonce,
             };
             cache_state.insert_account_with_storage(address, acc_info, info.storage);
@@ -311,12 +329,10 @@ pub fn execute_test_suite(
 
         // post and execution
         for (spec_name, tests) in unit.post {
-            if matches!(
-                spec_name,
-                SpecName::ByzantiumToConstantinopleAt5
-                    | SpecName::Constantinople
-                    | SpecName::Unknown
-            ) {
+            // Constantinople was immediately extended by Petersburg.
+            // There isn't any production Constantinople transaction
+            // so we don't support it and skip right to Petersburg.
+            if spec_name == SpecName::Constantinople {
                 continue;
             }
 
@@ -338,22 +354,16 @@ pub fn execute_test_suite(
                     .access_lists
                     .get(test.indexes.data)
                     .and_then(Option::as_deref)
-                    .unwrap_or_default()
-                    .iter()
-                    .map(|item| {
-                        (
-                            item.address,
-                            item.storage_keys
-                                .iter()
-                                .map(|key| U256::from_be_bytes(key.0))
-                                .collect::<Vec<_>>(),
-                        )
-                    })
-                    .collect();
+                    .cloned()
+                    .unwrap_or_default();
+                let Ok(auth_list) = test.eip7702_authorization_list() else {
+                    continue;
+                };
+                env.tx.authorization_list = auth_list;
 
                 let to = match unit.transaction.to {
-                    Some(add) => TransactTo::Call(add),
-                    None => TransactTo::Create,
+                    Some(add) => TxKind::Call(add),
+                    None => TxKind::Create,
                 };
                 env.tx.transact_to = to;
 

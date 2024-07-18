@@ -10,8 +10,8 @@ use crate::{
 };
 use core::mem;
 use revm_interpreter::{
-    opcode::InstructionTables, CallOutcome, EOFCreateInput, EOFCreateOutcome, InterpreterAction,
-    InterpreterResult, EMPTY_SHARED_MEMORY,
+    opcode::InstructionTables, CallOutcome, EOFCreateInputs, InterpreterAction, InterpreterResult,
+    EMPTY_SHARED_MEMORY,
 };
 use std::boxed::Box;
 
@@ -164,7 +164,7 @@ pub fn insert_create_outcome<EXT, DB: Database>(
 #[inline]
 pub fn eofcreate<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
-    inputs: Box<EOFCreateInput>,
+    inputs: Box<EOFCreateInputs>,
 ) -> Result<FrameOrResult, EVMError<DB::Error>> {
     context.evm.make_eofcreate_frame(SPEC::SPEC_ID, &inputs)
 }
@@ -174,16 +174,15 @@ pub fn eofcreate_return<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
     frame: Box<EOFCreateFrame>,
     mut interpreter_result: InterpreterResult,
-) -> Result<EOFCreateOutcome, EVMError<DB::Error>> {
+) -> Result<CreateOutcome, EVMError<DB::Error>> {
     context.evm.eofcreate_return::<SPEC>(
         &mut interpreter_result,
         frame.created_address,
         frame.frame_data.checkpoint,
     );
-    Ok(EOFCreateOutcome::new(
+    Ok(CreateOutcome::new(
         interpreter_result,
-        frame.created_address,
-        frame.return_memory_range,
+        Some(frame.created_address),
     ))
 }
 
@@ -191,7 +190,7 @@ pub fn eofcreate_return<SPEC: Spec, EXT, DB: Database>(
 pub fn insert_eofcreate_outcome<EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
     frame: &mut Frame,
-    outcome: EOFCreateOutcome,
+    outcome: CreateOutcome,
 ) -> Result<(), EVMError<DB::Error>> {
     core::mem::replace(&mut context.evm.error, Ok(()))?;
     frame
@@ -232,7 +231,6 @@ mod tests {
         assert_eq!(gas.refunded(), 0);
     }
 
-    // TODO
     #[test]
     fn test_consume_gas_with_refund() {
         let mut return_gas = Gas::new(90);

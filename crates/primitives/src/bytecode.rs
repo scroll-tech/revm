@@ -1,8 +1,10 @@
 pub mod eof;
 pub mod legacy;
 
-pub use eof::Eof;
+use eof::EofDecodeError;
+pub use eof::{Eof, EOF_MAGIC, EOF_MAGIC_BYTES, EOF_MAGIC_HASH};
 pub use legacy::{JumpTable, LegacyAnalyzedBytecode};
+use std::sync::Arc;
 
 use crate::{keccak256, Bytes, B256, KECCAK_EMPTY};
 #[cfg(feature = "scroll")]
@@ -17,7 +19,7 @@ pub enum Bytecode {
     /// The bytecode has been analyzed for valid jump destinations.
     LegacyAnalyzed(LegacyAnalyzedBytecode),
     /// Ethereum Object Format
-    Eof(Eof),
+    Eof(Arc<Eof>),
 }
 
 impl Default for Bytecode {
@@ -76,7 +78,7 @@ impl Bytecode {
 
     /// Return reference to the EOF if bytecode is EOF.
     #[inline]
-    pub const fn eof(&self) -> Option<&Eof> {
+    pub const fn eof(&self) -> Option<&Arc<Eof>> {
         match self {
             Self::Eof(eof) => Some(eof),
             _ => None,
@@ -89,10 +91,32 @@ impl Bytecode {
         matches!(self, Self::Eof(_))
     }
 
+    /// Creates a new legacy [`Bytecode`].
+    #[inline]
+    pub fn new_legacy(raw: Bytes) -> Self {
+        Self::LegacyRaw(raw)
+    }
+
     /// Creates a new raw [`Bytecode`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if bytecode is EOF and has incorrect format.
     #[inline]
     pub fn new_raw(bytecode: Bytes) -> Self {
-        Self::LegacyRaw(bytecode)
+        Self::new_raw_checked(bytecode).expect("Expect correct EOF bytecode")
+    }
+
+    /// Creates a new raw [`Bytecode`].
+    ///
+    /// Returns an error on incorrect EOF format.
+    #[inline]
+    pub fn new_raw_checked(bytecode: Bytes) -> Result<Self, EofDecodeError> {
+        if bytecode.get(..2) == Some(&[0xEF, 00]) {
+            Ok(Self::Eof(Arc::new(Eof::decode(bytecode)?)))
+        } else {
+            Ok(Self::LegacyRaw(bytecode))
+        }
     }
 
     /// Create new checked bytecode.
@@ -187,5 +211,29 @@ impl Bytecode {
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+
+    #[test]
+    fn eof_arc_clone() {
+        let eof = Arc::new(Eof::default());
+        let bytecode = Bytecode::Eof(Arc::clone(&eof));
+
+        // Cloning the Bytecode should not clone the underlying Eof
+        let cloned_bytecode = bytecode.clone();
+        if let Bytecode::Eof(original_arc) = bytecode {
+            if let Bytecode::Eof(cloned_arc) = cloned_bytecode {
+                assert!(Arc::ptr_eq(&original_arc, &cloned_arc));
+            } else {
+                panic!("Cloned bytecode is not Eof");
+            }
+        } else {
+            panic!("Original bytecode is not Eof");
+        }
     }
 }

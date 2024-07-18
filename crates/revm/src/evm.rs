@@ -2,16 +2,17 @@ use crate::{
     builder::{EvmBuilder, HandlerStage, SetGenericStage},
     db::{Database, DatabaseCommit, EmptyDB},
     handler::Handler,
-    interpreter::{Host, InterpreterAction, SharedMemory},
+    interpreter::{
+        CallInputs, CreateInputs, EOFCreateInputs, Host, InterpreterAction, SharedMemory,
+    },
     primitives::{
         specification::SpecId, BlockEnv, CfgEnv, EVMError, EVMResult, EnvWithHandlerCfg,
-        ExecutionResult, HandlerCfg, ResultAndState, TransactTo, TxEnv,
+        ExecutionResult, HandlerCfg, ResultAndState, TxEnv, TxKind, EOF_MAGIC_BYTES,
     },
     Context, ContextWithHandlerCfg, Frame, FrameOrResult, FrameResult,
 };
 use core::fmt;
-use revm_interpreter::{CallInputs, CreateInputs};
-use std::vec::Vec;
+use std::{boxed::Box, vec::Vec};
 
 /// EVM call stack limit.
 pub const CALL_STACK_LIMIT: u64 = 1024;
@@ -132,7 +133,6 @@ impl<'a, EXT, DB: Database> Evm<'a, EXT, DB> {
                 }
                 InterpreterAction::None => unreachable!("InterpreterAction::None is not expected"),
             };
-
             // handle result
             match frame_or_result {
                 FrameOrResult::Frame(frame) => {
@@ -324,6 +324,7 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
 
     /// Transact pre-verified transaction.
     fn transact_preverified_inner(&mut self, initial_gas_spend: u64) -> EVMResult<DB::Error> {
+        let spec_id = self.spec_id();
         let ctx = &mut self.context;
         let pre_exec = self.handler.pre_execution();
 
@@ -342,14 +343,27 @@ impl<EXT, DB: Database> Evm<'_, EXT, DB> {
         let exec = self.handler.execution();
         // call inner handling of call/create
         let first_frame_or_result = match ctx.evm.env.tx.transact_to {
-            TransactTo::Call(_) => exec.call(
+            TxKind::Call(_) => exec.call(
                 ctx,
                 CallInputs::new_boxed(&ctx.evm.env.tx, gas_limit).unwrap(),
             )?,
-            TransactTo::Create => exec.create(
-                ctx,
-                CreateInputs::new_boxed(&ctx.evm.env.tx, gas_limit).unwrap(),
-            )?,
+            TxKind::Create => {
+                // if first byte of data is magic 0xEF00, then it is EOFCreate.
+                if spec_id.is_enabled_in(SpecId::PRAGUE_EOF)
+                    && ctx.env().tx.data.get(0..2) == Some(&EOF_MAGIC_BYTES)
+                {
+                    exec.eofcreate(
+                        ctx,
+                        Box::new(EOFCreateInputs::new_tx(&ctx.evm.env.tx, gas_limit)),
+                    )?
+                } else {
+                    // Safe to unwrap because we are sure that it is create tx.
+                    exec.create(
+                        ctx,
+                        CreateInputs::new_boxed(&ctx.evm.env.tx, gas_limit).unwrap(),
+                    )?
+                }
+            }
         };
 
         // Starts the main running loop.

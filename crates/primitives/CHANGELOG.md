@@ -6,6 +6,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.0.0](https://github.com/bluealloy/revm/compare/revm-primitives-v6.0.0...revm-primitives-v7.0.0) - 2024-07-16
+
+### Added
+- *(EOF)* Bytecode::new_raw supports EOF, new_raw_checked added ([#1607](https://github.com/bluealloy/revm/pull/1607))
+- use `kzg-rs` for kzg point evaluation ([#1558](https://github.com/bluealloy/revm/pull/1558))
+
+### Fixed
+- *(eip7702)* Add tests and fix some bugs ([#1605](https://github.com/bluealloy/revm/pull/1605))
+- *(EOF)* Use cfg code size limit for eofcreate ([#1606](https://github.com/bluealloy/revm/pull/1606))
+- missing kzg_settings if kzg-rs feature enabled ([#1601](https://github.com/bluealloy/revm/pull/1601))
+
+### Other
+- bump alloy deps ([#1623](https://github.com/bluealloy/revm/pull/1623))
+- *(deps)* bump alloy-primitives from 0.7.6 to 0.7.7 ([#1612](https://github.com/bluealloy/revm/pull/1612))
+- group optimism invalid txn errors ([#1604](https://github.com/bluealloy/revm/pull/1604))
+- *(deps)* bump bitflags from 2.5.0 to 2.6.0 ([#1583](https://github.com/bluealloy/revm/pull/1583))
+- Rename gas_price to gas_limit for precompile args ([#1593](https://github.com/bluealloy/revm/pull/1593))
+
+## [6.0.0](https://github.com/bluealloy/revm/compare/revm-primitives-v5.0.0...revm-primitives-v6.0.0) - 2024-07-08
+
+### Added
+- *(Precompiles)* Throw fatal error if c-kzg is disabled ([#1589](https://github.com/bluealloy/revm/pull/1589))
+- *(Prague)* Add EIP-7702 ([#1565](https://github.com/bluealloy/revm/pull/1565))
+- add helper function to mape EVMError's Database error variant ([#1567](https://github.com/bluealloy/revm/pull/1567))
+
+### Other
+- *(README)* add rbuilder to used-by ([#1585](https://github.com/bluealloy/revm/pull/1585))
+- add utility function AccountInfo::from_bytecode ([#1577](https://github.com/bluealloy/revm/pull/1577))
+- replace AccessList with alloy version ([#1552](https://github.com/bluealloy/revm/pull/1552))
+- replace U256 with u64 in BLOCKHASH ([#1505](https://github.com/bluealloy/revm/pull/1505))
+
+## [5.0.0](https://github.com/bluealloy/revm/compare/revm-primitives-v4.0.0...revm-primitives-v5.0.0) - 2024-06-20
+
+### Added
+- *(EOF)* Put EOF bytecode behind an Arc ([#1517](https://github.com/bluealloy/revm/pull/1517))
+- *(EOF)* EXTCODECOPY,EXTCODESIZE,EXTCODEHASH eof support ([#1504](https://github.com/bluealloy/revm/pull/1504))
+- *(precompiles)* fatal error for precompiles ([#1499](https://github.com/bluealloy/revm/pull/1499))
+- Persist reverted account and storage slot lookups in `JournaledState` ([#1437](https://github.com/bluealloy/revm/pull/1437))
+- *(EOF)* EIP-7698 eof creation transaction ([#1467](https://github.com/bluealloy/revm/pull/1467))
+- *(optimism)* Add secp256r1 precompile for Fjord ([#1436](https://github.com/bluealloy/revm/pull/1436))
+- *(EOF)* Add CALLF/JUMPF stack checks ([#1417](https://github.com/bluealloy/revm/pull/1417))
+- *(EOF)* remove TXCREATE ([#1415](https://github.com/bluealloy/revm/pull/1415))
+
+### Fixed
+- *(eof)* fixture 2 tests ([#1550](https://github.com/bluealloy/revm/pull/1550))
+- *(primitives)* specify the optimism cfg on spec_to_generic ([#1412](https://github.com/bluealloy/revm/pull/1412))
+
+### Other
+- replace TransactTo with TxKind ([#1542](https://github.com/bluealloy/revm/pull/1542))
+- remove DatabaseWithDebugError ([#1545](https://github.com/bluealloy/revm/pull/1545))
+- avoid cloning precompiles ([#1486](https://github.com/bluealloy/revm/pull/1486))
+- added simular to used-by ([#1521](https://github.com/bluealloy/revm/pull/1521))
+- derive PartialEq and Hash on EnvKzgSettings ([#1494](https://github.com/bluealloy/revm/pull/1494))
+- remove old deprecated items ([#1489](https://github.com/bluealloy/revm/pull/1489))
+- *(primitives)* rename State/Storage to EvmState/EvmStorage ([#1459](https://github.com/bluealloy/revm/pull/1459))
+- Revert "Revert "feat: implement EIP-2935 ([#1354](https://github.com/bluealloy/revm/pull/1354))" ([#1424](https://github.com/bluealloy/revm/pull/1424))" ([#1426](https://github.com/bluealloy/revm/pull/1426))
+- Revert "feat: implement EIP-2935 ([#1354](https://github.com/bluealloy/revm/pull/1354))" ([#1424](https://github.com/bluealloy/revm/pull/1424))
+
 ## [4.0.0](https://github.com/bluealloy/revm/compare/revm-primitives-v3.1.1...revm-primitives-v4.0.0) - 2024-05-12
 
 ### Added

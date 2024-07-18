@@ -6,8 +6,8 @@ use crate::{
     CallFrame, Context, CreateFrame, Frame, FrameOrResult, FrameResult,
 };
 use revm_interpreter::{
-    opcode::InstructionTables, CallOutcome, CreateOutcome, EOFCreateInput, EOFCreateOutcome,
-    InterpreterAction, InterpreterResult,
+    opcode::InstructionTables, CallOutcome, CreateOutcome, EOFCreateInputs, InterpreterAction,
+    InterpreterResult,
 };
 use std::{boxed::Box, sync::Arc};
 
@@ -91,7 +91,7 @@ pub type InsertCreateOutcomeHandle<'a, EXT, DB> = Arc<
 pub type FrameEOFCreateHandle<'a, EXT, DB> = Arc<
     dyn Fn(
             &mut Context<EXT, DB>,
-            Box<EOFCreateInput>,
+            Box<EOFCreateInputs>,
         ) -> Result<FrameOrResult, EVMError<<DB as Database>::Error>>
         + 'a,
 >;
@@ -102,7 +102,7 @@ pub type FrameEOFCreateReturnHandle<'a, EXT, DB> = Arc<
             &mut Context<EXT, DB>,
             Box<EOFCreateFrame>,
             InterpreterResult,
-        ) -> Result<EOFCreateOutcome, EVMError<<DB as Database>::Error>>
+        ) -> Result<CreateOutcome, EVMError<<DB as Database>::Error>>
         + 'a,
 >;
 
@@ -111,7 +111,7 @@ pub type InsertEOFCreateOutcomeHandle<'a, EXT, DB> = Arc<
     dyn Fn(
             &mut Context<EXT, DB>,
             &mut Frame,
-            EOFCreateOutcome,
+            CreateOutcome,
         ) -> Result<(), EVMError<<DB as Database>::Error>>
         + 'a,
 >;
@@ -192,7 +192,7 @@ impl<'a, EXT, DB: Database> ExecutionHandler<'a, EXT, DB> {
         context: &mut Context<EXT, DB>,
         inputs: Box<CallInputs>,
     ) -> Result<FrameOrResult, EVMError<DB::Error>> {
-        (self.call)(context, inputs.clone())
+        (self.call)(context, inputs)
     }
 
     /// Call registered handler for call return.
@@ -255,7 +255,7 @@ impl<'a, EXT, DB: Database> ExecutionHandler<'a, EXT, DB> {
     pub fn eofcreate(
         &self,
         context: &mut Context<EXT, DB>,
-        inputs: Box<EOFCreateInput>,
+        inputs: Box<EOFCreateInputs>,
     ) -> Result<FrameOrResult, EVMError<DB::Error>> {
         (self.eofcreate)(context, inputs)
     }
@@ -267,7 +267,7 @@ impl<'a, EXT, DB: Database> ExecutionHandler<'a, EXT, DB> {
         context: &mut Context<EXT, DB>,
         frame: Box<EOFCreateFrame>,
         interpreter_result: InterpreterResult,
-    ) -> Result<EOFCreateOutcome, EVMError<DB::Error>> {
+    ) -> Result<CreateOutcome, EVMError<DB::Error>> {
         (self.eofcreate_return)(context, frame, interpreter_result)
     }
 
@@ -277,7 +277,7 @@ impl<'a, EXT, DB: Database> ExecutionHandler<'a, EXT, DB> {
         &self,
         context: &mut Context<EXT, DB>,
         frame: &mut Frame,
-        outcome: EOFCreateOutcome,
+        outcome: CreateOutcome,
     ) -> Result<(), EVMError<DB::Error>> {
         (self.insert_eofcreate_outcome)(context, frame, outcome)
     }

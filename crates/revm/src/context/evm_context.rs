@@ -1,19 +1,25 @@
 use revm_interpreter::CallValue;
+use revm_precompile::PrecompileErrors;
 
 use super::inner_evm_context::InnerEvmContext;
 use crate::{
     db::Database,
     interpreter::{
-        return_ok, CallInputs, Contract, Gas, InstructionResult, Interpreter, InterpreterResult,
+        analysis::validate_eof, return_ok, CallInputs, Contract, CreateInputs, EOFCreateInputs,
+        EOFCreateKind, Gas, InstructionResult, Interpreter, InterpreterResult,
     },
-    primitives::{Address, Bytes, EVMError, Env, HashSet, U256},
+    primitives::{
+        keccak256, Address, Bytecode, Bytes, CreateScheme, EVMError, Env, Eof,
+        SpecId::{self, *},
+        B256, EOF_MAGIC_BYTES, U256,
+    },
     ContextPrecompiles, FrameOrResult, CALL_STACK_LIMIT,
 };
 use core::{
     fmt,
     ops::{Deref, DerefMut},
 };
-use std::boxed::Box;
+use std::{boxed::Box, sync::Arc};
 
 /// EVM context that contains the inner EVM context and precompiles.
 pub struct EvmContext<DB: Database> {
@@ -95,8 +101,9 @@ impl<DB: Database> EvmContext<DB> {
     #[inline]
     pub fn set_precompiles(&mut self, precompiles: ContextPrecompiles<DB>) {
         // set warm loaded addresses.
-        self.journaled_state.warm_preloaded_addresses =
-            precompiles.addresses().copied().collect::<HashSet<_>>();
+        self.journaled_state
+            .warm_preloaded_addresses
+            .extend(precompiles.addresses_set());
         self.precompiles = precompiles;
     }
 
@@ -104,13 +111,16 @@ impl<DB: Database> EvmContext<DB> {
     #[inline]
     fn call_precompile(
         &mut self,
-        address: Address,
+        address: &Address,
         input_data: &Bytes,
         gas: Gas,
-    ) -> Option<InterpreterResult> {
-        let out = self
-            .precompiles
-            .call(address, input_data, gas.limit(), &mut self.inner)?;
+    ) -> Result<Option<InterpreterResult>, EVMError<DB::Error>> {
+        let Some(outcome) =
+            self.precompiles
+                .call(address, input_data, gas.limit(), &mut self.inner)
+        else {
+            return Ok(None);
+        };
 
         let mut result = InterpreterResult {
             result: InstructionResult::Return,
@@ -118,24 +128,25 @@ impl<DB: Database> EvmContext<DB> {
             output: Bytes::new(),
         };
 
-        match out {
-            Ok((gas_used, data)) => {
-                if result.gas.record_cost(gas_used) {
+        match outcome {
+            Ok(output) => {
+                if result.gas.record_cost(output.gas_used) {
                     result.result = InstructionResult::Return;
-                    result.output = data;
+                    result.output = output.bytes;
                 } else {
                     result.result = InstructionResult::PrecompileOOG;
                 }
             }
-            Err(e) => {
-                result.result = if e == crate::precompile::Error::OutOfGas {
+            Err(PrecompileErrors::Error(e)) => {
+                result.result = if e.is_oog() {
                     InstructionResult::PrecompileOOG
                 } else {
                     InstructionResult::PrecompileError
                 };
             }
+            Err(PrecompileErrors::Fatal { msg }) => return Err(EVMError::Precompile(msg)),
         }
-        Some(result)
+        Ok(Some(result))
     }
 
     /// Make call frame
@@ -162,25 +173,25 @@ impl<DB: Database> EvmContext<DB> {
             return return_result(InstructionResult::CallTooDeep);
         }
 
-        let (account, _) = self
+        // Make account warm and loaded
+        let _ = self
             .inner
             .journaled_state
-            .load_code(inputs.bytecode_address, &mut self.inner.db)?;
-        let code_hash = account.info.code_hash();
-        let bytecode = account.info.code.clone().unwrap_or_default();
+            .load_account(inputs.bytecode_address, &mut self.inner.db)?;
 
         // Create subroutine checkpoint
         let checkpoint = self.journaled_state.checkpoint();
 
         // Touch address. For "EIP-158 State Clear", this will erase empty accounts.
         match inputs.value {
-            // if transfer value is zero, do the touch.
+            // if transfer value is zero, load account and force the touch.
             CallValue::Transfer(value) if value == U256::ZERO => {
                 self.load_account(inputs.target_address)?;
                 self.journaled_state.touch(&inputs.target_address);
             }
             CallValue::Transfer(value) => {
-                // Transfer value from caller to called account
+                // Transfer value from caller to called account. As value get transferred
+                // target gets touched.
                 if let Some(result) = self.inner.journaled_state.transfer(
                     &inputs.caller,
                     &inputs.target_address,
@@ -194,7 +205,7 @@ impl<DB: Database> EvmContext<DB> {
             _ => {}
         };
 
-        if let Some(result) = self.call_precompile(inputs.bytecode_address, &inputs.input, gas) {
+        if let Some(result) = self.call_precompile(&inputs.bytecode_address, &inputs.input, gas)? {
             if matches!(result.result, return_ok!()) {
                 self.journaled_state.checkpoint_commit();
             } else {
@@ -204,7 +215,27 @@ impl<DB: Database> EvmContext<DB> {
                 result,
                 inputs.return_memory_offset.clone(),
             ))
-        } else if !bytecode.is_empty() {
+        } else {
+            let (account, _) = self
+                .inner
+                .journaled_state
+                .load_code(inputs.bytecode_address, &mut self.inner.db)?;
+
+            let code_hash = account.info.code_hash();
+            let bytecode = account.info.code.clone().unwrap_or_default();
+
+            // ExtDelegateCall is not allowed to call non-EOF contracts.
+            if inputs.scheme.is_ext_delegate_call()
+                && bytecode.bytes_slice().get(..2) != Some(&EOF_MAGIC_BYTES)
+            {
+                return return_result(InstructionResult::InvalidExtDelegateCallTarget);
+            }
+
+            if bytecode.is_empty() {
+                self.journaled_state.checkpoint_commit();
+                return return_result(InstructionResult::Stop);
+            }
+
             let contract =
                 Contract::new_with_context(inputs.input.clone(), bytecode, Some(code_hash), inputs);
             // Create interpreter and executes call and push new CallStackFrame.
@@ -213,10 +244,214 @@ impl<DB: Database> EvmContext<DB> {
                 checkpoint,
                 Interpreter::new(contract, gas.limit(), inputs.is_static),
             ))
-        } else {
-            self.journaled_state.checkpoint_commit();
-            return_result(InstructionResult::Stop)
         }
+    }
+
+    /// Make create frame.
+    #[inline]
+    pub fn make_create_frame(
+        &mut self,
+        spec_id: SpecId,
+        inputs: &CreateInputs,
+    ) -> Result<FrameOrResult, EVMError<DB::Error>> {
+        let return_error = |e| {
+            Ok(FrameOrResult::new_create_result(
+                InterpreterResult {
+                    result: e,
+                    gas: Gas::new(inputs.gas_limit),
+                    output: Bytes::new(),
+                },
+                None,
+            ))
+        };
+
+        // Check depth
+        if self.journaled_state.depth() > CALL_STACK_LIMIT {
+            return return_error(InstructionResult::CallTooDeep);
+        }
+
+        // Prague EOF
+        if spec_id.is_enabled_in(PRAGUE_EOF) && inputs.init_code.get(..2) == Some(&EOF_MAGIC_BYTES)
+        {
+            return return_error(InstructionResult::CreateInitCodeStartingEF00);
+        }
+
+        // Fetch balance of caller.
+        let (caller_balance, _) = self.balance(inputs.caller)?;
+
+        // Check if caller has enough balance to send to the created contract.
+        if caller_balance < inputs.value {
+            return return_error(InstructionResult::OutOfFunds);
+        }
+
+        // Increase nonce of caller and check if it overflows
+        let old_nonce;
+        if let Some(nonce) = self.journaled_state.inc_nonce(inputs.caller) {
+            old_nonce = nonce - 1;
+        } else {
+            return return_error(InstructionResult::Return);
+        }
+
+        // Create address
+        let mut init_code_hash = B256::ZERO;
+        let created_address = match inputs.scheme {
+            CreateScheme::Create => inputs.caller.create(old_nonce),
+            CreateScheme::Create2 { salt } => {
+                init_code_hash = keccak256(&inputs.init_code);
+                inputs.caller.create2(salt.to_be_bytes(), init_code_hash)
+            }
+        };
+
+        // created address is not allowed to be a precompile.
+        if self.precompiles.contains(&created_address) {
+            return return_error(InstructionResult::CreateCollision);
+        }
+
+        // warm load account.
+        self.load_account(created_address)?;
+
+        // create account, transfer funds and make the journal checkpoint.
+        let checkpoint = match self.journaled_state.create_account_checkpoint(
+            inputs.caller,
+            created_address,
+            inputs.value,
+            spec_id,
+        ) {
+            Ok(checkpoint) => checkpoint,
+            Err(e) => {
+                return return_error(e);
+            }
+        };
+
+        let bytecode = Bytecode::new_legacy(inputs.init_code.clone());
+
+        let contract = Contract::new(
+            Bytes::new(),
+            bytecode,
+            Some(init_code_hash),
+            created_address,
+            None,
+            inputs.caller,
+            inputs.value,
+        );
+
+        Ok(FrameOrResult::new_create_frame(
+            created_address,
+            checkpoint,
+            Interpreter::new(contract, inputs.gas_limit, false),
+        ))
+    }
+
+    /// Make create frame.
+    #[inline]
+    pub fn make_eofcreate_frame(
+        &mut self,
+        spec_id: SpecId,
+        inputs: &EOFCreateInputs,
+    ) -> Result<FrameOrResult, EVMError<DB::Error>> {
+        let return_error = |e| {
+            Ok(FrameOrResult::new_eofcreate_result(
+                InterpreterResult {
+                    result: e,
+                    gas: Gas::new(inputs.gas_limit),
+                    output: Bytes::new(),
+                },
+                None,
+            ))
+        };
+
+        let (input, initcode, created_address) = match &inputs.kind {
+            EOFCreateKind::Opcode {
+                initcode,
+                input,
+                created_address,
+            } => (input.clone(), initcode.clone(), Some(*created_address)),
+            EOFCreateKind::Tx { initdata } => {
+                // decode eof and init code.
+                let Ok((eof, input)) = Eof::decode_dangling(initdata.clone()) else {
+                    return return_error(InstructionResult::InvalidEOFInitCode);
+                };
+
+                if validate_eof(&eof).is_err() {
+                    // TODO (EOF) new error type.
+                    return return_error(InstructionResult::InvalidEOFInitCode);
+                }
+
+                // Use nonce from tx (if set) to calculate address.
+                // If not set, use the nonce from the account.
+                let nonce = self
+                    .env
+                    .tx
+                    .nonce
+                    .map(|nonce| self.env.tx.caller.create(nonce));
+
+                (input, eof, nonce)
+            }
+        };
+
+        // Check depth
+        if self.journaled_state.depth() > CALL_STACK_LIMIT {
+            return return_error(InstructionResult::CallTooDeep);
+        }
+
+        // Fetch balance of caller.
+        let (caller_balance, _) = self.balance(inputs.caller)?;
+
+        // Check if caller has enough balance to send to the created contract.
+        if caller_balance < inputs.value {
+            return return_error(InstructionResult::OutOfFunds);
+        }
+
+        // Increase nonce of caller and check if it overflows
+        let Some(nonce) = self.journaled_state.inc_nonce(inputs.caller) else {
+            // can't happen on mainnet.
+            return return_error(InstructionResult::Return);
+        };
+        let old_nonce = nonce - 1;
+
+        let created_address = created_address.unwrap_or_else(|| inputs.caller.create(old_nonce));
+
+        // created address is not allowed to be a precompile.
+        if self.precompiles.contains(&created_address) {
+            return return_error(InstructionResult::CreateCollision);
+        }
+
+        // Load account so it needs to be marked as warm for access list.
+        self.load_account(created_address)?;
+
+        // create account, transfer funds and make the journal checkpoint.
+        let checkpoint = match self.journaled_state.create_account_checkpoint(
+            inputs.caller,
+            created_address,
+            inputs.value,
+            spec_id,
+        ) {
+            Ok(checkpoint) => checkpoint,
+            Err(e) => {
+                return return_error(e);
+            }
+        };
+
+        let contract = Contract::new(
+            input.clone(),
+            // fine to clone as it is Bytes.
+            Bytecode::Eof(Arc::new(initcode.clone())),
+            None,
+            created_address,
+            None,
+            inputs.caller,
+            inputs.value,
+        );
+
+        let mut interpreter = Interpreter::new(contract, inputs.gas_limit, false);
+        // EOF init will enable RETURNCONTRACT opcode.
+        interpreter.set_is_eof_init();
+
+        Ok(FrameOrResult::new_eofcreate_frame(
+            created_address,
+            checkpoint,
+            interpreter,
+        ))
     }
 }
 
@@ -227,7 +462,7 @@ pub(crate) mod test_utils {
     use crate::{
         db::{CacheDB, EmptyDB},
         journaled_state::JournaledState,
-        primitives::{address, SpecId},
+        primitives::{address, HashSet, SpecId},
     };
 
     /// Mock caller address.
@@ -279,6 +514,7 @@ pub(crate) mod test_utils {
                 journaled_state: JournaledState::new(SpecId::CANCUN, HashSet::new()),
                 db,
                 error: Ok(()),
+                valid_authorizations: Vec::new(),
                 #[cfg(any(feature = "optimism", feature = "scroll"))]
                 l1_block_info: None,
             },
@@ -294,6 +530,7 @@ pub(crate) mod test_utils {
                 journaled_state: JournaledState::new(SpecId::CANCUN, HashSet::new()),
                 db,
                 error: Ok(()),
+                valid_authorizations: Default::default(),
                 #[cfg(any(feature = "optimism", feature = "scroll"))]
                 l1_block_info: None,
             },
@@ -352,7 +589,7 @@ mod tests {
             result.interpreter_result().result,
             InstructionResult::OutOfFunds
         );
-        let checkpointed = vec![vec![JournalEntry::AccountLoaded { address: contract }]];
+        let checkpointed = vec![vec![JournalEntry::AccountWarmed { address: contract }]];
         assert_eq!(evm_context.journaled_state.journal, checkpointed);
         assert_eq!(evm_context.journaled_state.depth, 0);
     }

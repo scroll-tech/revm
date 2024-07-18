@@ -354,7 +354,7 @@ impl<'a, BuilderStage, EXT, DB: Database> EvmBuilder<'a, BuilderStage, EXT, DB> 
     /// When called, EvmBuilder will transition from SetGenericStage to HandlerStage.
     pub fn append_handler_register_box(
         mut self,
-        handle_register: register::HandleRegisterBox<EXT, DB>,
+        handle_register: register::HandleRegisterBox<'a, EXT, DB>,
     ) -> EvmBuilder<'a, HandlerStage, EXT, DB> {
         self.handler
             .append_handler_register(register::HandleRegisters::Box(handle_register));
@@ -469,11 +469,12 @@ mod test {
         inspector::inspector_handle_register,
         inspectors::NoOpInspector,
         primitives::{
-            address, AccountInfo, Address, Bytecode, Bytes, PrecompileResult, TransactTo, U256,
+            address, AccountInfo, Address, Bytecode, Bytes, PrecompileResult, TxKind, U256,
         },
         Context, ContextPrecompile, ContextStatefulPrecompile, Evm, InMemoryDB, InnerEvmContext,
     };
     use revm_interpreter::{gas, Host, Interpreter};
+    use revm_precompile::PrecompileOutput;
     use std::{cell::RefCell, rc::Rc, sync::Arc};
 
     /// Custom evm context
@@ -484,7 +485,7 @@ mod test {
 
     #[test]
     fn simple_add_stateful_instruction() {
-        let code = Bytecode::new_raw([0xEF, 0x00].into());
+        let code = Bytecode::new_raw([0xED, 0x00].into());
         #[cfg(feature = "scroll")]
         let poseidon_code_hash = code.poseidon_hash_slow();
         #[cfg(feature = "scroll")]
@@ -508,7 +509,7 @@ mod test {
                     AccountInfo::new(U256::ZERO, 0, poseidon_code_hash, keccak_code_hash, code);
                 db.insert_account_info(to_addr, acc)
             })
-            .modify_tx_env(|tx| tx.transact_to = TransactTo::Call(to_addr))
+            .modify_tx_env(|tx| tx.transact_to = TxKind::Call(to_addr))
             // we need to use handle register box to capture the custom context in the handle
             // register
             .append_handler_register_box(Box::new(move |handler| {
@@ -527,7 +528,7 @@ mod test {
                 // can insert the custom instruction as a boxed instruction
                 handler
                     .instruction_table
-                    .insert_boxed(0xEF, custom_instruction);
+                    .insert_boxed(0xED, custom_instruction);
             }))
             .build();
 
@@ -548,7 +549,7 @@ mod test {
             gas!(interp, CUSTOM_INSTRUCTION_COST);
         }
 
-        let code = Bytecode::new_raw([0xEF, 0x00].into());
+        let code = Bytecode::new_raw([0xED, 0x00].into());
         #[cfg(feature = "scroll")]
         let poseidon_code_hash = code.poseidon_hash_slow();
         #[cfg(feature = "scroll")]
@@ -567,9 +568,9 @@ mod test {
                     AccountInfo::new(U256::ZERO, 0, poseidon_code_hash, keccak_code_hash, code);
                 db.insert_account_info(to_addr, acc)
             })
-            .modify_tx_env(|tx| tx.transact_to = TransactTo::Call(to_addr))
+            .modify_tx_env(|tx| tx.transact_to = TxKind::Call(to_addr))
             .append_handler_register(|handler| {
-                handler.instruction_table.insert(0xEF, custom_instruction)
+                handler.instruction_table.insert(0xED, custom_instruction)
             })
             .build();
 
@@ -656,10 +657,10 @@ mod test {
             fn call(
                 &self,
                 _input: &Bytes,
-                _gas_price: u64,
+                _gas_limit: u64,
                 _context: &mut InnerEvmContext<EmptyDB>,
             ) -> PrecompileResult {
-                Ok((10, Bytes::new()))
+                Ok(PrecompileOutput::new(10, Bytes::new()))
             }
         }
 

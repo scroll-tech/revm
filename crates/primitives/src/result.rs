@@ -1,4 +1,4 @@
-use crate::{Address, Bytes, Log, State, U256};
+use crate::{Address, Bytes, EvmState, Log, U256};
 use core::fmt;
 use std::{boxed::Box, string::String, vec::Vec};
 
@@ -14,7 +14,7 @@ pub struct ResultAndState {
     /// Status of execution
     pub result: ExecutionResult,
     /// State that got updated
-    pub state: State,
+    pub state: EvmState,
 }
 
 /// Result of a transaction execution.
@@ -148,6 +148,24 @@ pub enum EVMError<DBError> {
     ///
     /// Useful for handler registers where custom logic would want to return their own custom error.
     Custom(String),
+    /// Precompile error.
+    Precompile(String),
+}
+
+impl<DBError> EVMError<DBError> {
+    /// Maps a `DBError` to a new error type using the provided closure, leaving other variants unchanged.
+    pub fn map_db_err<F, E>(self, op: F) -> EVMError<E>
+    where
+        F: FnOnce(DBError) -> E,
+    {
+        match self {
+            Self::Transaction(e) => EVMError::Transaction(e),
+            Self::Header(e) => EVMError::Header(e),
+            Self::Database(e) => EVMError::Database(op(e)),
+            Self::Precompile(e) => EVMError::Precompile(e),
+            Self::Custom(e) => EVMError::Custom(e),
+        }
+    }
 }
 
 #[cfg(feature = "std")]
@@ -157,7 +175,7 @@ impl<DBError: std::error::Error + 'static> std::error::Error for EVMError<DBErro
             Self::Transaction(e) => Some(e),
             Self::Header(e) => Some(e),
             Self::Database(e) => Some(e),
-            Self::Custom(_) => None,
+            Self::Precompile(_) | Self::Custom(_) => None,
         }
     }
 }
@@ -168,7 +186,7 @@ impl<DBError: fmt::Display> fmt::Display for EVMError<DBError> {
             Self::Transaction(e) => write!(f, "transaction validation error: {e}"),
             Self::Header(e) => write!(f, "header validation error: {e}"),
             Self::Database(e) => write!(f, "database error: {e}"),
-            Self::Custom(e) => f.write_str(e),
+            Self::Precompile(e) | Self::Custom(e) => f.write_str(e),
         }
     }
 }
@@ -183,6 +201,45 @@ impl<DBError> From<InvalidHeader> for EVMError<DBError> {
     fn from(value: InvalidHeader) -> Self {
         Self::Header(value)
     }
+}
+
+/// Transaction validation error for Optimism.
+#[cfg(feature = "optimism")]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum OptimismInvalidTransaction {
+    /// System transactions are not supported post-regolith hardfork.
+    ///
+    /// Before the Regolith hardfork, there was a special field in the `Deposit` transaction
+    /// type that differentiated between `system` and `user` deposit transactions. This field
+    /// was deprecated in the Regolith hardfork, and this error is thrown if a `Deposit` transaction
+    /// is found with this field set to `true` after the hardfork activation.
+    ///
+    /// In addition, this error is internal, and bubbles up into a [HaltReason::FailedDeposit] error
+    /// in the `revm` handler for the consumer to easily handle. This is due to a state transition
+    /// rule on OP Stack chains where, if for any reason a deposit transaction fails, the transaction
+    /// must still be included in the block, the sender nonce is bumped, the `mint` value persists, and
+    /// special gas accounting rules are applied. Normally on L1, [EVMError::Transaction] errors
+    /// are cause for non-inclusion, so a special [HaltReason] variant was introduced to handle this
+    /// case for failed deposit transactions.
+    #[cfg(feature = "optimism")]
+    DepositSystemTxPostRegolith,
+    /// Deposit transaction haults bubble up to the global main return handler, wiping state and
+    /// only increasing the nonce + persisting the mint value.
+    ///
+    /// This is a catch-all error for any deposit transaction that is results in a [HaltReason] error
+    /// post-regolith hardfork. This allows for a consumer to easily handle special cases where
+    /// a deposit transaction fails during validation, but must still be included in the block.
+    ///
+    /// In addition, this error is internal, and bubbles up into a [HaltReason::FailedDeposit] error
+    /// in the `revm` handler for the consumer to easily handle. This is due to a state transition
+    /// rule on OP Stack chains where, if for any reason a deposit transaction fails, the transaction
+    /// must still be included in the block, the sender nonce is bumped, the `mint` value persists, and
+    /// special gas accounting rules are applied. Normally on L1, [EVMError::Transaction] errors
+    /// are cause for non-inclusion, so a special [HaltReason] variant was introduced to handle this
+    /// case for failed deposit transactions.
+    #[cfg(feature = "optimism")]
+    HaltedDepositPostRegolith,
 }
 
 /// Transaction validation error.
@@ -248,50 +305,35 @@ pub enum InvalidTransaction {
     },
     /// Blob transaction contains a versioned hash with an incorrect version
     BlobVersionNotSupported,
-    /// EOF TxCreate transaction is not supported before Prague hardfork.
-    EofInitcodesNotSupported,
-    /// EOF TxCreate transaction max initcode number reached.
-    EofInitcodesNumberLimit,
-    /// EOF initcode in TXCreate is too large.
-    EofInitcodesSizeLimit,
     /// EOF crate should have `to` address
     EofCrateShouldHaveToAddress,
-    /// System transactions are not supported post-regolith hardfork.
-    ///
-    /// Before the Regolith hardfork, there was a special field in the `Deposit` transaction
-    /// type that differentiated between `system` and `user` deposit transactions. This field
-    /// was deprecated in the Regolith hardfork, and this error is thrown if a `Deposit` transaction
-    /// is found with this field set to `true` after the hardfork activation.
-    ///
-    /// In addition, this error is internal, and bubbles up into a [HaltReason::FailedDeposit] error
-    /// in the `revm` handler for the consumer to easily handle. This is due to a state transition
-    /// rule on OP Stack chains where, if for any reason a deposit transaction fails, the transaction
-    /// must still be included in the block, the sender nonce is bumped, the `mint` value persists, and
-    /// special gas accounting rules are applied. Normally on L1, [EVMError::Transaction] errors
-    /// are cause for non-inclusion, so a special [HaltReason] variant was introduced to handle this
-    /// case for failed deposit transactions.
+    /// EIP-7702 is not enabled.
+    AuthorizationListNotSupported,
+    /// EIP-7702 transaction has invalid fields set.
+    AuthorizationListInvalidFields,
+    /// Optimism-specific transaction validation error.
     #[cfg(feature = "optimism")]
-    DepositSystemTxPostRegolith,
-    /// Deposit transaction haults bubble up to the global main return handler, wiping state and
-    /// only increasing the nonce + persisting the mint value.
-    ///
-    /// This is a catch-all error for any deposit transaction that is results in a [HaltReason] error
-    /// post-regolith hardfork. This allows for a consumer to easily handle special cases where
-    /// a deposit transaction fails during validation, but must still be included in the block.
-    ///
-    /// In addition, this error is internal, and bubbles up into a [HaltReason::FailedDeposit] error
-    /// in the `revm` handler for the consumer to easily handle. This is due to a state transition
-    /// rule on OP Stack chains where, if for any reason a deposit transaction fails, the transaction
-    /// must still be included in the block, the sender nonce is bumped, the `mint` value persists, and
-    /// special gas accounting rules are applied. Normally on L1, [EVMError::Transaction] errors
-    /// are cause for non-inclusion, so a special [HaltReason] variant was introduced to handle this
-    /// case for failed deposit transactions.
-    #[cfg(feature = "optimism")]
-    HaltedDepositPostRegolith,
+    OptimismError(OptimismInvalidTransaction),
 }
 
 #[cfg(feature = "std")]
 impl std::error::Error for InvalidTransaction {}
+
+#[cfg(feature = "optimism")]
+impl fmt::Display for OptimismInvalidTransaction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::DepositSystemTxPostRegolith => write!(
+                f,
+                "deposit system transactions post regolith hardfork are not supported"
+            ),
+            Self::HaltedDepositPostRegolith => write!(
+                f,
+                "deposit transaction halted post-regolith; error will be bubbled up to main return handler"
+            ),
+        }
+    }
+}
 
 impl fmt::Display for InvalidTransaction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -346,24 +388,13 @@ impl fmt::Display for InvalidTransaction {
                 write!(f, "too many blobs, have {have}, max {max}")
             }
             Self::BlobVersionNotSupported => write!(f, "blob version not supported"),
-            Self::EofInitcodesNotSupported => write!(f, "EOF initcodes not supported"),
             Self::EofCrateShouldHaveToAddress => write!(f, "EOF crate should have `to` address"),
-            Self::EofInitcodesSizeLimit => write!(f, "EOF initcodes size limit"),
-            Self::EofInitcodesNumberLimit => write!(f, "EOF initcodes number limit"),
-            #[cfg(feature = "optimism")]
-            Self::DepositSystemTxPostRegolith => {
-                write!(
-                    f,
-                    "deposit system transactions post regolith hardfork are not supported"
-                )
+            Self::AuthorizationListNotSupported => write!(f, "authorization list not supported"),
+            Self::AuthorizationListInvalidFields => {
+                write!(f, "authorization list tx has invalid fields")
             }
             #[cfg(feature = "optimism")]
-            Self::HaltedDepositPostRegolith => {
-                write!(
-                    f,
-                    "deposit transaction halted post-regolith; error will be bubbled up to main return handler"
-                )
-            }
+            Self::OptimismError(op_error) => op_error.fmt(f),
         }
     }
 }
@@ -397,6 +428,7 @@ pub enum SuccessReason {
     Stop,
     Return,
     SelfDestruct,
+    EofReturnContract,
 }
 
 /// Indicates that the EVM has experienced an exceptional halt. This causes execution to
@@ -428,6 +460,13 @@ pub enum HaltReason {
     CallNotAllowedInsideStatic,
     OutOfFunds,
     CallTooDeep,
+
+    /// Aux data overflow, new aux data is larger tha u16 max size.
+    EofAuxDataOverflow,
+    /// Aud data is smaller then already present data size.
+    EofAuxDataTooSmall,
+    /// EOF Subroutine stack overflow
+    EOFFunctionStackOverflow,
 
     /* Optimism errors */
     #[cfg(feature = "optimism")]

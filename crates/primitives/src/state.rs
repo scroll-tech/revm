@@ -6,13 +6,13 @@ use core::hash::{Hash, Hasher};
 use crate::POSEIDON_EMPTY;
 
 /// EVM State is a mapping from addresses to accounts.
-pub type State = HashMap<Address, Account>;
+pub type EvmState = HashMap<Address, Account>;
 
 /// Structure used for EIP-1153 transient storage.
 pub type TransientStorage = HashMap<(Address, U256), U256>;
 
-/// An account's Storage is a mapping from 256-bit integer keys to [StorageSlot]s.
-pub type Storage = HashMap<U256, StorageSlot>;
+/// An account's Storage is a mapping from 256-bit integer keys to [EvmStorageSlot]s.
+pub type EvmStorage = HashMap<U256, EvmStorageSlot>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -20,7 +20,7 @@ pub struct Account {
     /// Balance, nonce, and code.
     pub info: AccountInfo,
     /// Storage cache
-    pub storage: Storage,
+    pub storage: EvmStorage,
     /// Account status flags.
     pub status: AccountStatus,
 }
@@ -44,6 +44,8 @@ bitflags! {
         /// used only for pre spurious dragon hardforks where existing and empty were two separate states.
         /// it became same state after EIP-161: State trie clearing
         const LoadedAsNotExisting = 0b0001000;
+        /// used to mark account as cold
+        const Cold = 0b0010000;
     }
 }
 
@@ -103,6 +105,21 @@ impl Account {
         self.status -= AccountStatus::Created;
     }
 
+    /// Mark account as cold.
+    pub fn mark_cold(&mut self) {
+        self.status |= AccountStatus::Cold;
+    }
+
+    /// Mark account as warm and return true if it was previously cold.
+    pub fn mark_warm(&mut self) -> bool {
+        if self.status.contains(AccountStatus::Cold) {
+            self.status -= AccountStatus::Cold;
+            true
+        } else {
+            false
+        }
+    }
+
     /// Is account loaded as not existing from database
     /// This is needed for pre spurious dragon hardforks where
     /// existing and empty were two separate states.
@@ -122,8 +139,8 @@ impl Account {
 
     /// Returns an iterator over the storage slots that have been changed.
     ///
-    /// See also [StorageSlot::is_changed]
-    pub fn changed_storage_slots(&self) -> impl Iterator<Item = (&U256, &StorageSlot)> {
+    /// See also [EvmStorageSlot::is_changed]
+    pub fn changed_storage_slots(&self) -> impl Iterator<Item = (&U256, &EvmStorageSlot)> {
         self.storage.iter().filter(|(_, slot)| slot.is_changed())
     }
 }
@@ -141,47 +158,56 @@ impl From<AccountInfo> for Account {
 /// This type keeps track of the current value of a storage slot.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct StorageSlot {
-    /// The value of the storage slot before it was changed.
-    ///
-    /// When the slot is first loaded, this is the original value.
-    ///
-    /// If the slot was not changed, this is equal to the present value.
-    pub previous_or_original_value: U256,
-    /// When loaded with sload present value is set to original value
+pub struct EvmStorageSlot {
+    /// Original value of the storage slot.
+    pub original_value: U256,
+    /// Present value of the storage slot.
     pub present_value: U256,
+    /// Represents if the storage slot is cold.
+    pub is_cold: bool,
 }
 
-impl StorageSlot {
-    /// Creates a new _unchanged_ `StorageSlot` for the given value.
+impl EvmStorageSlot {
+    /// Creates a new _unchanged_ `EvmStorageSlot` for the given value.
     pub fn new(original: U256) -> Self {
         Self {
-            previous_or_original_value: original,
+            original_value: original,
             present_value: original,
+            is_cold: false,
         }
     }
 
-    /// Creates a new _changed_ `StorageSlot`.
-    pub fn new_changed(previous_or_original_value: U256, present_value: U256) -> Self {
+    /// Creates a new _changed_ `EvmStorageSlot`.
+    pub fn new_changed(original_value: U256, present_value: U256) -> Self {
         Self {
-            previous_or_original_value,
+            original_value,
             present_value,
+            is_cold: false,
         }
     }
-
     /// Returns true if the present value differs from the original value
     pub fn is_changed(&self) -> bool {
-        self.previous_or_original_value != self.present_value
+        self.original_value != self.present_value
     }
 
     /// Returns the original value of the storage slot.
     pub fn original_value(&self) -> U256 {
-        self.previous_or_original_value
+        self.original_value
     }
 
     /// Returns the current value of the storage slot.
     pub fn present_value(&self) -> U256 {
         self.present_value
+    }
+
+    /// Marks the storage slot as cold.
+    pub fn mark_cold(&mut self) {
+        self.is_cold = true;
+    }
+
+    /// Marks the storage slot as warm and returns a bool indicating if it was previously cold.
+    pub fn mark_warm(&mut self) -> bool {
+        core::mem::replace(&mut self.is_cold, false)
     }
 }
 
@@ -342,6 +368,23 @@ impl AccountInfo {
         self.code.take()
     }
 
+    /// Set code and its hash to the account.
+    pub fn set_code_with_hash(
+        &mut self,
+        code: Bytecode,
+        hash: B256,
+        #[cfg(feature = "scroll")] keccak_code_hash: B256,
+    ) {
+        #[cfg(feature = "scroll")]
+        {
+            self.code_size = code.len();
+            self.keccak_code_hash = keccak_code_hash;
+        }
+
+        self.code = Some(code);
+        self.code_hash = hash;
+    }
+
     /// Re-hash the code, set to empty if code is None,
     /// otherwise update the code hash.
     pub fn set_code_rehash_slow(&mut self, code: Option<Bytecode>) {
@@ -379,6 +422,34 @@ impl AccountInfo {
         AccountInfo {
             balance,
             ..Default::default()
+        }
+    }
+
+    pub fn from_bytecode(bytecode: Bytecode) -> Self {
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                let hash = bytecode.hash_slow();
+
+                AccountInfo {
+                    balance: U256::ZERO,
+                    nonce: 1,
+                    code: Some(bytecode),
+                    code_hash: hash,
+                }
+            } else {
+                let code_size = bytecode.len();
+                let code_hash = bytecode.poseidon_hash_slow();
+                let keccak_code_hash = bytecode.keccak_hash_slow();
+
+                AccountInfo {
+                    balance: U256::ZERO,
+                    nonce: 1,
+                    code_size,
+                    code: Some(bytecode),
+                    code_hash,
+                    keccak_code_hash,
+                }
+            }
         }
     }
 }
@@ -450,5 +521,25 @@ mod tests {
         account.unmark_selfdestruct();
         assert!(account.is_touched());
         assert!(!account.is_selfdestructed());
+    }
+
+    #[test]
+    fn account_is_cold() {
+        let mut account = Account::default();
+
+        // Account is not cold by default
+        assert!(!account.status.contains(crate::AccountStatus::Cold));
+
+        // When marking warm account as warm again, it should return false
+        assert!(!account.mark_warm());
+
+        // Mark account as cold
+        account.mark_cold();
+
+        // Account is cold
+        assert!(account.status.contains(crate::AccountStatus::Cold));
+
+        // When marking cold account as warm, it should return true
+        assert!(account.mark_warm());
     }
 }

@@ -90,7 +90,7 @@ impl SharedMemory {
     #[cfg(feature = "memory_limit")]
     #[inline]
     pub fn limit_reached(&self, new_size: usize) -> bool {
-        (self.last_checkpoint + new_size) as u64 > self.memory_limit
+        self.last_checkpoint.saturating_add(new_size) as u64 > self.memory_limit
     }
 
     /// Prepares the shared memory for a new context.
@@ -256,7 +256,7 @@ impl SharedMemory {
     ///
     /// # Panics
     ///
-    /// Panics on out of bounds.
+    /// Panics if memory is out of bounds.
     #[inline]
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn set_data(&mut self, memory_offset: usize, data_offset: usize, len: usize, data: &[u8]) {

@@ -1,10 +1,3 @@
-use crate::{
-    interpreter::{CallInputs, CreateInputs, EOFCreateInput, EOFCreateOutcome, Interpreter},
-    primitives::{db::Database, Address, Log, U256},
-    EvmContext,
-};
-use auto_impl::auto_impl;
-
 #[cfg(feature = "std")]
 mod customprinter;
 #[cfg(all(feature = "std", feature = "serde-json"))]
@@ -13,10 +6,16 @@ mod gas;
 mod handler_register;
 mod noop;
 
-// Exports.
+pub use handler_register::{inspector_handle_register, GetInspector};
 
-pub use handler_register::{inspector_handle_register, inspector_instruction, GetInspector};
-use revm_interpreter::{CallOutcome, CreateOutcome};
+use crate::{
+    interpreter::{
+        CallInputs, CallOutcome, CreateInputs, CreateOutcome, EOFCreateInputs, Interpreter,
+    },
+    primitives::{db::Database, Address, Log, U256},
+    EvmContext,
+};
+use auto_impl::auto_impl;
 
 /// [Inspector] implementations.
 pub mod inspectors {
@@ -67,7 +66,8 @@ pub trait Inspector<DB: Database> {
 
     /// Called when a log is emitted.
     #[inline]
-    fn log(&mut self, context: &mut EvmContext<DB>, log: &Log) {
+    fn log(&mut self, interp: &mut Interpreter, context: &mut EvmContext<DB>, log: &Log) {
+        let _ = interp;
         let _ = context;
         let _ = log;
     }
@@ -135,22 +135,26 @@ pub trait Inspector<DB: Database> {
         outcome
     }
 
+    /// Called when EOF creating is called.
+    ///
+    /// This can happen from create TX or from EOFCREATE opcode.
     fn eofcreate(
         &mut self,
         context: &mut EvmContext<DB>,
-        inputs: &mut EOFCreateInput,
-    ) -> Option<EOFCreateOutcome> {
+        inputs: &mut EOFCreateInputs,
+    ) -> Option<CreateOutcome> {
         let _ = context;
         let _ = inputs;
         None
     }
 
+    /// Called when eof creating has ended.
     fn eofcreate_end(
         &mut self,
         context: &mut EvmContext<DB>,
-        inputs: &EOFCreateInput,
-        outcome: EOFCreateOutcome,
-    ) -> EOFCreateOutcome {
+        inputs: &EOFCreateInputs,
+        outcome: CreateOutcome,
+    ) -> CreateOutcome {
         let _ = context;
         let _ = inputs;
         outcome
