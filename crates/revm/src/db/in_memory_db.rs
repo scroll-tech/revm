@@ -232,8 +232,8 @@ impl<ExtDB: DatabaseRef> Database for CacheDB<ExtDB> {
             DbMapEntry::Occupied(mut acc_entry) => {
                 let acc_entry = acc_entry.get_mut();
                 match acc_entry.storage.entry(index) {
-                    Entry::Occupied(entry) => Ok(*entry.get()),
-                    Entry::Vacant(entry) => {
+                    DbMapEntry::Occupied(entry) => Ok(*entry.get()),
+                    DbMapEntry::Vacant(entry) => {
                         if matches!(
                             acc_entry.account_state,
                             AccountState::StorageCleared | AccountState::NotExisting
@@ -327,7 +327,7 @@ pub struct DbAccount {
     /// If account is selfdestructed or newly created, storage will be cleared.
     pub account_state: AccountState,
     /// storage slots
-    pub storage: HashMap<U256, U256>,
+    pub storage: DbMap<U256, U256>,
 }
 
 impl DbAccount {
