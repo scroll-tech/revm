@@ -7,6 +7,15 @@ use crate::Database;
 use core::convert::Infallible;
 use std::vec::Vec;
 
+#[cfg(not(feature = "ordered-cache-db"))]
+use crate::primitives::hash_map::Entry as DbMapEntry;
+#[cfg(not(feature = "ordered-cache-db"))]
+use crate::primitives::HashMap as DbMap;
+#[cfg(feature = "ordered-cache-db")]
+use std::collections::btree_map::Entry as DbMapEntry;
+#[cfg(feature = "ordered-cache-db")]
+use std::collections::BTreeMap as DbMap;
+
 #[cfg(feature = "scroll")]
 use crate::primitives::POSEIDON_EMPTY;
 
@@ -25,7 +34,7 @@ pub type InMemoryDB = CacheDB<EmptyDB>;
 pub struct CacheDB<ExtDB> {
     /// Account info where None means it is not existing. Not existing state is needed for Pre TANGERINE forks.
     /// `code` is always `None`, and bytecode can be found in `contracts`.
-    pub accounts: HashMap<Address, DbAccount>,
+    pub accounts: DbMap<Address, DbAccount>,
     /// Tracks all contracts by their code hash.
     pub contracts: HashMap<B256, Bytecode>,
     /// All logs that were committed via [DatabaseCommit::commit].
@@ -56,7 +65,7 @@ impl<ExtDB> CacheDB<ExtDB> {
         }
         contracts.insert(B256::ZERO, Bytecode::default());
         Self {
-            accounts: HashMap::new(),
+            accounts: DbMap::new(),
             contracts,
             logs: Vec::default(),
             block_hashes: HashMap::new(),
@@ -111,8 +120,8 @@ impl<ExtDB: DatabaseRef> CacheDB<ExtDB> {
     pub fn load_account(&mut self, address: Address) -> Result<&mut DbAccount, ExtDB::Error> {
         let db = &self.db;
         match self.accounts.entry(address) {
-            Entry::Occupied(entry) => Ok(entry.into_mut()),
-            Entry::Vacant(entry) => Ok(entry.insert(
+            DbMapEntry::Occupied(entry) => Ok(entry.into_mut()),
+            DbMapEntry::Vacant(entry) => Ok(entry.insert(
                 db.basic_ref(address)?
                     .map(|info| DbAccount {
                         info,
@@ -191,8 +200,8 @@ impl<ExtDB: DatabaseRef> Database for CacheDB<ExtDB> {
 
     fn basic(&mut self, address: Address) -> Result<Option<AccountInfo>, Self::Error> {
         let basic = match self.accounts.entry(address) {
-            Entry::Occupied(entry) => entry.into_mut(),
-            Entry::Vacant(entry) => entry.insert(
+            DbMapEntry::Occupied(entry) => entry.into_mut(),
+            DbMapEntry::Vacant(entry) => entry.insert(
                 self.db
                     .basic_ref(address)?
                     .map(|info| DbAccount {
@@ -220,7 +229,7 @@ impl<ExtDB: DatabaseRef> Database for CacheDB<ExtDB> {
     /// It is assumed that account is already loaded.
     fn storage(&mut self, address: Address, index: U256) -> Result<U256, Self::Error> {
         match self.accounts.entry(address) {
-            Entry::Occupied(mut acc_entry) => {
+            DbMapEntry::Occupied(mut acc_entry) => {
                 let acc_entry = acc_entry.get_mut();
                 match acc_entry.storage.entry(index) {
                     Entry::Occupied(entry) => Ok(*entry.get()),
@@ -238,7 +247,7 @@ impl<ExtDB: DatabaseRef> Database for CacheDB<ExtDB> {
                     }
                 }
             }
-            Entry::Vacant(acc_entry) => {
+            DbMapEntry::Vacant(acc_entry) => {
                 // acc needs to be loaded for us to access slots.
                 let info = self.db.basic_ref(address)?;
                 let (account, value) = if info.is_some() {
