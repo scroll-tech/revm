@@ -224,7 +224,7 @@ impl<DB: Database> InnerEvmContext<DB> {
 
     /// Get keccak code hash of address.
     #[inline]
-    #[cfg(feature = "scroll")]
+    #[cfg(feature = "scroll-poseidon-codehash")]
     pub fn keccak_code_hash(
         &mut self,
         address: Address,

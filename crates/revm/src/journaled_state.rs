@@ -152,7 +152,7 @@ impl JournaledState {
         address: Address,
         code: Bytecode,
         hash: B256,
-        #[cfg(feature = "scroll")] keccak_code_hash: B256,
+        #[cfg(feature = "scroll-poseidon-codehash")] keccak_code_hash: B256,
     ) {
         let account = self.state.get_mut(&address).unwrap();
         Self::touch_account(self.journal.last_mut().unwrap(), &address, account);
@@ -163,7 +163,7 @@ impl JournaledState {
             .push(JournalEntry::CodeChange { address });
 
         cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll"))] {
+            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
                 account.info.set_code_with_hash(code, hash)
             } else {
                 account.info.set_code_with_hash(code, hash, keccak_code_hash)
@@ -175,12 +175,11 @@ impl JournaledState {
     /// Assume account is warm
     #[inline]
     pub fn set_code(&mut self, address: Address, code: Bytecode) {
+        let hash = code.hash_slow();
         cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll"))] {
-                let hash = code.hash_slow();
+            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
                 self.set_code_with_hash(address, code, hash)
             } else {
-                let hash = code.poseidon_hash_slow();
                 let keccak_code_hash = code.keccak_hash_slow();
                 self.set_code_with_hash(address, code, hash, keccak_code_hash)
             }

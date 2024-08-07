@@ -105,6 +105,7 @@ pub enum SpecId {
     /// Curie update introduces:
     ///   - Support `EIP-1559` transactions.
     ///   - Support the `BASEFEE`, `MCOPY`, `TLOAD`, `TSTORE` opcodes.
+    ///
     /// Although the Curie update include new opcodes in Cancun, the most important change
     /// `EIP-4844` is not included. So we sort it before Cancun.
     CURIE = 19,

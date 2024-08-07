@@ -116,18 +116,15 @@ impl<T: Transport + Clone, N: Network, P: Provider<T, N>> DatabaseRef for AlloyD
 
         let balance = balance?;
         let code = Bytecode::new_raw(code?.0.into());
-        #[cfg(not(feature = "scroll"))]
         let code_hash = code.hash_slow();
-        #[cfg(feature = "scroll")]
-        let code_hash = code.poseidon_hash_slow();
         let nonce = nonce?;
 
         cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll"))] {
-                return Ok(Some(AccountInfo::new(balance, nonce, code_hash, code)))
+            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
+                Ok(Some(AccountInfo::new(balance, nonce, code_hash, code)))
             } else {
                 let keccak_code_hash = code.keccak_hash_slow();
-                return Ok(Some(AccountInfo::new(balance, nonce, code_hash, keccak_code_hash, code)))
+                Ok(Some(AccountInfo::new(balance, nonce, code_hash, keccak_code_hash, code)))
             }
         }
     }

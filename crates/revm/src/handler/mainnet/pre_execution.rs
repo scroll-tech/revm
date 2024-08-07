@@ -96,7 +96,7 @@ pub fn load_accounts<SPEC: Spec, EXT, DB: Database>(
                     .load_code(authorization.address, &mut context.evm.inner.db)?;
                 let code = account.info.code.clone();
                 let code_hash = account.info.code_hash;
-                #[cfg(feature = "scroll")]
+                #[cfg(feature = "scroll-poseidon-codehash")]
                 let keccak_code_hash = account.info.keccak_code_hash;
 
                 // If code is empty no need to set code or add it to valid
@@ -110,7 +110,7 @@ pub fn load_accounts<SPEC: Spec, EXT, DB: Database>(
                     authority,
                     code.unwrap_or_default(),
                     code_hash,
-                    #[cfg(feature = "scroll")]
+                    #[cfg(feature = "scroll-poseidon-codehash")]
                     keccak_code_hash,
                 );
 

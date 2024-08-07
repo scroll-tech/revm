@@ -22,7 +22,16 @@ jobs:
       fail-fast: false
       matrix:
         rust: [ "stable", "beta", "nightly" ]
-        flags: [ "--no-default-features", "", "--features=\"all, scroll\"", "--features=\"all, optimism\"" ]
+        flags: [
+          "--no-default-features",
+          "",
+          "--features=\"scroll\"",
+          "--features=\"scroll, scroll-poseidon-codehash\"",
+          "--features=\"all, scroll\"",
+          "--features=\"all, scroll, scroll-poseidon-codehash\"",
+          "--features=\"optimism\""
+          "--features=\"all, optimism\""
+        ]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -38,7 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        features: ["", "optimism"]
+        features: [ "", "optimism" ]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -53,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        features: ["", "serde", "std"]
+        features: [ "", "serde", "std" ]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

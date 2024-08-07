@@ -168,7 +168,7 @@ impl<EXT, DB: Database> Host for Context<EXT, DB> {
             .ok()
     }
 
-    #[cfg(feature = "scroll")]
+    #[cfg(feature = "scroll-poseidon-codehash")]
     fn keccak_code_hash(&mut self, address: Address) -> Option<(B256, bool)> {
         self.evm
             .keccak_code_hash(address)

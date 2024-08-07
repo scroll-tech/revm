@@ -32,7 +32,7 @@ pub trait Host {
     /// Get code size of `address` and if the account is cold.
     fn code_size(&mut self, address: Address) -> Option<(usize, bool)>;
 
-    #[cfg(feature = "scroll")]
+    #[cfg(feature = "scroll-poseidon-codehash")]
     /// Get keccak code hash of `address` and if the account is cold.
     fn keccak_code_hash(&mut self, address: Address) -> Option<(B256, bool)>;
 

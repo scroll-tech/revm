@@ -95,10 +95,11 @@ optimism = []
 optimism-default-handler = ["optimism"]
 negate-optimism-default-handler = []
 
-scroll = ["halo2curves", "poseidon-base"]
+scroll = []
 # Scroll default handler enabled Scroll handler register by default in EvmBuilder.
 scroll-default-handler = ["scroll"]
 negate-scroll-default-handler = []
+scroll-poseidon-codehash = ["scroll", "halo2curves", "poseidon-base"]
 
 dev = [
     "memory_limit",
