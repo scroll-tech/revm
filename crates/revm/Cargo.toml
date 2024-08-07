@@ -108,6 +108,10 @@ negate-scroll-default-handler = [
     "revm-precompile/negate-scroll-default-handler",
     "revm-interpreter/negate-scroll-default-handler",
 ]
+scroll-poseidon-codehash = [
+    "scroll",
+    "revm-interpreter/scroll-poseidon-codehash",
+]
 
 ethersdb = ["std", "dep:tokio", "dep:ethers-providers", "dep:ethers-core"]
 

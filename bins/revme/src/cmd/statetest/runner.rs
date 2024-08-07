@@ -260,18 +260,18 @@ pub fn execute_test_suite(
             #[cfg(feature = "scroll")]
             let code_size = info.code.len();
             let keccak_code_hash = keccak256(&info.code);
-            #[cfg(feature = "scroll")]
+            #[cfg(feature = "scroll-poseidon-codehash")]
             let poseidon_code_hash = revm::primitives::poseidon(&info.code);
             let bytecode = Bytecode::new_raw(info.code);
             let acc_info = revm::primitives::AccountInfo {
                 balance: info.balance,
                 #[cfg(feature = "scroll")]
                 code_size,
-                #[cfg(not(feature = "scroll"))]
+                #[cfg(not(feature = "scroll-poseidon-codehash"))]
                 code_hash: keccak_code_hash,
-                #[cfg(feature = "scroll")]
+                #[cfg(feature = "scroll-poseidon-codehash")]
                 code_hash: poseidon_code_hash,
-                #[cfg(feature = "scroll")]
+                #[cfg(feature = "scroll-poseidon-codehash")]
                 keccak_code_hash,
                 code: Some(bytecode),
                 nonce: info.nonce,

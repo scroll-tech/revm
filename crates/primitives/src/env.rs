@@ -17,11 +17,6 @@ use core::hash::Hash;
 use std::boxed::Box;
 use std::vec::Vec;
 
-#[cfg(not(feature = "scroll"))]
-use crate::KECCAK_EMPTY;
-#[cfg(feature = "scroll")]
-use crate::POSEIDON_EMPTY;
-
 /// EVM environment configuration.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -233,11 +228,15 @@ impl Env {
         // This EIP is introduced after london but there was no collision in past
         // so we can leave it enabled always
         cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll"))] {
+            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
+                use crate::KECCAK_EMPTY;
+
                 if !self.cfg.is_eip3607_disabled() && account.info.code_hash != KECCAK_EMPTY {
                     return Err(InvalidTransaction::RejectCallerWithCode);
                 }
             } else {
+                use crate::POSEIDON_EMPTY;
+
                 if !self.cfg.is_eip3607_disabled() && account.info.code_hash != POSEIDON_EMPTY {
                     return Err(InvalidTransaction::RejectCallerWithCode);
                 }

@@ -36,3 +36,4 @@ k256 = { version = "0.13.3", features = ["ecdsa"] }
 
 [features]
 scroll = ["revm/scroll"]
+scroll-poseidon-codehash = ["scroll", "revm/scroll-poseidon-codehash"]

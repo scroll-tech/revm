@@ -2,7 +2,7 @@ use crate::{Address, Bytecode, HashMap, B256, KECCAK_EMPTY, U256};
 use bitflags::bitflags;
 use core::hash::{Hash, Hasher};
 
-#[cfg(feature = "scroll")]
+#[cfg(feature = "scroll-poseidon-codehash")]
 use crate::POSEIDON_EMPTY;
 
 /// EVM State is a mapping from addresses to accounts.
@@ -224,7 +224,7 @@ pub struct AccountInfo {
     pub code_size: usize,
     /// code hash,
     pub code_hash: B256,
-    #[cfg(feature = "scroll")]
+    #[cfg(feature = "scroll-poseidon-codehash")]
     /// keccak code hash,
     pub keccak_code_hash: B256,
     /// code: if None, `code_by_hash` will be used to fetch it if code needs to be loaded from
@@ -238,11 +238,11 @@ impl Default for AccountInfo {
             balance: U256::ZERO,
             #[cfg(feature = "scroll")]
             code_size: 0,
-            #[cfg(not(feature = "scroll"))]
+            #[cfg(not(feature = "scroll-poseidon-codehash"))]
             code_hash: KECCAK_EMPTY,
-            #[cfg(feature = "scroll")]
+            #[cfg(feature = "scroll-poseidon-codehash")]
             code_hash: POSEIDON_EMPTY,
-            #[cfg(feature = "scroll")]
+            #[cfg(feature = "scroll-poseidon-codehash")]
             keccak_code_hash: KECCAK_EMPTY,
             code: Some(Bytecode::default()),
             nonce: 0,
@@ -260,6 +260,7 @@ impl PartialEq for AccountInfo {
         #[cfg(all(debug_assertions, feature = "scroll"))]
         if eq {
             assert_eq!(self.code_size, other.code_size);
+            #[cfg(feature = "scroll-poseidon-codehash")]
             assert_eq!(self.keccak_code_hash, other.keccak_code_hash);
         }
         eq
@@ -279,7 +280,7 @@ impl AccountInfo {
         balance: U256,
         nonce: u64,
         code_hash: B256,
-        #[cfg(feature = "scroll")] keccak_code_hash: B256,
+        #[cfg(feature = "scroll-poseidon-codehash")] keccak_code_hash: B256,
         code: Bytecode,
     ) -> Self {
         Self {
@@ -289,7 +290,7 @@ impl AccountInfo {
             code_size: code.len(),
             code: Some(code),
             code_hash,
-            #[cfg(feature = "scroll")]
+            #[cfg(feature = "scroll-poseidon-codehash")]
             keccak_code_hash,
         }
     }
@@ -332,15 +333,21 @@ impl AccountInfo {
 
     /// Return bytecode hash associated with this account.
     /// If account does not have code,
-    #[cfg_attr(not(feature = "scroll"), doc = "it return's `KECCAK_EMPTY` hash.")]
-    #[cfg_attr(feature = "scroll", doc = "it return's `POSEIDON_EMPTY` hash.")]
+    #[cfg_attr(
+        not(feature = "scroll-poseidon-codehash"),
+        doc = "it return's `KECCAK_EMPTY` hash."
+    )]
+    #[cfg_attr(
+        feature = "scroll-poseidon-codehash",
+        doc = "it return's `POSEIDON_EMPTY` hash."
+    )]
     pub fn code_hash(&self) -> B256 {
         self.code_hash
     }
 
     /// Return keccak code hash associated with this account.
     /// If account does not have code, it return's `KECCAK_EMPTY` hash.
-    #[cfg(feature = "scroll")]
+    #[cfg(feature = "scroll-poseidon-codehash")]
     pub fn keccak_code_hash(&self) -> B256 {
         self.keccak_code_hash
     }
@@ -349,7 +356,7 @@ impl AccountInfo {
     #[inline]
     pub fn is_empty_code_hash(&self) -> bool {
         cfg_if::cfg_if! {
-            if #[cfg(feature = "scroll")] {
+            if #[cfg(feature = "scroll-poseidon-codehash")] {
                 #[cfg(debug_assertions)]
                 if self.code_hash == POSEIDON_EMPTY {
                     assert_eq!(self.code_size, 0);
@@ -373,12 +380,15 @@ impl AccountInfo {
         &mut self,
         code: Bytecode,
         hash: B256,
-        #[cfg(feature = "scroll")] keccak_code_hash: B256,
+        #[cfg(feature = "scroll-poseidon-codehash")] keccak_code_hash: B256,
     ) {
         #[cfg(feature = "scroll")]
         {
             self.code_size = code.len();
-            self.keccak_code_hash = keccak_code_hash;
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            {
+                self.keccak_code_hash = keccak_code_hash;
+            }
         }
 
         self.code = Some(code);
@@ -390,26 +400,28 @@ impl AccountInfo {
     pub fn set_code_rehash_slow(&mut self, code: Option<Bytecode>) {
         match code {
             Some(code) => {
-                cfg_if::cfg_if! {
-                    if #[cfg(feature = "scroll")] {
-                        self.code_size = code.len();
-                        self.code_hash = code.poseidon_hash_slow();
+                self.code_hash = code.hash_slow();
+                #[cfg(feature = "scroll")]
+                {
+                    self.code_size = code.len();
+                    #[cfg(feature = "scroll-poseidon-codehash")]
+                    {
                         self.keccak_code_hash = code.keccak_hash_slow();
-                    } else {
-                        self.code_hash = code.hash_slow();
                     }
                 }
 
                 self.code = Some(code);
             }
             None => {
-                cfg_if::cfg_if! {
-                    if #[cfg(feature = "scroll")] {
-                        self.code_size = 0;
+                self.code_hash = KECCAK_EMPTY;
+
+                #[cfg(feature = "scroll")]
+                {
+                    self.code_size = 0;
+                    #[cfg(feature = "scroll-poseidon-codehash")]
+                    {
                         self.code_hash = POSEIDON_EMPTY;
                         self.keccak_code_hash = KECCAK_EMPTY;
-                    } else {
-                        self.code_hash = KECCAK_EMPTY;
                     }
                 }
 
@@ -426,19 +438,18 @@ impl AccountInfo {
     }
 
     pub fn from_bytecode(bytecode: Bytecode) -> Self {
+        let code_hash = bytecode.hash_slow();
         cfg_if::cfg_if! {
             if #[cfg(not(feature = "scroll"))] {
-                let hash = bytecode.hash_slow();
-
                 AccountInfo {
                     balance: U256::ZERO,
                     nonce: 1,
                     code: Some(bytecode),
-                    code_hash: hash,
+                    code_hash,
                 }
             } else {
                 let code_size = bytecode.len();
-                let code_hash = bytecode.poseidon_hash_slow();
+                #[cfg(feature = "scroll-poseidon-codehash")]
                 let keccak_code_hash = bytecode.keccak_hash_slow();
 
                 AccountInfo {
@@ -447,6 +458,7 @@ impl AccountInfo {
                     code_size,
                     code: Some(bytecode),
                     code_hash,
+                    #[cfg(feature = "scroll-poseidon-codehash")]
                     keccak_code_hash,
                 }
             }
@@ -494,7 +506,7 @@ mod tests {
         assert!(account.is_empty());
 
         cfg_if::cfg_if! {
-            if #[cfg(feature = "scroll")] {
+            if #[cfg(feature = "scroll-poseidon-codehash")] {
                 account.info.code_hash = crate::POSEIDON_EMPTY;
             } else {
                 account.info.code_hash = crate::KECCAK_EMPTY;

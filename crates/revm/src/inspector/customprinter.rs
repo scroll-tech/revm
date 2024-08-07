@@ -134,11 +134,11 @@ mod test {
                     balance: "0x100c5d668240db8e00".parse().unwrap(),
                     #[cfg(feature = "scroll")]
                     code_size: code.len(),
-                    #[cfg(not(feature = "scroll"))]
+                    #[cfg(not(feature = "scroll-poseidon-codehash"))]
                     code_hash: crate::primitives::keccak256(&code),
-                    #[cfg(feature = "scroll")]
+                    #[cfg(feature = "scroll-poseidon-codehash")]
                     code_hash: crate::primitives::poseidon(&code),
-                    #[cfg(feature = "scroll")]
+                    #[cfg(feature = "scroll-poseidon-codehash")]
                     keccak_code_hash: crate::primitives::keccak256(&code),
                     code: Some(crate::primitives::Bytecode::new_raw(code.clone())),
                     nonce: 1,

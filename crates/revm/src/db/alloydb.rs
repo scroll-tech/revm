@@ -119,7 +119,14 @@ impl<T: Transport + Clone, N: Network, P: Provider<T, N>> DatabaseRef for AlloyD
         let code_hash = code.hash_slow();
         let nonce = nonce?;
 
-        Ok(Some(AccountInfo::new(balance, nonce, code_hash, code)))
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
+                Ok(Some(AccountInfo::new(balance, nonce, code_hash, code)))
+            } else {
+                let keccak_code_hash = code.keccak_hash_slow();
+                Ok(Some(AccountInfo::new(balance, nonce, code_hash, keccak_code_hash, code)))
+            }
+        }
     }
 
     fn block_hash_ref(&self, number: u64) -> Result<B256, Self::Error> {

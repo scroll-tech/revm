@@ -70,6 +70,10 @@ scroll-default-handler = [
 negate-scroll-default-handler = [
     "revm-primitives/negate-scroll-default-handler",
 ]
+scroll-poseidon-codehash = [
+    "scroll",
+    "revm-primitives/scroll-poseidon-codehash",
+]
 
 dev = [
     "memory_limit",

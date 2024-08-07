@@ -16,9 +16,6 @@ use std::collections::btree_map::Entry as DbMapEntry;
 #[cfg(feature = "ordered-cache-db")]
 use std::collections::BTreeMap as DbMap;
 
-#[cfg(feature = "scroll")]
-use crate::primitives::POSEIDON_EMPTY;
-
 /// A [Database] implementation that stores all state changes in memory.
 pub type InMemoryDB = CacheDB<EmptyDB>;
 
@@ -57,9 +54,11 @@ impl<ExtDB> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
         let mut contracts = HashMap::new();
         cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll"))] {
+            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
                 contracts.insert(KECCAK_EMPTY, Bytecode::default());
             } else {
+                use crate::primitives::POSEIDON_EMPTY;
+
                 contracts.insert(POSEIDON_EMPTY, Bytecode::default());
             }
         }
@@ -81,16 +80,14 @@ impl<ExtDB> CacheDB<ExtDB> {
     pub fn insert_contract(&mut self, account: &mut AccountInfo) {
         if let Some(code) = &account.code {
             if !code.is_empty() {
-                cfg_if::cfg_if! {
-                    if #[cfg(not(feature = "scroll"))] {
-                        if account.code_hash == KECCAK_EMPTY {
-                            account.code_hash = code.hash_slow();
-                        }
-                    } else {
-                        account.code_size = code.len();
-                        if account.code_hash == POSEIDON_EMPTY {
-                            account.code_hash = code.poseidon_hash_slow();
-                        }
+                if account.is_empty_code_hash() {
+                    account.code_hash = code.hash_slow();
+                }
+                #[cfg(feature = "scroll")]
+                {
+                    account.code_size = code.len();
+                    #[cfg(feature = "scroll-poseidon-codehash")]
+                    {
                         if account.keccak_code_hash == KECCAK_EMPTY {
                             account.keccak_code_hash = code.keccak_hash_slow();
                         }
@@ -389,27 +386,26 @@ impl AccountState {
 /// Custom benchmarking DB that only has account info for the zero address.
 ///
 /// Any other address will return an empty account.
-#[cfg(not(feature = "scroll"))]
+#[cfg(not(feature = "scroll-poseidon-codehash"))]
 #[derive(Debug, Default, Clone)]
 pub struct BenchmarkDB(pub Bytecode, B256);
 
 /// Custom benchmarking DB that only has account info for the zero address.
 ///
 /// Any other address will return an empty account.
-#[cfg(feature = "scroll")]
+#[cfg(feature = "scroll-poseidon-codehash")]
 #[derive(Debug, Default, Clone)]
 pub struct BenchmarkDB(pub Bytecode, B256, B256);
 
 impl BenchmarkDB {
     pub fn new_bytecode(bytecode: Bytecode) -> Self {
+        let hash = bytecode.hash_slow();
         cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll"))] {
-                let hash = bytecode.hash_slow();
+            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
                 Self(bytecode, hash)
             } else {
-                let poseidon_hash = bytecode.poseidon_hash_slow();
                 let keccak_hash = bytecode.keccak_hash_slow();
-                Self(bytecode, poseidon_hash, keccak_hash)
+                Self(bytecode, hash, keccak_hash)
             }
         }
     }
@@ -427,7 +423,7 @@ impl Database for BenchmarkDB {
                 code_size: self.0.len(),
                 code: Some(self.0.clone()),
                 code_hash: self.1,
-                #[cfg(feature = "scroll")]
+                #[cfg(feature = "scroll-poseidon-codehash")]
                 keccak_code_hash: self.2,
             }));
         }

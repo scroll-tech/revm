@@ -3,28 +3,25 @@ use crate::{
 };
 pub use alloy_primitives::{keccak256, Keccak256};
 
-#[cfg(feature = "scroll")]
-use crate::U256;
-
 /// The Keccak-256 hash of the empty string `""`.
 pub const KECCAK_EMPTY: B256 =
     b256!("c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
 
-#[cfg(feature = "scroll")]
+#[cfg(feature = "scroll-poseidon-codehash")]
 pub const POSEIDON_EMPTY: B256 =
     b256!("2098f5fb9e239eab3ceac3f27b81e481dc3124d55ffed523a839ee8446b64864");
 
-/// Default number of bytes to pack into a field element.
-#[cfg(feature = "scroll")]
-pub const POSEIDON_HASH_BYTES_IN_FIELD: usize = 31;
-
 /// Poseidon code hash
-#[cfg(feature = "scroll")]
+#[cfg(feature = "scroll-poseidon-codehash")]
 pub fn poseidon(code: &[u8]) -> B256 {
+    use crate::U256;
     use halo2curves::{bn256::Fr, ff::PrimeField};
     use poseidon_base::hash::{Hashable, MessageHashable, HASHABLE_DOMAIN_SPEC};
     #[cfg(not(feature = "std"))]
     use std::vec::Vec;
+
+    /// Default number of bytes to pack into a field element.
+    const POSEIDON_HASH_BYTES_IN_FIELD: usize = 31;
 
     let bytes_in_field = POSEIDON_HASH_BYTES_IN_FIELD;
     let fls = (0..(code.len() / bytes_in_field))
