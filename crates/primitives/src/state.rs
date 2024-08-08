@@ -222,7 +222,7 @@ pub struct AccountInfo {
     /// code hash,
     pub code_hash: B256,
     #[cfg(feature = "scroll-poseidon-codehash")]
-    /// poseidon code hash,
+    /// poseidon code hash, won't be calculated if code is not changed.
     pub poseidon_code_hash: B256,
     /// code: if None, `code_by_hash` will be used to fetch it if code needs to be loaded from
     /// inside of `revm`.
@@ -254,8 +254,6 @@ impl PartialEq for AccountInfo {
         #[cfg(all(debug_assertions, feature = "scroll"))]
         if eq {
             assert_eq!(self.code_size, other.code_size);
-            #[cfg(feature = "scroll-poseidon-codehash")]
-            assert_eq!(self.poseidon_code_hash, other.poseidon_code_hash);
         }
         eq
     }
@@ -271,8 +269,6 @@ impl Hash for AccountInfo {
 
 impl AccountInfo {
     pub fn new(balance: U256, nonce: u64, code_hash: B256, code: Bytecode) -> Self {
-        #[cfg(feature = "scroll-poseidon-codehash")]
-        let poseidon_code_hash = code.poseidon_hash_slow();
         Self {
             balance,
             nonce,
@@ -281,7 +277,7 @@ impl AccountInfo {
             code: Some(code),
             code_hash,
             #[cfg(feature = "scroll-poseidon-codehash")]
-            poseidon_code_hash,
+            poseidon_code_hash: B256::ZERO,
         }
     }
 
@@ -333,7 +329,10 @@ impl AccountInfo {
         #[cfg(all(debug_assertions, feature = "scroll-poseidon-codehash"))]
         if self.code_hash == KECCAK_EMPTY {
             assert_eq!(self.code_size, 0);
-            assert_eq!(self.poseidon_code_hash, crate::POSEIDON_EMPTY);
+            assert!(
+                self.poseidon_code_hash == crate::POSEIDON_EMPTY
+                    || self.poseidon_code_hash == B256::ZERO
+            );
         }
 
         self.code_hash == KECCAK_EMPTY
