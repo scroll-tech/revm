@@ -222,20 +222,6 @@ impl<DB: Database> InnerEvmContext<DB> {
         Ok((acc.info.code_hash, is_cold))
     }
 
-    /// Get keccak code hash of address.
-    #[inline]
-    #[cfg(feature = "scroll-poseidon-codehash")]
-    pub fn keccak_code_hash(
-        &mut self,
-        address: Address,
-    ) -> Result<(B256, bool), EVMError<DB::Error>> {
-        let (acc, is_cold) = self.journaled_state.load_code(address, &mut self.db)?;
-        if acc.is_empty() {
-            return Ok((B256::ZERO, is_cold));
-        }
-        Ok((acc.info.keccak_code_hash, is_cold))
-    }
-
     /// Load storage slot, if storage is not present inside the account then it will be loaded from database.
     #[inline]
     pub fn sload(

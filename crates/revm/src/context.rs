@@ -168,14 +168,6 @@ impl<EXT, DB: Database> Host for Context<EXT, DB> {
             .ok()
     }
 
-    #[cfg(feature = "scroll-poseidon-codehash")]
-    fn keccak_code_hash(&mut self, address: Address) -> Option<(B256, bool)> {
-        self.evm
-            .keccak_code_hash(address)
-            .map_err(|e| self.evm.error = Err(e))
-            .ok()
-    }
-
     fn sload(&mut self, address: Address, index: U256) -> Option<(U256, bool)> {
         self.evm
             .sload(address, index)
