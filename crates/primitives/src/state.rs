@@ -254,6 +254,10 @@ impl PartialEq for AccountInfo {
         #[cfg(all(debug_assertions, feature = "scroll"))]
         if eq {
             assert_eq!(self.code_size, other.code_size);
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            if self.poseidon_code_hash != B256::ZERO && other.poseidon_code_hash != B256::ZERO {
+                assert_eq!(self.poseidon_code_hash, other.poseidon_code_hash);
+            }
         }
         eq
     }
