@@ -53,15 +53,7 @@ impl<ExtDB: Default> Default for CacheDB<ExtDB> {
 impl<ExtDB> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
         let mut contracts = HashMap::new();
-        cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
-                contracts.insert(KECCAK_EMPTY, Bytecode::default());
-            } else {
-                use crate::primitives::POSEIDON_EMPTY;
-
-                contracts.insert(POSEIDON_EMPTY, Bytecode::default());
-            }
-        }
+        contracts.insert(KECCAK_EMPTY, Bytecode::default());
         contracts.insert(B256::ZERO, Bytecode::default());
         Self {
             accounts: DbMap::new(),
@@ -80,7 +72,7 @@ impl<ExtDB> CacheDB<ExtDB> {
     pub fn insert_contract(&mut self, account: &mut AccountInfo) {
         if let Some(code) = &account.code {
             if !code.is_empty() {
-                if account.is_empty_code_hash() {
+                if account.code_hash == KECCAK_EMPTY {
                     account.code_hash = code.hash_slow();
                 }
                 #[cfg(feature = "scroll")]
@@ -88,8 +80,8 @@ impl<ExtDB> CacheDB<ExtDB> {
                     account.code_size = code.len();
                     #[cfg(feature = "scroll-poseidon-codehash")]
                     {
-                        if account.keccak_code_hash == KECCAK_EMPTY {
-                            account.keccak_code_hash = code.keccak_hash_slow();
+                        if account.poseidon_code_hash == crate::primitives::POSEIDON_EMPTY {
+                            account.poseidon_code_hash = code.poseidon_hash_slow();
                         }
                     }
                 }
@@ -98,8 +90,8 @@ impl<ExtDB> CacheDB<ExtDB> {
                     .or_insert_with(|| code.clone());
             }
         }
-        if account.code_hash == B256::ZERO {
-            account.set_code_rehash_slow(None);
+        if account.code_hash.is_zero() {
+            account.code_hash = KECCAK_EMPTY;
         }
     }
 
@@ -404,8 +396,8 @@ impl BenchmarkDB {
             if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
                 Self(bytecode, hash)
             } else {
-                let keccak_hash = bytecode.keccak_hash_slow();
-                Self(bytecode, hash, keccak_hash)
+                let poseidon_hash = bytecode.poseidon_hash_slow();
+                Self(bytecode, hash, poseidon_hash)
             }
         }
     }
@@ -424,7 +416,7 @@ impl Database for BenchmarkDB {
                 code: Some(self.0.clone()),
                 code_hash: self.1,
                 #[cfg(feature = "scroll-poseidon-codehash")]
-                keccak_code_hash: self.2,
+                poseidon_code_hash: self.2,
             }));
         }
         if address == Address::with_last_byte(1) {

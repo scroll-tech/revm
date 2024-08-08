@@ -267,12 +267,9 @@ pub fn execute_test_suite(
                 balance: info.balance,
                 #[cfg(feature = "scroll")]
                 code_size,
-                #[cfg(not(feature = "scroll-poseidon-codehash"))]
                 code_hash: keccak_code_hash,
                 #[cfg(feature = "scroll-poseidon-codehash")]
-                code_hash: poseidon_code_hash,
-                #[cfg(feature = "scroll-poseidon-codehash")]
-                keccak_code_hash,
+                poseidon_code_hash,
                 code: Some(bytecode),
                 nonce: info.nonce,
             };

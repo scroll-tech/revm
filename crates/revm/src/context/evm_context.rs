@@ -625,7 +625,7 @@ mod tests {
                 code_size: by.len(),
                 code_hash: by.clone().hash_slow(),
                 #[cfg(feature = "scroll-poseidon-codehash")]
-                keccak_code_hash: by.clone().keccak_hash_slow(),
+                poseidon_code_hash: by.clone().poseidon_hash_slow(),
                 code: Some(by),
             },
         );

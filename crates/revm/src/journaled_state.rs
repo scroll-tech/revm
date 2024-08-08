@@ -3,7 +3,7 @@ use crate::{
     primitives::{
         db::Database, hash_map::Entry, Account, Address, Bytecode, EVMError, EvmState,
         EvmStorageSlot, HashMap, HashSet, Log, SpecId, SpecId::*, TransientStorage, B256,
-        PRECOMPILE3, U256,
+        KECCAK_EMPTY, PRECOMPILE3, U256,
     },
 };
 use core::mem;
@@ -147,13 +147,7 @@ impl JournaledState {
     ///
     /// Note: Assume account is warm and that hash is calculated from code.
     #[inline]
-    pub fn set_code_with_hash(
-        &mut self,
-        address: Address,
-        code: Bytecode,
-        hash: B256,
-        #[cfg(feature = "scroll-poseidon-codehash")] keccak_code_hash: B256,
-    ) {
+    pub fn set_code_with_hash(&mut self, address: Address, code: Bytecode, hash: B256) {
         let account = self.state.get_mut(&address).unwrap();
         Self::touch_account(self.journal.last_mut().unwrap(), &address, account);
 
@@ -162,13 +156,16 @@ impl JournaledState {
             .unwrap()
             .push(JournalEntry::CodeChange { address });
 
-        cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
-                account.info.set_code_with_hash(code, hash)
-            } else {
-                account.info.set_code_with_hash(code, hash, keccak_code_hash)
+        account.info.code_hash = hash;
+        #[cfg(feature = "scroll")]
+        {
+            account.info.code_size = code.len();
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            {
+                account.info.poseidon_code_hash = code.poseidon_hash_slow();
             }
         }
+        account.info.code = Some(code);
     }
 
     /// use it only if you know that acc is warm
@@ -176,14 +173,7 @@ impl JournaledState {
     #[inline]
     pub fn set_code(&mut self, address: Address, code: Bytecode) {
         let hash = code.hash_slow();
-        cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
-                self.set_code_with_hash(address, code, hash)
-            } else {
-                let keccak_code_hash = code.keccak_hash_slow();
-                self.set_code_with_hash(address, code, hash, keccak_code_hash)
-            }
-        }
+        self.set_code_with_hash(address, code, hash)
     }
 
     #[inline]
@@ -427,7 +417,16 @@ impl JournaledState {
                 }
                 JournalEntry::CodeChange { address } => {
                     let acc = state.get_mut(&address).unwrap();
-                    acc.info.set_code_rehash_slow(None);
+                    acc.info.code_hash = KECCAK_EMPTY;
+                    acc.info.code = None;
+                    #[cfg(feature = "scroll")]
+                    {
+                        acc.info.code_size = 0;
+                        #[cfg(feature = "scroll-poseidon-codehash")]
+                        {
+                            acc.info.poseidon_code_hash = crate::primitives::POSEIDON_EMPTY;
+                        }
+                    }
                 }
             }
         }

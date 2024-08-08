@@ -105,6 +105,10 @@ pub fn output<EXT, DB: Database>(
             .expect("Authorized account must exist");
         account.info.code = Some(Bytecode::default());
         account.info.code_hash = KECCAK_EMPTY;
+        #[cfg(feature = "scroll-poseidon-codehash")]
+        {
+            account.info.poseidon_code_hash = crate::primitives::POSEIDON_EMPTY;
+        }
     }
 
     let result = match instruction_result.result.into() {

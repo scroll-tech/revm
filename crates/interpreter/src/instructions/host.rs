@@ -74,13 +74,7 @@ pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
 pub fn extcodehash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check!(interpreter, CONSTANTINOPLE);
     pop_address!(interpreter, address);
-
-    #[cfg(not(feature = "scroll-poseidon-codehash"))]
-    let result = host.code_hash(address);
-    #[cfg(feature = "scroll-poseidon-codehash")]
-    let result = host.keccak_code_hash(address);
-
-    let Some((code_hash, is_cold)) = result else {
+    let Some((code_hash, is_cold)) = host.code_hash(address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };

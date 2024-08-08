@@ -46,32 +46,22 @@ impl Bytecode {
 
     /// Calculate hash of the bytecode.
     pub fn hash_slow(&self) -> B256 {
-        cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
-                if self.is_empty() {
-                    KECCAK_EMPTY
-                } else {
-                    keccak256(self.original_byte_slice())
-                }
-            } else {
-                use crate::{poseidon, POSEIDON_EMPTY};
-
-                if self.is_empty() {
-                    POSEIDON_EMPTY
-                } else {
-                    poseidon(self.original_byte_slice())
-                }
-            }
-        }
-    }
-
-    /// Calculate keccak hash of the bytecode.
-    #[cfg(feature = "scroll-poseidon-codehash")]
-    pub fn keccak_hash_slow(&self) -> B256 {
         if self.is_empty() {
             KECCAK_EMPTY
         } else {
             keccak256(self.original_byte_slice())
+        }
+    }
+
+    /// Calculate poseidon hash of the bytecode.
+    #[cfg(feature = "scroll-poseidon-codehash")]
+    pub fn poseidon_hash_slow(&self) -> B256 {
+        use crate::{poseidon, POSEIDON_EMPTY};
+
+        if self.is_empty() {
+            POSEIDON_EMPTY
+        } else {
+            poseidon(self.original_byte_slice())
         }
     }
 

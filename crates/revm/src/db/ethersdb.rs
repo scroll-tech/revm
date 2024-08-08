@@ -127,14 +127,7 @@ impl<M: Middleware> DatabaseRef for EthersDB<M> {
         let nonce = nonce?.as_u64();
         let bytecode = Bytecode::new_raw(code?.0.into());
         let code_hash = bytecode.hash_slow();
-        cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
-                Ok(Some(AccountInfo::new(balance, nonce, code_hash, bytecode)))
-            } else {
-                let keccak_code_hash = bytecode.keccak_hash_slow();
-                Ok(Some(AccountInfo::new(balance, nonce, code_hash, keccak_code_hash, bytecode)))
-            }
-        }
+        Ok(Some(AccountInfo::new(balance, nonce, code_hash, bytecode)))
     }
 
     fn code_by_hash_ref(&self, _code_hash: B256) -> Result<Bytecode, Self::Error> {
