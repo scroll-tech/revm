@@ -80,7 +80,9 @@ impl<ExtDB> CacheDB<ExtDB> {
                     account.code_size = code.len();
                     #[cfg(feature = "scroll-poseidon-codehash")]
                     {
-                        if account.poseidon_code_hash == crate::primitives::POSEIDON_EMPTY {
+                        if account.poseidon_code_hash == crate::primitives::POSEIDON_EMPTY
+                            || account.poseidon_code_hash == B256::ZERO
+                        {
                             account.poseidon_code_hash = code.poseidon_hash_slow();
                         }
                     }
