@@ -9,7 +9,7 @@ use crate::{
         AccessListItem, Account, Address, AnalysisKind, Bytecode, Bytes, CfgEnv, EVMError, Env,
         Eof, HashSet, Spec,
         SpecId::{self, *},
-        B256, EOF_MAGIC_BYTES, EOF_MAGIC_HASH, U256,
+        B256, EOF_MAGIC_BYTES, U256,
     },
     JournalCheckpoint,
 };
@@ -208,15 +208,23 @@ impl<DB: Database> InnerEvmContext<DB> {
 
     /// Get code hash of address.
     ///
+
+    /// Get code hash of address.
+    ///
     /// In case of EOF account it will return `EOF_MAGIC_HASH`
     /// (the hash of `0xEF00`).
-    #[inline]
     pub fn code_hash(&mut self, address: Address) -> Result<(B256, bool), EVMError<DB::Error>> {
+        #[cfg(not(feature = "scroll"))]
         let (acc, is_cold) = self.journaled_state.load_code(address, &mut self.db)?;
+        // Scroll does not support EOF yet, code won't be loaded if only EXTCODEHASH is called.
+        #[cfg(feature = "scroll")]
+        let (acc, is_cold) = self.journaled_state.load_account(address, &mut self.db)?;
         if acc.is_empty() {
             return Ok((B256::ZERO, is_cold));
         }
+        #[cfg(not(feature = "scroll"))]
         if let Some(true) = acc.info.code.as_ref().map(|code| code.is_eof()) {
+            use crate::primitives::EOF_MAGIC_HASH;
             return Ok((EOF_MAGIC_HASH, is_cold));
         }
         Ok((acc.info.code_hash, is_cold))
