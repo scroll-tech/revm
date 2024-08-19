@@ -8,7 +8,7 @@ use crate::{
         db::Database,
         Account, EVMError, Env, Spec,
         SpecId::{CANCUN, PRAGUE, SHANGHAI},
-        TxKind, BLOCKHASH_STORAGE_ADDRESS, U256,
+        TxKind, BLOCKHASH_STORAGE_ADDRESS, KECCAK_EMPTY, U256,
     },
     Context, ContextPrecompiles,
 };
@@ -76,7 +76,7 @@ pub fn load_accounts<SPEC: Spec, EXT, DB: Database>(
                 // 3. Verify that the code of authority is empty.
                 // In case of multiple same authorities this step will skip loading of
                 // authorized account.
-                if authority_acc.info.is_empty_code_hash() {
+                if authority_acc.info.code_hash() != KECCAK_EMPTY {
                     continue;
                 }
 
@@ -99,7 +99,7 @@ pub fn load_accounts<SPEC: Spec, EXT, DB: Database>(
 
                 // If code is empty no need to set code or add it to valid
                 // authorizations, as it is a noop operation.
-                if account.info.is_empty_code_hash() {
+                if code_hash == KECCAK_EMPTY {
                     continue;
                 }
 
