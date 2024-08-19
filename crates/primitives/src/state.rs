@@ -225,7 +225,7 @@ pub struct AccountInfo {
     /// poseidon code hash, won't be calculated if code is not changed.
     pub poseidon_code_hash: B256,
     /// code: if None, `code_by_hash` will be used to fetch it if code needs to be loaded from
-    /// inside of `revm`.
+    /// inside `revm`.
     pub code: Option<Bytecode>,
 }
 
@@ -308,7 +308,7 @@ impl AccountInfo {
             );
         }
 
-        code_empty && self.balance == U256::ZERO && self.nonce == 0
+        code_empty && self.balance.is_zero() && self.nonce == 0
     }
 
     /// Returns `true` if the account is not empty.
@@ -385,7 +385,7 @@ impl AccountInfo {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Account, U256};
+    use crate::{Account, KECCAK_EMPTY, U256};
 
     #[test]
     fn account_is_empty_balance() {
@@ -422,7 +422,7 @@ mod tests {
         account.info.code_hash = [0; 32].into();
         assert!(account.is_empty());
 
-        account.info.code_hash = crate::KECCAK_EMPTY;
+        account.info.code_hash = KECCAK_EMPTY;
         assert!(account.is_empty());
     }
 

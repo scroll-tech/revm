@@ -1,0 +1,61 @@
+{
+    "tests/prague/eip7692_eof_v1/eip6206_jumpf/test_jumpf_target.py::test_jumpf_target_rules[fork_PragueEIP7692-state_test-so-0-to-127]": {
+        "env": {
+            "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
+            "currentGasLimit": "0x016345785d8a0000",
+            "currentNumber": "0x01",
+            "currentTimestamp": "0x03e8",
+            "currentRandom": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "currentDifficulty": "0x00",
+            "currentBaseFee": "0x07",
+            "currentExcessBlobGas": "0x00"
+        },
+        "pre": {
+            "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                "nonce": "0x00",
+                "balance": "0x3635c9adc5dea00000",
+                "code": "0x",
+                "storage": {}
+            }
+        },
+        "transaction": {
+            "nonce": "0x00",
+            "gasPrice": "0x0a",
+            "gasLimit": [
+                "0x989680"
+            ],
+            "value": [
+                "0x00"
+            ],
+            "data": [
+                "0xef00010100100200040008000a00830007040000000080000200000001007f007f0000000260006000e3000100600035e10001e4e500025f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5fe30003e4612015600155e401"
+            ],
+            "sender": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "secretKey": "0x45a915e4d060149eb4365960e6a7a45f334393093061116b197e3240065ff2d8",
+            "to": ""
+        },
+        "post": {
+            "PragueEOF": [
+                {
+                    "hash": "0x2196ece4231c124d87f8c894badb6d201fada4ac55da27dfa257c123aa02a46c",
+                    "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+                    "txbytes": "0xf9010f800a839896808080b8c2ef00010100100200040008000a00830007040000000080000200000001007f007f0000000260006000e3000100600035e10001e4e500025f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5fe30003e4612015600155e40125a0badadd1d78a897767f3202f6d8a3f015504c4fdc10e964b54e8c85c6a0a338c4a023f037f1dcb98d2276c5824c42afa14b5243bcea7210f2357325961ad4df3b8f",
+                    "indexes": {
+                        "data": 0,
+                        "gas": 0,
+                        "value": 0
+                    }
+                }
+            ]
+        },
+        "_info": {
+            "hash": "0x8543d81e0d98e4de1b9280b1f05389f0492cc37223b58422ce5582a34dc011ba",
+            "comment": "`execution-spec-tests` generated test",
+            "filling-transition-tool": "Hyperledger Besu evm 24.7-develop-30c96c7",
+            "description": "Test function documentation:\n\n    Validate the target section rules of JUMPF, and execute valid cases.\n    We are not testing stack so a lot of the logic is to get correct stack values.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/eip7692-prague@v1.0.7/tests/prague/eip7692_eof_v1/eip6206_jumpf/test_jumpf_target.py#L21",
+            "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-6206.md",
+            "reference-spec-version": "2f365ea0cd58faa6e26013ea77ce6d538175f7d0"
+        }
+    }
+}

@@ -31,6 +31,7 @@ const INPUT_LENGTH: usize = 384;
 /// Output is 32 bytes where first 31 bytes are equal to 0x00 and the last byte
 /// is 0x01 if pairing result is equal to the multiplicative identity in a pairing
 /// target field and 0x00 otherwise.
+///
 /// See also: <https://eips.ethereum.org/EIPS/eip-2537#abi-for-pairing>
 pub(super) fn pairing(input: &Bytes, gas_limit: u64) -> PrecompileResult {
     let input_len = input.len();
