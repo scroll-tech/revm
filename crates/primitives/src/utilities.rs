@@ -14,58 +14,7 @@ pub const POSEIDON_EMPTY: B256 =
 /// Poseidon code hash
 #[cfg(feature = "scroll-poseidon-codehash")]
 pub fn poseidon(code: &[u8]) -> B256 {
-    use crate::U256;
-    use halo2curves::{bn256::Fr, ff::PrimeField};
-    use poseidon_base::hash::{Hashable, MessageHashable, HASHABLE_DOMAIN_SPEC};
-    #[cfg(not(feature = "std"))]
-    use std::vec::Vec;
-
-    /// Default number of bytes to pack into a field element.
-    const POSEIDON_HASH_BYTES_IN_FIELD: usize = 31;
-
-    let bytes_in_field = POSEIDON_HASH_BYTES_IN_FIELD;
-    let fls = (0..(code.len() / bytes_in_field))
-        .map(|i| i * bytes_in_field)
-        .map(|i| {
-            Fr::from_bytes(
-                &U256::try_from_be_slice(&code[i..i + bytes_in_field])
-                    .expect("infallible")
-                    .to_le_bytes(),
-            )
-            .unwrap()
-        });
-    let msgs: Vec<_> = fls
-        .chain(if code.len() % bytes_in_field == 0 {
-            None
-        } else {
-            let last_code = &code[code.len() - code.len() % bytes_in_field..];
-            // pad to bytes_in_field
-            let mut last_buf = [0u8; POSEIDON_HASH_BYTES_IN_FIELD];
-            last_buf.as_mut_slice()[..last_code.len()].copy_from_slice(last_code);
-            Some(
-                Fr::from_bytes(
-                    &U256::try_from_be_slice(&last_buf)
-                        .expect("infallible")
-                        .to_le_bytes(),
-                )
-                .unwrap(),
-            )
-        })
-        .collect();
-
-    let h = if msgs.is_empty() {
-        // the empty code hash is overlapped with simple hash on [0, 0]
-        // an issue in poseidon primitive prevent us calculate it from hash_msg
-        Fr::hash_with_domain([Fr::zero(), Fr::zero()], Fr::zero())
-    } else {
-        Fr::hash_msg(&msgs, Some(code.len() as u128 * HASHABLE_DOMAIN_SPEC))
-    };
-
-    B256::from(
-        &U256::try_from_le_slice(h.to_repr().as_ref())
-            .expect("infallible")
-            .to_be_bytes(),
-    )
+    poseidon_bn254::hash_code(code).into()
 }
 
 /// Calculates the `excess_blob_gas` from the parent header's `blob_gas_used` and `excess_blob_gas`.
