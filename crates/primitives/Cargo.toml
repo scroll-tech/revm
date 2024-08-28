@@ -53,7 +53,7 @@ serde = { version = "1.0", default-features = false, features = [
 ], optional = true }
 
 # scroll
-poseidon-bn254 = { git = "https://github.com/scroll-tech/poseidon-bn254", features = ["bn254"], optional = true }
+poseidon-bn254 = { git = "https://github.com/scroll-tech/poseidon-bn254", branch = "master", features = ["bn254"], optional = true }
 
 [build-dependencies]
 hex = { version = "0.4", default-features = false }

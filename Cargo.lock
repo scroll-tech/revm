@@ -725,7 +725,7 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7bc6d6292be3a19e6379786dac800f551e5865a5bb51ebbe3064ab80433f403"
 dependencies = [
- "ff 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ff",
  "group",
  "pairing",
  "rand_core",
@@ -749,7 +749,7 @@ name = "bn254"
 version = "0.1.0"
 source = "git+https://github.com/scroll-tech/bn254#1773ed6c51f14652272056370cf135ff5d7a01c5"
 dependencies = [
- "ff 0.13.0 (git+https://github.com/scroll-tech/ff?branch=feat/sp1)",
+ "ff",
  "getrandom",
  "rand",
  "rand_core",
@@ -1178,7 +1178,7 @@ dependencies = [
  "base16ct",
  "crypto-bigint",
  "digest 0.10.7",
- "ff 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ff",
  "generic-array",
  "group",
  "pkcs8",
@@ -1418,17 +1418,6 @@ dependencies = [
 [[package]]
 name = "ff"
 version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
-dependencies = [
- "bitvec",
- "rand_core",
- "subtle",
-]
-
-[[package]]
-name = "ff"
-version = "0.13.0"
 source = "git+https://github.com/scroll-tech/ff?branch=feat/sp1#244b1098f6be1d19c5fd3f0ec60117ac2940e6ca"
 dependencies = [
  "bitvec",
@@ -1651,7 +1640,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
 dependencies = [
- "ff 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ff",
  "rand_core",
  "subtle",
 ]
@@ -2714,7 +2703,7 @@ checksum = "7170ef9988bc169ba16dd36a7fa041e5c4cbeb6a35b76d4c03daded371eae7c0"
 [[package]]
 name = "poseidon-bn254"
 version = "0.1.0"
-source = "git+https://github.com/scroll-tech/poseidon-bn254#ef4c505ffe943567acf72a62200818dd6ea5d577"
+source = "git+https://github.com/scroll-tech/poseidon-bn254?branch=master#ef4c505ffe943567acf72a62200818dd6ea5d577"
 dependencies = [
  "bn254",
  "itertools 0.13.0",
