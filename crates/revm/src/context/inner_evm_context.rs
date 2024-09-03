@@ -263,7 +263,7 @@ impl<DB: Database> InnerEvmContext<DB> {
                     let hash = if delegated_account.is_empty() {
                         B256::ZERO
                     } else if delegated_account.info.code.as_ref().unwrap().is_eof() {
-                        EOF_MAGIC_HASH
+                        crate::primitives::EOF_MAGIC_HASH
                     } else {
                         delegated_account.info.code_hash
                     };
@@ -275,7 +275,7 @@ impl<DB: Database> InnerEvmContext<DB> {
                 }
 
                 let hash = if code.is_eof() {
-                    EOF_MAGIC_HASH
+                    crate::primitives::EOF_MAGIC_HASH
                 } else {
                     acc.info.code_hash
                 };
