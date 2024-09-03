@@ -142,7 +142,7 @@ pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
 
     match block_number.checked_sub(*number) {
         Some(diff) if !diff.is_zero() => {
-            let diff = as_usize_saturated!(diff);
+            let diff = as_u64_saturated!(diff);
             let block_number = as_u64_or_fail!(interpreter, number);
 
             if SPEC::enabled(BERNOULLI) && diff <= BLOCK_HASH_HISTORY {

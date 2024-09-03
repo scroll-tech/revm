@@ -44,7 +44,7 @@ pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
 ) -> Result<(), EVMError<DB::Error>> {
     // load caller's account.
-    let (caller_account, _) = context
+    let caller_account = context
         .evm
         .inner
         .journaled_state
@@ -53,7 +53,7 @@ pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
     if !context.evm.inner.env.tx.scroll.is_l1_msg {
         // We deduct caller max balance after minting and before deducing the
         // l1 cost, max values is already checked in pre_validate but l1 cost wasn't.
-        deduct_caller_inner::<SPEC>(caller_account, &context.evm.inner.env);
+        deduct_caller_inner::<SPEC>(caller_account.data, &context.evm.inner.env);
 
         let Some(rlp_bytes) = &context.evm.inner.env.tx.scroll.rlp_bytes else {
             return Err(EVMError::Custom(
@@ -76,16 +76,17 @@ pub fn deduct_caller<SPEC: Spec, EXT, DB: Database>(
                 },
             ));
         }
-        caller_account.info.balance = caller_account.info.balance.saturating_sub(tx_l1_cost);
+        caller_account.data.info.balance =
+            caller_account.data.info.balance.saturating_sub(tx_l1_cost);
     } else {
         // bump the nonce for calls. Nonce for CREATE will be bumped in `handle_create`.
         if matches!(context.evm.inner.env.tx.transact_to, TransactTo::Call(_)) {
             // Nonce is already checked
-            caller_account.info.nonce = caller_account.info.nonce.saturating_add(1);
+            caller_account.data.info.nonce = caller_account.data.info.nonce.saturating_add(1);
         }
 
         // touch account so we know it is changed.
-        caller_account.mark_touch();
+        caller_account.data.mark_touch();
     }
     Ok(())
 }
@@ -102,7 +103,7 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
     // transfer fee to coinbase/beneficiary.
     let coinbase_gas_price = effective_gas_price;
 
-    let (coinbase_account, _) = context
+    let coinbase_account = context
         .evm
         .inner
         .journaled_state
@@ -123,8 +124,9 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
 
         let l1_cost = l1_block_info.calculate_tx_l1_cost(rlp_bytes, SPEC::SPEC_ID);
 
-        coinbase_account.mark_touch();
-        coinbase_account.info.balance = coinbase_account
+        coinbase_account.data.mark_touch();
+        coinbase_account.data.info.balance = coinbase_account
+            .data
             .info
             .balance
             .saturating_add(coinbase_gas_price * U256::from(gas.spent() - gas.refunded() as u64))

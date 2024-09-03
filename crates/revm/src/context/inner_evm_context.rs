@@ -224,7 +224,7 @@ impl<DB: Database> InnerEvmContext<DB> {
     pub fn code_size(&mut self, address: Address) -> Result<(usize, bool), EVMError<DB::Error>> {
         self.journaled_state
             .load_account(address, &mut self.db)
-            .map(|(acc, is_cold)| (acc.info.code_size, is_cold))
+            .map(|acc| (acc.info.code_size, acc.is_cold))
     }
 
     /// Get code hash of address.
