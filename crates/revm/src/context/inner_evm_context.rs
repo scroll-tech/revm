@@ -280,10 +280,10 @@ impl<DB: Database> InnerEvmContext<DB> {
                     acc.info.code_hash
                 };
 
-                return Ok(Eip7702CodeLoad::new_not_delegated(hash, acc.is_cold))
+                Ok(Eip7702CodeLoad::new_not_delegated(hash, acc.is_cold))
             } else {
                 // Scroll does not support EOF yet
-                return Ok(Eip7702CodeLoad::new_not_delegated(acc.info.code_hash, acc.is_cold))
+                Ok(Eip7702CodeLoad::new_not_delegated(acc.info.code_hash, acc.is_cold))
             }
         }
     }
