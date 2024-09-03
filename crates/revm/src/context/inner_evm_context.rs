@@ -1,8 +1,8 @@
 use crate::{
     db::Database,
     interpreter::{
-        analysis::to_analysed, gas, return_ok, InstructionResult, InterpreterResult,
-        LoadAccountResult, SStoreResult, SelfDestructResult,
+        analysis::to_analysed, gas, return_ok, AccountLoad, Eip7702CodeLoad, InstructionResult,
+        InterpreterResult, SStoreResult, SelfDestructResult, StateLoad,
     },
     journaled_state::JournaledState,
     primitives::{
@@ -13,7 +13,7 @@ use crate::{
     },
     JournalCheckpoint,
 };
-use std::{boxed::Box, sync::Arc, vec::Vec};
+use std::{boxed::Box, sync::Arc};
 
 /// EVM contexts contains data that EVM needs for execution.
 #[derive(Debug)]
@@ -27,8 +27,6 @@ pub struct InnerEvmContext<DB: Database> {
     pub db: DB,
     /// Error that happened during execution.
     pub error: Result<(), EVMError<DB::Error>>,
-    /// EIP-7702 Authorization list of accounts that needs to be cleared.
-    pub valid_authorizations: Vec<Address>,
     /// Used as temporary value holder to store L1 block info.
     #[cfg(feature = "optimism")]
     pub l1_block_info: Option<crate::optimism::L1BlockInfo>,
@@ -47,7 +45,6 @@ where
             journaled_state: self.journaled_state.clone(),
             db: self.db.clone(),
             error: self.error.clone(),
-            valid_authorizations: self.valid_authorizations.clone(),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: self.l1_block_info.clone(),
         }
@@ -61,7 +58,6 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: JournaledState::new(SpecId::LATEST, HashSet::new()),
             db,
             error: Ok(()),
-            valid_authorizations: Default::default(),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: None,
         }
@@ -75,7 +71,6 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: JournaledState::new(SpecId::LATEST, HashSet::new()),
             db,
             error: Ok(()),
-            valid_authorizations: Default::default(),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: None,
         }
@@ -91,7 +86,6 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: self.journaled_state,
             db,
             error: Ok(()),
-            valid_authorizations: Default::default(),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: self.l1_block_info,
         }
@@ -156,7 +150,7 @@ impl<DB: Database> InnerEvmContext<DB> {
     pub fn load_account(
         &mut self,
         address: Address,
-    ) -> Result<(&mut Account, bool), EVMError<DB::Error>> {
+    ) -> Result<StateLoad<&mut Account>, EVMError<DB::Error>> {
         self.journaled_state.load_account(address, &mut self.db)
     }
 
@@ -164,38 +158,65 @@ impl<DB: Database> InnerEvmContext<DB> {
     ///
     /// Return boolean pair where first is `is_cold` second bool `exists`.
     #[inline]
-    pub fn load_account_exist(
+    pub fn load_account_delegated(
         &mut self,
         address: Address,
-    ) -> Result<LoadAccountResult, EVMError<DB::Error>> {
+    ) -> Result<AccountLoad, EVMError<DB::Error>> {
         self.journaled_state
-            .load_account_exist(address, &mut self.db)
+            .load_account_delegated(address, &mut self.db)
     }
 
     /// Return account balance and is_cold flag.
     #[inline]
-    pub fn balance(&mut self, address: Address) -> Result<(U256, bool), EVMError<DB::Error>> {
+    pub fn balance(&mut self, address: Address) -> Result<StateLoad<U256>, EVMError<DB::Error>> {
         self.journaled_state
             .load_account(address, &mut self.db)
-            .map(|(acc, is_cold)| (acc.info.balance, is_cold))
+            .map(|acc| acc.map(|a| a.info.balance))
     }
 
     /// Return account code bytes and if address is cold loaded.
     ///
     /// In case of EOF account it will return `EOF_MAGIC` (0xEF00) as code.
     #[inline]
-    pub fn code(&mut self, address: Address) -> Result<(Bytes, bool), EVMError<DB::Error>> {
-        self.journaled_state
-            .load_code(address, &mut self.db)
-            .map(|(a, is_cold)| {
-                // SAFETY: safe to unwrap as load_code will insert code if it is empty.
-                let code = a.info.code.as_ref().unwrap();
-                if code.is_eof() {
-                    (EOF_MAGIC_BYTES.clone(), is_cold)
-                } else {
-                    (code.original_bytes(), is_cold)
-                }
-            })
+    pub fn code(
+        &mut self,
+        address: Address,
+    ) -> Result<Eip7702CodeLoad<Bytes>, EVMError<DB::Error>> {
+        let a = self.journaled_state.load_code(address, &mut self.db)?;
+        // SAFETY: safe to unwrap as load_code will insert code if it is empty.
+        let code = a.info.code.as_ref().unwrap();
+        if code.is_eof() {
+            return Ok(Eip7702CodeLoad::new_not_delegated(
+                EOF_MAGIC_BYTES.clone(),
+                a.is_cold,
+            ));
+        }
+
+        if let Bytecode::Eip7702(code) = code {
+            let address = code.address();
+            let is_cold = a.is_cold;
+
+            let delegated_account = self.journaled_state.load_code(address, &mut self.db)?;
+
+            // SAFETY: safe to unwrap as load_code will insert code if it is empty.
+            let delegated_code = delegated_account.info.code.as_ref().unwrap();
+
+            let bytes = if delegated_code.is_eof() {
+                EOF_MAGIC_BYTES.clone()
+            } else {
+                delegated_code.original_bytes()
+            };
+
+            return Ok(Eip7702CodeLoad::new(
+                StateLoad::new(bytes, is_cold),
+                delegated_account.is_cold,
+            ));
+        }
+
+        Ok(Eip7702CodeLoad::new_not_delegated(
+            code.original_bytes(),
+            a.is_cold,
+        ))
     }
 
     #[inline]
@@ -213,21 +234,58 @@ impl<DB: Database> InnerEvmContext<DB> {
     ///
     /// In case of EOF account it will return `EOF_MAGIC_HASH`
     /// (the hash of `0xEF00`).
-    pub fn code_hash(&mut self, address: Address) -> Result<(B256, bool), EVMError<DB::Error>> {
+    #[inline]
+    pub fn code_hash(
+        &mut self,
+        address: Address,
+    ) -> Result<Eip7702CodeLoad<B256>, EVMError<DB::Error>> {
         #[cfg(not(feature = "scroll"))]
-        let (acc, is_cold) = self.journaled_state.load_code(address, &mut self.db)?;
+        let acc = self.journaled_state.load_code(address, &mut self.db)?;
         // Scroll does not support EOF yet, code won't be loaded if only EXTCODEHASH is called.
         #[cfg(feature = "scroll")]
-        let (acc, is_cold) = self.journaled_state.load_account(address, &mut self.db)?;
+        let acc = self.journaled_state.load_account(address, &mut self.db)?;
         if acc.is_empty() {
-            return Ok((B256::ZERO, is_cold));
+            return Ok(Eip7702CodeLoad::new_not_delegated(B256::ZERO, acc.is_cold));
         }
-        #[cfg(not(feature = "scroll"))]
-        if let Some(true) = acc.info.code.as_ref().map(|code| code.is_eof()) {
-            use crate::primitives::EOF_MAGIC_HASH;
-            return Ok((EOF_MAGIC_HASH, is_cold));
+
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                 // SAFETY: safe to unwrap as load_code will insert code if it is empty.
+                let code = acc.info.code.as_ref().unwrap();
+
+                // If bytecode is EIP-7702 then we need to load the delegated account.
+                if let Bytecode::Eip7702(code) = code {
+                    let address = code.address();
+                    let is_cold = acc.is_cold;
+
+                    let delegated_account = self.journaled_state.load_code(address, &mut self.db)?;
+
+                    let hash = if delegated_account.is_empty() {
+                        B256::ZERO
+                    } else if delegated_account.info.code.as_ref().unwrap().is_eof() {
+                        EOF_MAGIC_HASH
+                    } else {
+                        delegated_account.info.code_hash
+                    };
+
+                    return Ok(Eip7702CodeLoad::new(
+                        StateLoad::new(hash, is_cold),
+                        delegated_account.is_cold,
+                    ));
+                }
+
+                let hash = if code.is_eof() {
+                    EOF_MAGIC_HASH
+                } else {
+                    acc.info.code_hash
+                };
+
+                return Ok(Eip7702CodeLoad::new_not_delegated(hash, acc.is_cold))
+            } else {
+                // Scroll does not support EOF yet
+                return Ok(Eip7702CodeLoad::new_not_delegated(acc.info.code_hash, acc.is_cold))
+            }
         }
-        Ok((acc.info.code_hash, is_cold))
     }
 
     /// Load storage slot, if storage is not present inside the account then it will be loaded from database.
@@ -236,7 +294,7 @@ impl<DB: Database> InnerEvmContext<DB> {
         &mut self,
         address: Address,
         index: U256,
-    ) -> Result<(U256, bool), EVMError<DB::Error>> {
+    ) -> Result<StateLoad<U256>, EVMError<DB::Error>> {
         // account is always warm. reference on that statement https://eips.ethereum.org/EIPS/eip-2929 see `Note 2:`
         self.journaled_state.sload(address, index, &mut self.db)
     }
@@ -248,7 +306,7 @@ impl<DB: Database> InnerEvmContext<DB> {
         address: Address,
         index: U256,
         value: U256,
-    ) -> Result<SStoreResult, EVMError<DB::Error>> {
+    ) -> Result<StateLoad<SStoreResult>, EVMError<DB::Error>> {
         self.journaled_state
             .sstore(address, index, value, &mut self.db)
     }
@@ -271,7 +329,7 @@ impl<DB: Database> InnerEvmContext<DB> {
         &mut self,
         address: Address,
         target: Address,
-    ) -> Result<SelfDestructResult, EVMError<DB::Error>> {
+    ) -> Result<StateLoad<SelfDestructResult>, EVMError<DB::Error>> {
         self.journaled_state
             .selfdestruct(address, target, &mut self.db)
     }
