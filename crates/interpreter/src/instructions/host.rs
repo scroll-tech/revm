@@ -145,7 +145,7 @@ pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
             let diff = as_u64_saturated!(diff);
             let block_number = as_u64_or_fail!(interpreter, number);
 
-            if SPEC::enabled(BERNOULLI) && diff <= BLOCK_HASH_HISTORY {
+            if SPEC::enabled(PRE_BERNOULLI) && diff <= BLOCK_HASH_HISTORY {
                 let mut hasher = crate::primitives::Keccak256::new();
                 hasher.update(host.env().cfg.chain_id.to_be_bytes());
                 hasher.update(block_number.to_be_bytes());
@@ -270,7 +270,7 @@ pub fn selfdestruct<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter,
     pop_address!(interpreter, target);
 
     #[cfg(feature = "scroll")]
-    if SPEC::enabled(BERNOULLI) {
+    if SPEC::enabled(PRE_BERNOULLI) {
         interpreter.instruction_result = InstructionResult::NotActivated;
         return;
     }
