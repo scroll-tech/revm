@@ -9,14 +9,13 @@ use std::vec::Vec;
 
 pub fn balance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_address!(interpreter, address);
-    #[allow(unused_mut)]
-    let Some(mut balance) = host.balance(address) else {
+    let Some(balance) = host.balance(address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
     #[cfg(feature = "scroll")]
     if balance.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
-        balance.is_cold = false;
+        panic!("access list account should be either loaded or never accessed");
     }
     gas!(
         interpreter,
@@ -67,13 +66,13 @@ pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
 #[cfg(feature = "scroll")]
 pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_address!(interpreter, address);
-    let Some((code_size, mut is_cold)) = host.code_size(address) else {
+    let Some((code_size, is_cold)) = host.code_size(address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
     #[cfg(feature = "scroll")]
     if is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
-        is_cold = false;
+        panic!("access list account should be either loaded or never accessed");
     }
     gas!(interpreter, warm_cold_cost(is_cold));
 
@@ -84,14 +83,13 @@ pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
 pub fn extcodehash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check!(interpreter, CONSTANTINOPLE);
     pop_address!(interpreter, address);
-    #[allow(unused_mut)]
-    let Some(mut code_hash) = host.code_hash(address) else {
+    let Some(code_hash) = host.code_hash(address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
     #[cfg(feature = "scroll")]
     if code_hash.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
-        code_hash.is_cold = false;
+        panic!("access list account should be either loaded or never accessed");
     }
     let (code_hash, load) = code_hash.into_components();
     if SPEC::enabled(BERLIN) {
@@ -108,14 +106,13 @@ pub fn extcodecopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     pop_address!(interpreter, address);
     pop!(interpreter, memory_offset, code_offset, len_u256);
 
-    #[allow(unused_mut)]
-    let Some(mut code) = host.code(address) else {
+    let Some(code) = host.code(address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
     #[cfg(feature = "scroll")]
     if code.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
-        code.is_cold = false;
+        panic!("access list account should be either loaded or never accessed");
     }
 
     let len = as_usize_or_fail!(interpreter, len_u256);
@@ -183,8 +180,7 @@ pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
 
 pub fn sload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_top!(interpreter, index);
-    #[allow(unused_mut)]
-    let Some(mut value) = host.sload(interpreter.contract.target_address, *index) else {
+    let Some(value) = host.sload(interpreter.contract.target_address, *index) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
@@ -192,7 +188,7 @@ pub fn sload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: 
     if value.is_cold
         && host.is_storage_key_in_access_list(interpreter.contract.target_address, *index)
     {
-        value.is_cold = false;
+        panic!("access list account should be either loaded or never accessed");
     }
     gas!(interpreter, gas::sload_cost(SPEC::SPEC_ID, value.is_cold));
     *index = value.data;
