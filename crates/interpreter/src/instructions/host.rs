@@ -13,6 +13,10 @@ pub fn balance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if balance.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        panic!("access list account should be either loaded or never accessed");
+    }
     gas!(
         interpreter,
         if SPEC::enabled(BERLIN) {
@@ -66,6 +70,10 @@ pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        panic!("access list account should be either loaded or never accessed");
+    }
     gas!(interpreter, warm_cold_cost(is_cold));
 
     push!(interpreter, U256::from(code_size));
@@ -79,6 +87,10 @@ pub fn extcodehash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if code_hash.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        panic!("access list account should be either loaded or never accessed");
+    }
     let (code_hash, load) = code_hash.into_components();
     if SPEC::enabled(BERLIN) {
         gas!(interpreter, warm_cold_cost_with_delegation(load))
@@ -98,6 +110,10 @@ pub fn extcodecopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if code.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        panic!("access list account should be either loaded or never accessed");
+    }
 
     let len = as_usize_or_fail!(interpreter, len_u256);
     let (code, load) = code.into_components();
@@ -168,6 +184,12 @@ pub fn sload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: 
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if value.is_cold
+        && host.is_storage_key_in_access_list(interpreter.contract.target_address, *index)
+    {
+        panic!("access list account should be either loaded or never accessed");
+    }
     gas!(interpreter, gas::sload_cost(SPEC::SPEC_ID, value.is_cold));
     *index = value.data;
 }
@@ -180,6 +202,13 @@ pub fn sstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if state_load.is_cold
+        && host.is_storage_key_in_access_list(interpreter.contract.target_address, index)
+    {
+        interpreter.instruction_result = InstructionResult::NotActivated;
+        return;
+    }
     gas_or_fail!(interpreter, {
         let remaining_gas = interpreter.gas.remaining();
         gas::sstore_cost(
