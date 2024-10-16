@@ -114,6 +114,10 @@ impl<DB: Database> InnerEvmContext<DB> {
             );
             cfg_if::cfg_if! {
                 if #[cfg(feature = "scroll")] {
+                    // In scroll, we don't include the account in access list
+                    // if it was not actually accessed in the transaction.
+                    // The load will fail in that case, we just ignore the error.
+                    // This is not a problem as the account was never accessed.
                     result.ok();
                 } else {
                     result?;
