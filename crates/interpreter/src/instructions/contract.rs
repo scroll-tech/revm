@@ -417,7 +417,7 @@ pub fn call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &
         return;
     };
     #[cfg(feature = "scroll")]
-    if account_load.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+    if account_load.is_cold && host.is_address_in_access_list(to) {
         panic!("access list account should be either loaded or never accessed");
     }
     let Some(mut gas_limit) =
@@ -469,7 +469,7 @@ pub fn call_code<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
     // set is_empty to false as we are not creating this account.
     load.is_empty = false;
     #[cfg(feature = "scroll")]
-    if load.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+    if load.is_cold && host.is_address_in_access_list(to) {
         panic!("access list account should be either loaded or never accessed");
     }
     let Some(mut gas_limit) =
@@ -521,7 +521,7 @@ pub fn delegate_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter
     // set is_empty to false as we are not creating this account.
     load.is_empty = false;
     #[cfg(feature = "scroll")]
-    if load.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+    if load.is_cold && host.is_address_in_access_list(to) {
         panic!("access list account should be either loaded or never accessed");
     }
     let Some(gas_limit) = calc_call_gas::<SPEC>(interpreter, load, false, local_gas_limit) else {
@@ -566,7 +566,7 @@ pub fn static_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     // set is_empty to false as we are not creating this account.
     load.is_empty = false;
     #[cfg(feature = "scroll")]
-    if load.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+    if load.is_cold && host.is_address_in_access_list(to) {
         panic!("access list account should be either loaded or never accessed");
     }
     let Some(gas_limit) = calc_call_gas::<SPEC>(interpreter, load, false, local_gas_limit) else {
