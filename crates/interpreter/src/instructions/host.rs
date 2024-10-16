@@ -9,10 +9,15 @@ use std::vec::Vec;
 
 pub fn balance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_address!(interpreter, address);
-    let Some(balance) = host.balance(address) else {
+    #[allow(unused_mut)]
+    let Some(mut balance) = host.balance(address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if balance.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        balance.is_cold = false;
+    }
     gas!(
         interpreter,
         if SPEC::enabled(BERLIN) {
@@ -62,10 +67,14 @@ pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
 #[cfg(feature = "scroll")]
 pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_address!(interpreter, address);
-    let Some((code_size, is_cold)) = host.code_size(address) else {
+    let Some((code_size, mut is_cold)) = host.code_size(address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        is_cold = false;
+    }
     gas!(interpreter, warm_cold_cost(is_cold));
 
     push!(interpreter, U256::from(code_size));
@@ -75,10 +84,15 @@ pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
 pub fn extcodehash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check!(interpreter, CONSTANTINOPLE);
     pop_address!(interpreter, address);
-    let Some(code_hash) = host.code_hash(address) else {
+    #[allow(unused_mut)]
+    let Some(mut code_hash) = host.code_hash(address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if code_hash.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        code_hash.is_cold = false;
+    }
     let (code_hash, load) = code_hash.into_components();
     if SPEC::enabled(BERLIN) {
         gas!(interpreter, warm_cold_cost_with_delegation(load))
@@ -94,10 +108,15 @@ pub fn extcodecopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     pop_address!(interpreter, address);
     pop!(interpreter, memory_offset, code_offset, len_u256);
 
-    let Some(code) = host.code(address) else {
+    #[allow(unused_mut)]
+    let Some(mut code) = host.code(address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if code.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        code.is_cold = false;
+    }
 
     let len = as_usize_or_fail!(interpreter, len_u256);
     let (code, load) = code.into_components();
@@ -164,10 +183,17 @@ pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
 
 pub fn sload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_top!(interpreter, index);
-    let Some(value) = host.sload(interpreter.contract.target_address, *index) else {
+    #[allow(unused_mut)]
+    let Some(mut value) = host.sload(interpreter.contract.target_address, *index) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if value.is_cold
+        && host.is_storage_key_in_access_list(interpreter.contract.target_address, *index)
+    {
+        value.is_cold = false;
+    }
     gas!(interpreter, gas::sload_cost(SPEC::SPEC_ID, value.is_cold));
     *index = value.data;
 }
@@ -180,6 +206,13 @@ pub fn sstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if state_load.is_cold
+        && host.is_storage_key_in_access_list(interpreter.contract.target_address, index)
+    {
+        interpreter.instruction_result = InstructionResult::NotActivated;
+        return;
+    }
     gas_or_fail!(interpreter, {
         let remaining_gas = interpreter.gas.remaining();
         gas::sstore_cost(

@@ -107,11 +107,18 @@ impl<DB: Database> InnerEvmContext<DB> {
             storage_keys,
         } in self.env.tx.access_list.iter()
         {
-            self.journaled_state.initial_account_load(
+            let result = self.journaled_state.initial_account_load(
                 *address,
                 storage_keys.iter().map(|i| U256::from_be_bytes(i.0)),
                 &mut self.db,
-            )?;
+            );
+            cfg_if::cfg_if! {
+                if #[cfg(feature = "scroll")] {
+                    result.ok();
+                } else {
+                    result?;
+                }
+            }
         }
         Ok(())
     }
