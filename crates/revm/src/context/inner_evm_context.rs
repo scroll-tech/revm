@@ -114,11 +114,25 @@ impl<DB: Database> InnerEvmContext<DB> {
             );
             cfg_if::cfg_if! {
                 if #[cfg(feature = "scroll")] {
-                    // In scroll, we don't include the account in access list
-                    // if it was not actually accessed in the transaction.
+                    // In scroll, we don't include the access list accounts/storages in the partial
+                    // merkle trie proofs if it was not actually accessed in the transaction.
                     // The load will fail in that case, we just ignore the error.
-                    // This is not a problem as the account was never accessed.
-                    result.ok();
+                    // This is not a problem as the accounts/storages was never accessed.
+                    match result {
+                        Err(EVMError::Database(e)) => {
+                            // the concrete error in scroll is
+                            // https://github.com/scroll-tech/stateless-block-verifier/blob/851f5141ded76ddba7594814b9761df1dc469a12/crates/core/src/error.rs#L4-L13
+                            // We cannot check it since `Database::Error` is an opaque type
+                            // without any trait bounds (like `Debug` or `Display`).
+                            // only thing we can do is to check the type name.
+                            assert_eq!(
+                                "sbv_core::error::DatabaseError",
+                                core::any::type_name_of_val(&e),
+                                "unexpected error type"
+                            );
+                        }
+                        _ => { result?; }
+                    }
                 } else {
                     result?;
                 }
