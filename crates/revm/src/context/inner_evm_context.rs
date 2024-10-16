@@ -119,19 +119,16 @@ impl<DB: Database> InnerEvmContext<DB> {
                     // The load will fail in that case, we just ignore the error.
                     // This is not a problem as the accounts/storages was never accessed.
                     match result {
-                        Err(EVMError::Database(e)) => {
-                            // the concrete error in scroll is
-                            // https://github.com/scroll-tech/stateless-block-verifier/blob/851f5141ded76ddba7594814b9761df1dc469a12/crates/core/src/error.rs#L4-L13
-                            // We cannot check it since `Database::Error` is an opaque type
-                            // without any trait bounds (like `Debug` or `Display`).
-                            // only thing we can do is to check the type name.
-                            assert_eq!(
-                                "sbv_core::error::DatabaseError",
-                                core::any::type_name_of_val(&e),
-                                "unexpected error type"
-                            );
-                        }
-                        _ => { result?; }
+                         // the concrete error in scroll is
+                         // https://github.com/scroll-tech/stateless-block-verifier/blob/851f5141ded76ddba7594814b9761df1dc469a12/crates/core/src/error.rs#L4-L13
+                         // We cannot check it since `Database::Error` is an opaque type
+                         // without any trait bounds (like `Debug` or `Display`).
+                         // only thing we can do is to check the type name.
+                         Err(EVMError::Database(e))
+                             if core::any::type_name_of_val(&e) == "sbv_core::error::DatabaseError" => {}
+                         _ => {
+                             result?;
+                         }
                     }
                 } else {
                     result?;
