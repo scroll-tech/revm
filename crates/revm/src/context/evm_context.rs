@@ -5,8 +5,9 @@ use super::inner_evm_context::InnerEvmContext;
 use crate::{
     db::Database,
     interpreter::{
-        analysis::validate_eof, return_ok, CallInputs, Contract, CreateInputs, EOFCreateInputs,
-        EOFCreateKind, Gas, InstructionResult, Interpreter, InterpreterResult,
+        analysis::{to_analysed, validate_eof},
+        return_ok, CallInputs, Contract, CreateInputs, EOFCreateInputs, EOFCreateKind, Gas,
+        InstructionResult, Interpreter, InterpreterResult,
     },
     primitives::{
         keccak256, Address, Bytecode, Bytes, CreateScheme, EVMError, Env, Eof,
@@ -216,13 +217,13 @@ impl<DB: Database> EvmContext<DB> {
                 inputs.return_memory_offset.clone(),
             ))
         } else {
-            let account = self
+            let mut account = self
                 .inner
                 .journaled_state
                 .load_code(inputs.bytecode_address, &mut self.inner.db)?;
 
             let code_hash = account.info.code_hash();
-            let mut bytecode = account.info.code.clone().unwrap_or_default();
+            let bytecode = account.info.code.clone().unwrap_or_default();
 
             // ExtDelegateCall is not allowed to call non-EOF contracts.
             if inputs.scheme.is_ext_delegate_call()
@@ -236,16 +237,24 @@ impl<DB: Database> EvmContext<DB> {
                 return return_result(InstructionResult::Stop);
             }
 
-            if let Bytecode::Eip7702(eip7702_bytecode) = bytecode {
-                bytecode = self
-                    .inner
-                    .journaled_state
-                    .load_code(eip7702_bytecode.delegated_address, &mut self.inner.db)?
-                    .info
-                    .code
-                    .clone()
-                    .unwrap_or_default();
-            }
+            let bytecode = match bytecode {
+                Bytecode::LegacyRaw(_) => {
+                    account.info.code = account.info.code.take().map(to_analysed);
+                    account.info.code.clone().unwrap()
+                }
+                Bytecode::Eip7702(eip7702_bytecode) => {
+                    let mut delegated_account = self
+                        .inner
+                        .journaled_state
+                        .load_code(eip7702_bytecode.delegated_address, &mut self.inner.db)?;
+                    if matches!(delegated_account.info.code, Some(Bytecode::LegacyRaw(_))) {
+                        delegated_account.info.code =
+                            delegated_account.info.code.take().map(to_analysed);
+                    }
+                    delegated_account.info.code.clone().unwrap_or_default()
+                }
+                _ => bytecode,
+            };
 
             let contract =
                 Contract::new_with_context(inputs.input.clone(), bytecode, Some(code_hash), inputs);
