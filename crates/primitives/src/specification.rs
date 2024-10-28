@@ -830,8 +830,8 @@ mod scroll_tests {
         assert!(EuclidSpec::enabled(SpecId::SHANGHAI));
         assert!(EuclidSpec::enabled(SpecId::PRE_BERNOULLI));
         assert!(EuclidSpec::enabled(SpecId::BERNOULLI));
-        assert!(!EuclidSpec::enabled(SpecId::CURIE));
-        assert!(!EuclidSpec::enabled(SpecId::CANCUN));
+        assert!(EuclidSpec::enabled(SpecId::CURIE));
+        assert!(EuclidSpec::enabled(SpecId::CANCUN));
         assert!(!EuclidSpec::enabled(SpecId::LATEST));
     }
 }
