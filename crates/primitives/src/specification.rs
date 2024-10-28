@@ -113,6 +113,9 @@ pub enum SpecId {
     CANCUN = 20,
     PRAGUE = 21,
     PRAGUE_EOF = 22,
+    /// Euclid update introduces:
+    ///   - Support `p256_verify` precompile.
+    EUCLID = 23,
     #[default]
     LATEST = u8::MAX,
 }
@@ -174,6 +177,8 @@ impl From<&str> for SpecId {
             "Bernoulli" => SpecId::BERNOULLI,
             #[cfg(feature = "scroll")]
             "Curie" => SpecId::CURIE,
+            #[cfg(feature = "scroll")]
+            "Euclid" => SpecId::EUCLID,
             _ => Self::LATEST,
         }
     }
@@ -220,6 +225,8 @@ impl From<SpecId> for &'static str {
             SpecId::BERNOULLI => "Bernoulli",
             #[cfg(feature = "scroll")]
             SpecId::CURIE => "Curie",
+            #[cfg(feature = "scroll")]
+            SpecId::EUCLID => "Euclid",
             SpecId::LATEST => "Latest",
         }
     }
@@ -291,6 +298,8 @@ spec!(PRE_BERNOULLI, PreBernoulliSpec);
 spec!(BERNOULLI, BernoulliSpec);
 #[cfg(feature = "scroll")]
 spec!(CURIE, CurieSpec);
+#[cfg(feature = "scroll")]
+spec!(EUCLID, EuclidSpec);
 
 #[cfg(not(any(feature = "optimism", feature = "scroll")))]
 #[macro_export]
@@ -538,6 +547,11 @@ macro_rules! spec_to_generic {
                 use $crate::CurieSpec as SPEC;
                 $e
             }
+            #[cfg(feature = "scroll")]
+            $crate::SpecId::EUCLID => {
+                use $crate::EuclidSpec as SPEC;
+                $e
+            }
         }
     }};
 }
@@ -579,6 +593,8 @@ mod tests {
         spec_to_generic!(BERNOULLI, assert_eq!(SPEC::SPEC_ID, BERNOULLI));
         #[cfg(feature = "scroll")]
         spec_to_generic!(CURIE, assert_eq!(SPEC::SPEC_ID, CURIE));
+        #[cfg(feature = "scroll")]
+        spec_to_generic!(EUCLID, assert_eq!(SPEC::SPEC_ID, EUCLID));
         spec_to_generic!(CANCUN, assert_eq!(SPEC::SPEC_ID, CANCUN));
         #[cfg(feature = "optimism")]
         spec_to_generic!(ECOTONE, assert_eq!(SPEC::SPEC_ID, ECOTONE));
@@ -771,5 +787,16 @@ mod scroll_tests {
         assert!(CurieSpec::enabled(SpecId::BERNOULLI));
         assert!(!CurieSpec::enabled(SpecId::CANCUN));
         assert!(!CurieSpec::enabled(SpecId::LATEST));
+    }
+
+    #[test]
+    fn test_euclid_post_merge_hardforks() {
+        assert!(EuclidSpec::enabled(SpecId::MERGE));
+        assert!(EuclidSpec::enabled(SpecId::SHANGHAI));
+        assert!(EuclidSpec::enabled(SpecId::PRE_BERNOULLI));
+        assert!(EuclidSpec::enabled(SpecId::BERNOULLI));
+        assert!(!EuclidSpec::enabled(SpecId::CURIE));
+        assert!(!EuclidSpec::enabled(SpecId::CANCUN));
+        assert!(!EuclidSpec::enabled(SpecId::LATEST));
     }
 }

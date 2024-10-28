@@ -64,6 +64,8 @@ impl Precompiles {
             PrecompileSpecId::PRE_BERNOULLI => Self::pre_bernoulli(),
             #[cfg(feature = "scroll")]
             PrecompileSpecId::BERNOULLI => Self::bernoulli(),
+            #[cfg(feature = "scroll")]
+            PrecompileSpecId::EUCLID => Self::euclid(),
             PrecompileSpecId::CANCUN => Self::cancun(),
             PrecompileSpecId::PRAGUE => Self::prague(),
             PrecompileSpecId::LATEST => Self::latest(),
@@ -207,11 +209,26 @@ impl Precompiles {
     /// Returns precompiles for Scroll
     #[cfg(feature = "scroll")]
     pub fn bernoulli() -> &'static Self {
+        println!("Bernoulli");
         static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Self::pre_bernoulli().clone();
             precompiles.extend([
                 hash::SHA256, // 0x02
+            ]);
+
+            Box::new(precompiles)
+        })
+    }
+
+    /// Returns precompiles for Scroll
+    #[cfg(feature = "scroll")]
+    pub fn euclid() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let mut precompiles = Self::bernoulli().clone();
+            precompiles.extend([
+                secp256r1::P256VERIFY, // 0x100
             ]);
             Box::new(precompiles)
         })
@@ -318,6 +335,8 @@ pub enum PrecompileSpecId {
     PRE_BERNOULLI,
     #[cfg(feature = "scroll")]
     BERNOULLI,
+    #[cfg(feature = "scroll")]
+    EUCLID,
     CANCUN,
     PRAGUE,
     LATEST,
@@ -345,6 +364,8 @@ impl PrecompileSpecId {
             PRE_BERNOULLI => Self::PRE_BERNOULLI,
             #[cfg(feature = "scroll")]
             BERNOULLI | CURIE => Self::BERNOULLI,
+            #[cfg(feature = "scroll")]
+            EUCLID => Self::EUCLID,
         }
     }
 }
