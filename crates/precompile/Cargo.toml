@@ -96,7 +96,7 @@ negate-optimism-default-handler = [
     "revm-primitives/negate-optimism-default-handler",
 ]
 
-scroll = ["revm-primitives/scroll"]
+scroll = ["revm-primitives/scroll", "secp256r1"]
 # Scroll default handler enabled Scroll handler register by default in EvmBuilder.
 scroll-default-handler = [
     "scroll",
