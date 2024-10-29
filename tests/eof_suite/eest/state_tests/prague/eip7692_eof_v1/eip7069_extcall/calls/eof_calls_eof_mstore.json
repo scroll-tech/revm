@@ -1,9 +1,5 @@
 {
-<<<<<<<< HEAD:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip3540_eof_v1/calls/eof_calls_eof_mstore.json
-    "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_calls.py::test_eof_calls_eof_mstore[fork_PragueEIP7692-state_test-extcall]": {
-========
     "tests/prague/eip7692_eof_v1/eip7069_extcall/test_calls.py::test_eof_calls_eof_mstore[fork_CancunEIP7692-state_test-opcode_EXTCALL]": {
->>>>>>>> v43-upstream:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip7069_extcall/calls/eof_calls_eof_mstore.json
         "env": {
             "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
             "currentGasLimit": "0x016345785d8a0000",
@@ -65,28 +61,16 @@
             ]
         },
         "_info": {
-<<<<<<<< HEAD:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip3540_eof_v1/calls/eof_calls_eof_mstore.json
-            "hash": "0x72ae548fdc8a1bbe074c0033f9d4a0d9f48b5678c0f48c836475e457030947fd",
-            "comment": "`execution-spec-tests` generated test",
-            "filling-transition-tool": "Hyperledger Besu evm 24.7-develop-30c96c7",
-            "description": "Test function documentation:\nTest EOF contracts calling EOF contracts that return data",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/eip7692-prague@v1.0.7/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_calls.py#L264",
-========
             "hash": "0xa040c545a6973419dc493c5faf80990e2d956af0158052ce83869ce4ec91650c",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "evmone-t8n 0.12.0-6+commit.2d20cc63.dirty",
             "description": "Test function documentation:\nTest EOF contracts calling EOF contracts that return data",
             "url": "https://github.com/ethereum/execution-spec-tests/blob/60b2036d3a8090e36595948846578af102666e65/tests/prague/eip7692_eof_v1/eip7069_extcall/test_calls.py#L254",
->>>>>>>> v43-upstream:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip7069_extcall/calls/eof_calls_eof_mstore.json
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3540.md",
             "reference-spec-version": "2f013de4065babde7c02f84a2ce9864a3c5bfbd3"
         }
     },
-<<<<<<<< HEAD:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip3540_eof_v1/calls/eof_calls_eof_mstore.json
-    "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_calls.py::test_eof_calls_eof_mstore[fork_PragueEIP7692-state_test-extdelegatecall]": {
-========
     "tests/prague/eip7692_eof_v1/eip7069_extcall/test_calls.py::test_eof_calls_eof_mstore[fork_CancunEIP7692-state_test-opcode_EXTDELEGATECALL]": {
->>>>>>>> v43-upstream:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip7069_extcall/calls/eof_calls_eof_mstore.json
         "env": {
             "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
             "currentGasLimit": "0x016345785d8a0000",
@@ -148,28 +132,16 @@
             ]
         },
         "_info": {
-<<<<<<<< HEAD:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip3540_eof_v1/calls/eof_calls_eof_mstore.json
-            "hash": "0x840eae18192bd9b767cb9a4629555293c4addd89f21e0e171973b350c5d84e31",
-            "comment": "`execution-spec-tests` generated test",
-            "filling-transition-tool": "Hyperledger Besu evm 24.7-develop-30c96c7",
-            "description": "Test function documentation:\nTest EOF contracts calling EOF contracts that return data",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/eip7692-prague@v1.0.7/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_calls.py#L264",
-========
             "hash": "0x5c9e20c913b0a0cf06cb005a3d8759a94712f83d7cf7b7fbbc38fe2f7add305d",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "evmone-t8n 0.12.0-6+commit.2d20cc63.dirty",
             "description": "Test function documentation:\nTest EOF contracts calling EOF contracts that return data",
             "url": "https://github.com/ethereum/execution-spec-tests/blob/60b2036d3a8090e36595948846578af102666e65/tests/prague/eip7692_eof_v1/eip7069_extcall/test_calls.py#L254",
->>>>>>>> v43-upstream:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip7069_extcall/calls/eof_calls_eof_mstore.json
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3540.md",
             "reference-spec-version": "2f013de4065babde7c02f84a2ce9864a3c5bfbd3"
         }
     },
-<<<<<<<< HEAD:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip3540_eof_v1/calls/eof_calls_eof_mstore.json
-    "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_calls.py::test_eof_calls_eof_mstore[fork_PragueEIP7692-state_test-extstaticall]": {
-========
     "tests/prague/eip7692_eof_v1/eip7069_extcall/test_calls.py::test_eof_calls_eof_mstore[fork_CancunEIP7692-state_test-opcode_EXTSTATICCALL]": {
->>>>>>>> v43-upstream:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip7069_extcall/calls/eof_calls_eof_mstore.json
         "env": {
             "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
             "currentGasLimit": "0x016345785d8a0000",
@@ -231,19 +203,11 @@
             ]
         },
         "_info": {
-<<<<<<<< HEAD:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip3540_eof_v1/calls/eof_calls_eof_mstore.json
-            "hash": "0x6980648e75db6ff001d3b9b4548210558ea67912ab3fd2b8fb3aeac5d91eab4d",
-            "comment": "`execution-spec-tests` generated test",
-            "filling-transition-tool": "Hyperledger Besu evm 24.7-develop-30c96c7",
-            "description": "Test function documentation:\nTest EOF contracts calling EOF contracts that return data",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/eip7692-prague@v1.0.7/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_calls.py#L264",
-========
             "hash": "0x07a618c4d77187e08d19868149f8dd2262eef1ee76f842b8e0f530d803df3b96",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "evmone-t8n 0.12.0-6+commit.2d20cc63.dirty",
             "description": "Test function documentation:\nTest EOF contracts calling EOF contracts that return data",
             "url": "https://github.com/ethereum/execution-spec-tests/blob/60b2036d3a8090e36595948846578af102666e65/tests/prague/eip7692_eof_v1/eip7069_extcall/test_calls.py#L254",
->>>>>>>> v43-upstream:tests/eof_suite/eest/state_tests/prague/eip7692_eof_v1/eip7069_extcall/calls/eof_calls_eof_mstore.json
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3540.md",
             "reference-spec-version": "2f013de4065babde7c02f84a2ce9864a3c5bfbd3"
         }
