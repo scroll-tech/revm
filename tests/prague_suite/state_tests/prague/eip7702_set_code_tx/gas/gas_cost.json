@@ -74,9 +74,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_chain_specific_authorization_single_signer]": {
@@ -154,9 +154,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-multiple_valid_authorizations_single_signer]": {
@@ -227,7 +227,7 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0xc4cea52d34eefe227a6fa18eeb4c6b0c0c74f39e864e91a19f9adf2ae992ec76",
+                    "hash": "0xd86052826fc37cfbcc6384acd5c1b79ba96641f1c493575f47a9d0052078667f",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
                     "txbytes": "0x04f9011d01808007830474db9400000000000000000000000000000000000010008080c0f8b8f85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b8001a05a8cac98fd240d8ef83c22db4a061ffa0facb1801245283cc05fc809d8b92837a01c3162fe11d91bc24d4fa00fb19ca34531e0eacdf8142c804be44058d5b8244ff85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b0180a06cacf1ec5bb4f5c1c84ae564222cbf2ce124add0a2707287860881692263fca4a00315456b6df53b696a97f927e9a4624014dafe0031cc88979754ca4be33140eb01a07d8f8b8d8f6ed121c5d45d6606c0a79ad27c3c66e6e5581f9ca0b4e2c5158677a062043f02a8543fdb9ec7693cab2a69d0cf2726e7c94a172075c67a8fd39496c8",
                     "indexes": {
@@ -239,13 +239,13 @@
             ]
         },
         "_info": {
-            "hash": "0x00d54cb2077045a84161b29e9b9b19461aa667a1df3fed49e4f627017432c005",
+            "hash": "0xe3024cbb25b2197c6e5b1441b8ead5ce8650e3a2aae6f3e6ac3b8134c4ab23dc",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_invalid_nonce_authorization_single_signer]": {
@@ -323,9 +323,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_invalid_authorization_invalid_chain_id_single_signer]": {
@@ -403,9 +403,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-multiple_invalid_nonce_authorizations_single_signer]": {
@@ -492,9 +492,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-multiple_invalid_nonce_authorizations_multiple_signers]": {
@@ -581,9 +581,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-multiple_invalid_chain_id_authorizations_single_signer]": {
@@ -670,9 +670,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-multiple_valid_authorizations_multiple_signers]": {
@@ -759,9 +759,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-first_valid_then_single_repeated_nonce_authorization]": {
@@ -848,9 +848,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-first_valid_then_single_repeated_nonce_authorizations_multiple_signers]": {
@@ -955,9 +955,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_authorization_to_eoa]": {
@@ -1041,9 +1041,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_authorization_to_contract]": {
@@ -1127,9 +1127,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_authorization_with_authority_in_access_list]": {
@@ -1214,9 +1214,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_authorization_with_set_code_address_in_access_list]": {
@@ -1301,9 +1301,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_authorization_with_authority_and_set_code_address_in_access_list]": {
@@ -1394,9 +1394,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_authorization_eoa_authority]": {
@@ -1464,7 +1464,7 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0xa937ed2e84d23d64317fccbcf4ed28138c11ea2ed501012547a8a00832c85e90",
+                    "hash": "0x81f9ab7bf5569768d9ada257978480196c4cff39c6489c2a7164bcf43b8abb47",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
                     "txbytes": "0x04f8c101808007830413339400000000000000000000000000000000000010008080c0f85cf85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b8001a05a8cac98fd240d8ef83c22db4a061ffa0facb1801245283cc05fc809d8b92837a01c3162fe11d91bc24d4fa00fb19ca34531e0eacdf8142c804be44058d5b8244f01a0daf1dc70268426bbc449a0b3b43f285e2af3146786d51e3c2fc15c66ffb7f5f8a044f1fb8f39782fe461e2f50130eeb6a8b61b166821ccddb849a479fb0a901a92",
                     "indexes": {
@@ -1476,13 +1476,13 @@
             ]
         },
         "_info": {
-            "hash": "0x09aa88e07792cc766c07e3c812d1494d50544d123554d4a7049a84cbe1a19978",
+            "hash": "0xa357b2b9aead275ab194f507ac886e5c1430cc907b94e3372efbe8bb013db443",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_re_authorization_eoa_authority]": {
@@ -1550,7 +1550,7 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0x4f2e62caabf2965ad35ef423395ba7f0a35ddd651e34ed65ce80fd2c338741af",
+                    "hash": "0x428674f28d3dbfac1f48bf941cb79e185c78b2867634d904441b099e1772dcef",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
                     "txbytes": "0x04f8c101808007830413339400000000000000000000000000000000000010008080c0f85cf85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b0180a06cacf1ec5bb4f5c1c84ae564222cbf2ce124add0a2707287860881692263fca4a00315456b6df53b696a97f927e9a4624014dafe0031cc88979754ca4be33140eb80a0cbb20a24b5a4938bb53f8204b36bdb3b4664fab49940ea9b6a512724663bd015a05a0963e3b18d5297c6a91143764d1244c30184ada923991d81a1c4a872fb8a2c",
                     "indexes": {
@@ -1562,13 +1562,13 @@
             ]
         },
         "_info": {
-            "hash": "0x323909b0a78b3519d4ecd0765d8e2243b732e959d596ef56e574465d73ca903c",
+            "hash": "0xb05052c63e7ad702c403cf3bad03a1ea0bb1d7568514a2ec98781376c0910332",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-multiple_valid_authorizations_eoa_authority]": {
@@ -1645,7 +1645,7 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0xcc2488b0ecc51044dc7004b3303e72a5b1e5bb3f6d0a6ddb4d9cf80bb186ec98",
+                    "hash": "0xc1fb36d7e264c5d169c3aabcc9124f8d1f42b92ef83c3a7eaa9d9f993b39ee7b",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
                     "txbytes": "0x04f9011d01808007830474db9400000000000000000000000000000000000010008080c0f8b8f85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b8001a05a8cac98fd240d8ef83c22db4a061ffa0facb1801245283cc05fc809d8b92837a01c3162fe11d91bc24d4fa00fb19ca34531e0eacdf8142c804be44058d5b8244ff85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b0180a06cacf1ec5bb4f5c1c84ae564222cbf2ce124add0a2707287860881692263fca4a00315456b6df53b696a97f927e9a4624014dafe0031cc88979754ca4be33140eb01a07d8f8b8d8f6ed121c5d45d6606c0a79ad27c3c66e6e5581f9ca0b4e2c5158677a062043f02a8543fdb9ec7693cab2a69d0cf2726e7c94a172075c67a8fd39496c8",
                     "indexes": {
@@ -1657,13 +1657,13 @@
             ]
         },
         "_info": {
-            "hash": "0x55c67620793898df789aa7659e0bf668cb488d370340fcee48565fe9c9310701",
+            "hash": "0xeca10484e8aad62063161b2f5c734611b1348f14499b3ae09b9b4716e2c60958",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_authorization_eoa_self_sponsored_authority]": {
@@ -1725,7 +1725,7 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0xa7bcf172a94c268f7f776e33d4813ea26f96959e4d6c51f44e0af834e667c1c9",
+                    "hash": "0x5eb8248a316250e5e7da9088e48d79e631b68027b20071fbd370b6b44e45d675",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
                     "txbytes": "0x04f8c101808007830413339400000000000000000000000000000000000010008080c0f85cf85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b0101a05dc970375527771146e0d4d3f938cab2b3d26a8eeac635d6e98ffc783e5fdab9a0670def30129ad98b77e5ca9a58e62f770c5faf5eb4d3ae469ab1125530d1494d01a0e139bc34a2a7580647be7eaaaa992d33fb0ed782a7f8b9abce1f658f1c33d4eca06b949367d0b3e1d587b6ead4b4fd2094aedc12f37adfca2ca3cc5252f7b6eb05",
                     "indexes": {
@@ -1737,13 +1737,13 @@
             ]
         },
         "_info": {
-            "hash": "0x64268757a51dcd3a8adde26995621b426646205e45231b2b356cd78af32de492",
+            "hash": "0xa4a2a3b01cb991c9a37d501c9b703620b22385770c4ab5f5ccfc2f304a7a73e1",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-multiple_valid_authorizations_eoa_self_sponsored_authority]": {
@@ -1814,7 +1814,7 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0x7ce0ee47afd183ff563265fe1c6abab358c22a30c091472a4e8e5d35b80d0cc5",
+                    "hash": "0x9975e532c8d4f59df88ae0de42588aecda39e5e7e7a9491e8e2f4d2a24cdf0ee",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
                     "txbytes": "0x04f9011d01808007830474db9400000000000000000000000000000000000010008080c0f8b8f85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b0101a05dc970375527771146e0d4d3f938cab2b3d26a8eeac635d6e98ffc783e5fdab9a0670def30129ad98b77e5ca9a58e62f770c5faf5eb4d3ae469ab1125530d1494df85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b0201a0a482bcddcc7fc855c7853e70c4d51e95c73d4f6867ce500fe49be1a62a2c25dda004ab2df71bb8cbf316c0b97ef286d8f19f0ab620d2758fe53cbe7a52b45e3a0a80a07faa82d23dd2274ebd4dbac6ad7099dce0fb394fc35e14dfdc877ba9f4a8950fa048e99b630821d28e1a1410ee12a18bcca6d328ef85e6616a271029eff1be62a0",
                     "indexes": {
@@ -1826,13 +1826,13 @@
             ]
         },
         "_info": {
-            "hash": "0x6ca062ad8c373e583779b8470577a2d6aa9d45c61fbb75575378b2970e749aa2",
+            "hash": "0x1edead7297fcee9ab8b6685e67f221c0ac01dc02e61dedde40308121d155f46b",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_authorization_invalid_contract_authority]": {
@@ -1916,9 +1916,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-multiple_authorizations_empty_account_then_contract_authority]": {
@@ -2011,9 +2011,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-multiple_authorizations_eoa_then_contract_authority]": {
@@ -2096,7 +2096,7 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0x5663eeda96a80bad1f44555566d02b7ad87abaf24ec0f82371efac4c6cb5f89f",
+                    "hash": "0x093a2d27e19dadf6e8f2fb3d1c36f738f241c12e17d04d0ef112c6e1c284319e",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
                     "txbytes": "0x04f9011d01808007830474db9400000000000000000000000000000000000010008080c0f8b8f85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b8001a05a8cac98fd240d8ef83c22db4a061ffa0facb1801245283cc05fc809d8b92837a01c3162fe11d91bc24d4fa00fb19ca34531e0eacdf8142c804be44058d5b8244ff85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b8001a00345c56a25c9b20388d46c6313e904c2bc902157d4b64b0f3093b79f58211b59a02a6501b16e91d253e98399cda003f8abbbaf1e67c8fa4764f899a5057210f1b301a02c3d5f1d1e8f50f421f3d7e75fa44d0502a3209e752ea45ec43d4c7a656c5395a008faaa6d6e3752a9531ac2fe170e0e7d552996dd6a13e44616b7c9f189001547",
                     "indexes": {
@@ -2108,13 +2108,13 @@
             ]
         },
         "_info": {
-            "hash": "0x22c8f7db204d9fa84966a58d95e2182ae47905b2d3293ea3ce4e67ebbc4b6473",
+            "hash": "0x586fa25b2f55a47c6fc9a0432987d13a00353ac4292bc9202f764d9296f78999",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-multiple_authorizations_eoa_self_sponsored_then_contract_authority]": {
@@ -2191,7 +2191,7 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0x37b9adb1c06464738b45ee855d68cb87416d70aba795840926326dafd79f6eda",
+                    "hash": "0x193f95f3e305591adedf88b9e575bec0df2d19a34e318b268370037a780b5b0c",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
                     "txbytes": "0x04f9011d01808007830474db9400000000000000000000000000000000000010008080c0f8b8f85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b0101a05dc970375527771146e0d4d3f938cab2b3d26a8eeac635d6e98ffc783e5fdab9a0670def30129ad98b77e5ca9a58e62f770c5faf5eb4d3ae469ab1125530d1494df85a8094a94f5374fce5edbc8e2a8697c15331677e6ebf0b8001a05a8cac98fd240d8ef83c22db4a061ffa0facb1801245283cc05fc809d8b92837a01c3162fe11d91bc24d4fa00fb19ca34531e0eacdf8142c804be44058d5b8244f80a04b6e0a5b1f7a3d5226bf5664c66f3a924f5a4c25025891d246f6ec5a8c2894a8a03b8cd7446fc11c7c37831c4a60720d44ccb89b3de18eac502acd8ad70da49c35",
                     "indexes": {
@@ -2203,13 +2203,13 @@
             ]
         },
         "_info": {
-            "hash": "0xc066bb0b8b8529cc029607991927cbdc673a4f59b17236bd778e35361de96c32",
+            "hash": "0x077cb8336281cdce4a35a02deb51c480d4c7537992a81ff283dea601a7d57527",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_authorization_with_single_non_zero_byte_data]": {
@@ -2287,9 +2287,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-single_valid_authorization_with_single_zero_byte_data]": {
@@ -2367,9 +2367,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-many_valid_authorizations_single_signer]": {
@@ -47438,9 +47438,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-many_valid_authorizations_multiple_signers]": {
@@ -92509,9 +92509,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
     "tests/prague/eip7702_set_code_tx/test_gas.py::test_gas_cost[fork_Prague-state_test-first_valid_then_many_duplicate_authorizations]": {
@@ -137580,9 +137580,9 @@
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
             "description": "Test function documentation:\n\n    Test gas at the execution start of a set-code transaction in multiple scenarios.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-3@v1.4.0/tests/prague/eip7702_set_code_tx/test_gas.py#L678",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_gas.py#L680",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
-            "reference-spec-version": "a6bf54ffc1506ed00f8234731684ccfe935ec9a3"
+            "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     }
 }

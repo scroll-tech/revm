@@ -1,5 +1,5 @@
 {
-    "tests/prague/eip7702_set_code_tx/test_set_code_txs.py::test_address_from_set_code[fork_Prague-state_test]": {
+    "tests/prague/eip7702_set_code_tx/test_set_code_txs.py::test_signature_s_out_of_range[fork_Prague-state_test]": {
         "env": {
             "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
             "currentGasLimit": "0x016345785d8a0000",
@@ -14,7 +14,13 @@
             "0x0000000000000000000000000000000000001000": {
                 "nonce": "0x01",
                 "balance": "0x00",
-                "code": "0x3060005500",
+                "code": "0x00",
+                "storage": {}
+            },
+            "0x0000000000000000000000000000000000001100": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x600160015500",
                 "storage": {}
             },
             "0x8a0a19589531694250d570040a0c4b74576919b8": {
@@ -29,9 +35,9 @@
             "maxPriorityFeePerGas": "0x00",
             "maxFeePerGas": "0x07",
             "gasLimit": [
-                "0x989680"
+                "0x0186a0"
             ],
-            "to": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0x0000000000000000000000000000000000001100",
             "value": [
                 "0x00"
             ],
@@ -43,12 +49,12 @@
             ],
             "authorizationList": [
                 {
-                    "chainId": "0x00",
+                    "chainId": "0x01",
                     "address": "0x0000000000000000000000000000000000001000",
                     "nonce": "0x00",
-                    "v": "0x00",
-                    "r": "0xdbcff17ff6c249f13b334fa86bcbaa1afd9f566ca9b06e4ea5fab9bdde9a9202",
-                    "s": "0x5c34c9d8af5b20e4a425fc1daf2d9d484576857eaf1629145b4686bac733868e",
+                    "v": "0x01",
+                    "r": "0xae1ac344585e4554f124daff114b7a7778477fa5922bc630b1e6c8ecd4d2d075",
+                    "s": "0xf2eee708088057381796bfa39bdda1e0c16d31950dec6d9cd6a019854d7ad50e",
                     "signer": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"
                 }
             ],
@@ -58,9 +64,9 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0xc79c9276f91e3b40f5d419dfede766691f8ba6475a0c59f755298772c65f0721",
+                    "hash": "0xff03e0005d2003f1ef2a204a742593465aadff73868ddac6434d4a23859072bd",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-                    "txbytes": "0x04f8c1018080078398968094a94f5374fce5edbc8e2a8697c15331677e6ebf0b8080c0f85cf85a809400000000000000000000000000000000000010008080a0dbcff17ff6c249f13b334fa86bcbaa1afd9f566ca9b06e4ea5fab9bdde9a9202a05c34c9d8af5b20e4a425fc1daf2d9d484576857eaf1629145b4686bac733868e80a0d54dc4f661196bd7204844d9296d5954675313504601c0bba8644bfaa844ecb6a068542663f1a2f8d71ed317617c53a35754b002306300abed1f0e31b547787187",
+                    "txbytes": "0x04f8c101808007830186a09400000000000000000000000000000000000011008080c0f85cf85a019400000000000000000000000000000000000010008001a0ae1ac344585e4554f124daff114b7a7778477fa5922bc630b1e6c8ecd4d2d075a0f2eee708088057381796bfa39bdda1e0c16d31950dec6d9cd6a019854d7ad50e80a0327ce534d669774f21134eb7813cc2014654f0d86a427dd3b1b89a50ecd8c026a0743879f4f985406d180f1c5c149dbb9e20b06de3f4c23db563be54b48180af5d",
                     "indexes": {
                         "data": 0,
                         "gas": 0,
@@ -70,11 +76,11 @@
             ]
         },
         "_info": {
-            "hash": "0xe8efd57553d4b19c61fd3fc678b8e6a646c811c8328164852ab73dc649f8cb4a",
+            "hash": "0x633f94eb46930150c07239efa9cad309a662d5360731819735d6723f97e043cf",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
-            "description": "Test function documentation:\n\n    Test the address opcode in a set-code transaction.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_set_code_txs.py#L716",
+            "description": "Test function documentation:\n\n    Test sending a transaction with an authorization tuple where the signature s value is out of\n    range by modifying its value to be `SECP256K1N - S` and flipping the v value.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_set_code_txs.py#L2256",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
             "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }

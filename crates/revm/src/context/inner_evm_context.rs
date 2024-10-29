@@ -9,7 +9,7 @@ use crate::{
         AccessListItem, Account, Address, AnalysisKind, Bytecode, Bytes, CfgEnv, EVMError, Env,
         Eof, HashSet, Spec,
         SpecId::{self, *},
-        B256, EOF_MAGIC_BYTES, U256,
+        B256, EOF_MAGIC_BYTES, EOF_MAGIC_HASH, U256,
     },
     JournalCheckpoint,
 };
@@ -280,7 +280,7 @@ impl<DB: Database> InnerEvmContext<DB> {
         }
 
         let hash = if code.is_eof() {
-            crate::primitives::EOF_MAGIC_HASH
+            EOF_MAGIC_HASH
         } else {
             acc.info.code_hash
         };

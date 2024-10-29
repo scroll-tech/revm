@@ -380,28 +380,40 @@ impl AccountState {
 /// Custom benchmarking DB that only has account info for the zero address.
 ///
 /// Any other address will return an empty account.
-#[cfg(not(feature = "scroll-poseidon-codehash"))]
 #[derive(Debug, Default, Clone)]
-pub struct BenchmarkDB(pub Bytecode, B256);
-
-/// Custom benchmarking DB that only has account info for the zero address.
-///
-/// Any other address will return an empty account.
-#[cfg(feature = "scroll-poseidon-codehash")]
-#[derive(Debug, Default, Clone)]
-pub struct BenchmarkDB(pub Bytecode, B256, B256);
+pub struct BenchmarkDB {
+    pub bytecode: Bytecode,
+    pub hash: B256,
+    #[cfg(feature = "scroll-poseidon-codehash")]
+    pub poseidon_hash: B256,
+    pub target: Address,
+    pub caller: Address,
+}
 
 impl BenchmarkDB {
+    /// Create a new benchmark database with the given bytecode.
     pub fn new_bytecode(bytecode: Bytecode) -> Self {
         let hash = bytecode.hash_slow();
-        cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll-poseidon-codehash"))] {
-                Self(bytecode, hash)
-            } else {
-                let poseidon_hash = bytecode.poseidon_hash_slow();
-                Self(bytecode, hash, poseidon_hash)
-            }
+        #[cfg(feature = "scroll-poseidon-codehash")]
+        let poseidon_hash = bytecode.poseidon_hash_slow();
+        Self {
+            bytecode,
+            hash,
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            poseidon_hash,
+            target: Address::ZERO,
+            caller: Address::with_last_byte(1),
         }
+    }
+
+    /// Change the caller address for the benchmark.
+    pub fn with_caller(self, caller: Address) -> Self {
+        Self { caller, ..self }
+    }
+
+    /// Change the target address for the benchmark.
+    pub fn with_target(self, target: Address) -> Self {
+        Self { target, ..self }
     }
 }
 
@@ -409,19 +421,19 @@ impl Database for BenchmarkDB {
     type Error = Infallible;
     /// Get basic account information.
     fn basic(&mut self, address: Address) -> Result<Option<AccountInfo>, Self::Error> {
-        if address == Address::ZERO {
+        if address == self.target {
             return Ok(Some(AccountInfo {
                 nonce: 1,
                 balance: U256::from(10000000),
                 #[cfg(feature = "scroll")]
-                code_size: self.0.len(),
-                code: Some(self.0.clone()),
-                code_hash: self.1,
+                code_size: self.bytecode.len(),
+                code: Some(self.bytecode.clone()),
+                code_hash: self.hash,
                 #[cfg(feature = "scroll-poseidon-codehash")]
-                poseidon_code_hash: self.2,
+                poseidon_code_hash: self.poseidon_hash,
             }));
         }
-        if address == Address::with_last_byte(1) {
+        if address == self.caller {
             return Ok(Some(AccountInfo {
                 nonce: 0,
                 balance: U256::from(10000000),

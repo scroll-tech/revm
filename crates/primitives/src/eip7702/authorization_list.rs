@@ -35,26 +35,15 @@ impl AuthorizationList {
         }
     }
 
-    /// Returns true if the authorization list is valid.
-    pub fn is_valid(&self, _chain_id: u64) -> Result<(), InvalidAuthorization> {
+    /// Validate the authorization list.
+    pub fn is_valid(&self) -> Result<(), InvalidAuthorization> {
         let validate = |auth: &SignedAuthorization| -> Result<(), InvalidAuthorization> {
-            // TODO Eip7702. Check chain_id
-            // Pending: https://github.com/ethereum/EIPs/pull/8833/files
-            // let auth_chain_id: u64 = auth.chain_id().try_into().unwrap_or(u64::MAX);
-            // if auth_chain_id != 0 && auth_chain_id != chain_id {
-            //     return Err(InvalidAuthorization::InvalidChainId);
-            // }
-
-            // Check y_parity, Parity::Parity means that it was 0 or 1.
-            if !matches!(auth.signature().v(), Parity::Parity(_)) {
-                return Err(InvalidAuthorization::InvalidYParity);
+            // Check y_parity
+            if let Parity::Eip155(parity) = auth.signature().v() {
+                if parity > u8::MAX as u64 {
+                    return Err(InvalidAuthorization::InvalidYParity);
+                }
             }
-
-            // Check s-value
-            if auth.signature().s() > SECP256K1N_HALF {
-                return Err(InvalidAuthorization::Eip2InvalidSValue);
-            }
-
             Ok(())
         };
 
@@ -114,7 +103,18 @@ impl RecoveredAuthorization {
     /// Get the `authority` for the authorization.
     ///
     /// If this is `None`, then the authority could not be recovered.
-    pub const fn authority(&self) -> Option<Address> {
+    pub fn authority(&self) -> Option<Address> {
+        let signature = self.inner.signature();
+
+        // Check s-value
+        if signature.s() > SECP256K1N_HALF {
+            return None;
+        }
+
+        // Check y_parity, Parity::Parity means that it was 0 or 1.
+        if !matches!(signature.v(), Parity::Parity(_)) {
+            return None;
+        }
         self.authority
     }
 

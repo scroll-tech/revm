@@ -1,5 +1,5 @@
 {
-    "tests/prague/eip7702_set_code_tx/test_set_code_txs.py::test_set_code_invalid_authorization_tuple[fork_Prague-state_test-invalidity_reason_InvalidityReason.NONCE-transaction_exception_None]": {
+    "tests/prague/eip7702_set_code_tx/test_set_code_txs.py::test_tx_validity_nonce[fork_Prague-state_test-nonce=2**64]": {
         "env": {
             "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
             "currentGasLimit": "0x016345785d8a0000",
@@ -14,7 +14,13 @@
             "0x0000000000000000000000000000000000001000": {
                 "nonce": "0x01",
                 "balance": "0x00",
-                "code": "0x600160015500",
+                "code": "0x60016000f3",
+                "storage": {}
+            },
+            "0x0000000000000000000000000000000000001100": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x60016001556000600060006000600073a94f5374fce5edbc8e2a8697c15331677e6ebf0b5af13d600255",
                 "storage": {}
             },
             "0x8a0a19589531694250d570040a0c4b74576919b8": {
@@ -29,9 +35,9 @@
             "maxPriorityFeePerGas": "0x00",
             "maxFeePerGas": "0x07",
             "gasLimit": [
-                "0x989680"
+                "0x0186a0"
             ],
-            "to": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0x0000000000000000000000000000000000001100",
             "value": [
                 "0x00"
             ],
@@ -45,10 +51,10 @@
                 {
                     "chainId": "0x00",
                     "address": "0x0000000000000000000000000000000000001000",
-                    "nonce": "0x01",
+                    "nonce": "0x010000000000000000",
                     "v": "0x01",
-                    "r": "0xe074be204a558063cc3b2663e24e82272a436cececd74a3d6c7f46cd51934f2f",
-                    "s": "0x1dba64504e6de332f9b00fba50b9cd8b70fc19823a85e33217431a0825e55902",
+                    "r": "0x7347bcb9ebe2eff2d378232a719817c6cea613cb71efb10051a5426c3dc54ac6",
+                    "s": "0x507b426a4ff4048293c8a6cb65d45b4195d9b46759cafd3355374256cbdc9c55",
                     "signer": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"
                 }
             ],
@@ -58,28 +64,29 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0xaa440c8b5b7f210ce3588de79e50d33f9009b9904edff13f0ffe76663baf181b",
+                    "hash": "0x7a77cca81f216be5a0b0919ab8f4edd2b3f8664529f0977f57fcab653495ef6f",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-                    "txbytes": "0x04f8c1018080078398968094a94f5374fce5edbc8e2a8697c15331677e6ebf0b8080c0f85cf85a809400000000000000000000000000000000000010000101a0e074be204a558063cc3b2663e24e82272a436cececd74a3d6c7f46cd51934f2fa01dba64504e6de332f9b00fba50b9cd8b70fc19823a85e33217431a0825e5590280a0687761af9de301377a8075487ec3f5205005e8a763848bd4e623ec6d291e13cca00d5cbe7f757dfe4ca1889aa9076b600929f6a6ffcfdba0125dbe9a7023293fcb",
+                    "txbytes": "0x04f8ca01808007830186a09400000000000000000000000000000000000011008080c0f865f863809400000000000000000000000000000000000010008901000000000000000001a07347bcb9ebe2eff2d378232a719817c6cea613cb71efb10051a5426c3dc54ac6a0507b426a4ff4048293c8a6cb65d45b4195d9b46759cafd3355374256cbdc9c5580a054f1f083a7510ee90b4d64bc9058f60194a40ef052171958a2b6645b6ced8113a04ecbe03224b516c424435448c351b088fc6d1c824b1856e4ec1d6f91b5608fcc",
                     "indexes": {
                         "data": 0,
                         "gas": 0,
                         "value": 0
-                    }
+                    },
+                    "expectException": "TransactionException.TYPE_4_INVALID_AUTHORIZATION_FORMAT"
                 }
             ]
         },
         "_info": {
-            "hash": "0xe54d58ed9200779cd92240dc787437e2d090d8f4297d3b11014cafb3fac79ace",
+            "hash": "0x7136229b92dafce35aaba1e9828f18aa34573bd120b727fac5e7bf8374d0aefc",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
-            "description": "Test function documentation:\n\n    Test attempting to set the code of an account with invalid authorization tuple.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_set_code_txs.py#L1945",
+            "description": "Test function documentation:\n\n    Test sending a transaction where the nonce field of an authorization overflows the maximum\n    value, or almost overflows the maximum value.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_set_code_txs.py#L2372",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
             "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
-    "tests/prague/eip7702_set_code_tx/test_set_code_txs.py::test_set_code_invalid_authorization_tuple[fork_Prague-state_test-invalidity_reason_InvalidityReason.CHAIN_ID-transaction_exception_None]": {
+    "tests/prague/eip7702_set_code_tx/test_set_code_txs.py::test_tx_validity_nonce[fork_Prague-state_test-nonce=2**64-1]": {
         "env": {
             "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
             "currentGasLimit": "0x016345785d8a0000",
@@ -91,10 +98,22 @@
             "currentExcessBlobGas": "0x00"
         },
         "pre": {
+            "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                "nonce": "0xffffffffffffffff",
+                "balance": "0x00",
+                "code": "0x",
+                "storage": {}
+            },
             "0x0000000000000000000000000000000000001000": {
                 "nonce": "0x01",
                 "balance": "0x00",
-                "code": "0x600160015500",
+                "code": "0x60016000f3",
+                "storage": {}
+            },
+            "0x0000000000000000000000000000000000001100": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x60016001556000600060006000600073a94f5374fce5edbc8e2a8697c15331677e6ebf0b5af13d600255",
                 "storage": {}
             },
             "0x8a0a19589531694250d570040a0c4b74576919b8": {
@@ -109,9 +128,9 @@
             "maxPriorityFeePerGas": "0x00",
             "maxFeePerGas": "0x07",
             "gasLimit": [
-                "0x989680"
+                "0x0186a0"
             ],
-            "to": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0x0000000000000000000000000000000000001100",
             "value": [
                 "0x00"
             ],
@@ -123,12 +142,12 @@
             ],
             "authorizationList": [
                 {
-                    "chainId": "0x02",
+                    "chainId": "0x00",
                     "address": "0x0000000000000000000000000000000000001000",
-                    "nonce": "0x00",
-                    "v": "0x01",
-                    "r": "0x6aae9cd7d792bda3b8a40309148342a4b6fd138d3415cf00540d47e18d8a2dc2",
-                    "s": "0x07d946c0264894f8fbe87bae7ea8f5bedc41b2bcf087ad5873332558581c9842",
+                    "nonce": "0xffffffffffffffff",
+                    "v": "0x00",
+                    "r": "0xb783921fbc1861d2477f74b42a061acf02279743f75f03d382562eff4806bcf8",
+                    "s": "0x40b3271ff128f6ea5abbbd4906534c5088321817309b04dcbb1c339dcb777636",
                     "signer": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"
                 }
             ],
@@ -138,9 +157,9 @@
         "post": {
             "Prague": [
                 {
-                    "hash": "0xaa440c8b5b7f210ce3588de79e50d33f9009b9904edff13f0ffe76663baf181b",
+                    "hash": "0xf144aa3ca880e21ee9178853471c7f15b14a692bcf60caba1ebee2bdb9b29712",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-                    "txbytes": "0x04f8c1018080078398968094a94f5374fce5edbc8e2a8697c15331677e6ebf0b8080c0f85cf85a029400000000000000000000000000000000000010008001a06aae9cd7d792bda3b8a40309148342a4b6fd138d3415cf00540d47e18d8a2dc2a007d946c0264894f8fbe87bae7ea8f5bedc41b2bcf087ad5873332558581c984280a043abacae99156687836f726d80f6cd62d7a022d23049727ef5c85c8ccd52a040a01adb3fe96f9caf728b9f743bb66b04260e961a9986f86ff9e77dbe13830a80b3",
+                    "txbytes": "0x04f8c901808007830186a09400000000000000000000000000000000000011008080c0f864f8628094000000000000000000000000000000000000100088ffffffffffffffff80a0b783921fbc1861d2477f74b42a061acf02279743f75f03d382562eff4806bcf8a040b3271ff128f6ea5abbbd4906534c5088321817309b04dcbb1c339dcb77763680a07cf94237d3a06046eb3ffbe3e93d0f9d1cbc321d2f2865cf8c6cc5bbc62104eba04974360f9b416b60cf4bc417647c69aa8d9f2970817a45cf69a7df9dddadaa35",
                     "indexes": {
                         "data": 0,
                         "gas": 0,
@@ -150,16 +169,16 @@
             ]
         },
         "_info": {
-            "hash": "0xf2f699a72de2994086c7604b863efbf9ffc7d8cd020a2142873051167a7e1603",
+            "hash": "0xc3170f5c142b78b3c1505215bde150a9158969d87392e399a38fe707b9c3d3da",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
-            "description": "Test function documentation:\n\n    Test attempting to set the code of an account with invalid authorization tuple.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_set_code_txs.py#L1945",
+            "description": "Test function documentation:\n\n    Test sending a transaction where the nonce field of an authorization overflows the maximum\n    value, or almost overflows the maximum value.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_set_code_txs.py#L2372",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
             "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
     },
-    "tests/prague/eip7702_set_code_tx/test_set_code_txs.py::test_set_code_invalid_authorization_tuple[fork_Prague-state_test-invalidity_reason_InvalidityReason.EMPTY_AUTHORIZATION_LIST-transaction_exception_TransactionException.TYPE_4_EMPTY_AUTHORIZATION_LIST]": {
+    "tests/prague/eip7702_set_code_tx/test_set_code_txs.py::test_tx_validity_nonce[fork_Prague-state_test-nonce=2**64-2]": {
         "env": {
             "currentCoinbase": "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba",
             "currentGasLimit": "0x016345785d8a0000",
@@ -171,10 +190,22 @@
             "currentExcessBlobGas": "0x00"
         },
         "pre": {
+            "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                "nonce": "0xfffffffffffffffe",
+                "balance": "0x00",
+                "code": "0x",
+                "storage": {}
+            },
             "0x0000000000000000000000000000000000001000": {
                 "nonce": "0x01",
                 "balance": "0x00",
-                "code": "0x600160015500",
+                "code": "0x60016000f3",
+                "storage": {}
+            },
+            "0x0000000000000000000000000000000000001100": {
+                "nonce": "0x01",
+                "balance": "0x00",
+                "code": "0x60016001556000600060006000600073a94f5374fce5edbc8e2a8697c15331677e6ebf0b5af13d600255",
                 "storage": {}
             },
             "0x8a0a19589531694250d570040a0c4b74576919b8": {
@@ -189,9 +220,9 @@
             "maxPriorityFeePerGas": "0x00",
             "maxFeePerGas": "0x07",
             "gasLimit": [
-                "0x989680"
+                "0x0186a0"
             ],
-            "to": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b",
+            "to": "0x0000000000000000000000000000000000001100",
             "value": [
                 "0x00"
             ],
@@ -201,31 +232,40 @@
             "accessLists": [
                 []
             ],
-            "authorizationList": [],
+            "authorizationList": [
+                {
+                    "chainId": "0x00",
+                    "address": "0x0000000000000000000000000000000000001000",
+                    "nonce": "0xfffffffffffffffe",
+                    "v": "0x01",
+                    "r": "0xf356020afd2bfe839a758bdd67454dd9cf763ab2a44714beb99ab0d918d409cf",
+                    "s": "0x0cb65b317b26e7adc61b60709fd61163ac53602a22ba672dbc4359011eb68b0f",
+                    "signer": "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b"
+                }
+            ],
             "sender": "0x8a0a19589531694250d570040a0c4b74576919b8",
             "secretKey": "0x9e7645d0cfd9c3a04eb7a9db59a4eb7d359f2e75c9164a9d6b9a7d54e1b6a36f"
         },
         "post": {
             "Prague": [
                 {
-                    "hash": "0x41dd93a82d1d985bd8e694f6bd8d1ec177f604428ccfd6a95a40d5e647c087aa",
+                    "hash": "0x424769c7c13eb924e50771556feeca397b7d31933004f2f2b141b02019ff1f3e",
                     "logs": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-                    "txbytes": "0x04f864018080078398968094a94f5374fce5edbc8e2a8697c15331677e6ebf0b8080c0c080a05d6e69800f9ebae9e61cdf51f56637395423d48c6007f4ba2f61a03e21ab99fea04c63718ae718ab70c142691149b4d9e455335b522f96c9e63c2a1e3bdc6ec503",
+                    "txbytes": "0x04f8c901808007830186a09400000000000000000000000000000000000011008080c0f864f8628094000000000000000000000000000000000000100088fffffffffffffffe01a0f356020afd2bfe839a758bdd67454dd9cf763ab2a44714beb99ab0d918d409cfa00cb65b317b26e7adc61b60709fd61163ac53602a22ba672dbc4359011eb68b0f80a080db9fa5a92af66d15e6c5f1a44624ca38c957f3ba7dbfcc7c3a3eab39d00f98a061898da0d366854c1296b38ea9f85d9a3658cdeb9523d78cde8e214b18458bd6",
                     "indexes": {
                         "data": 0,
                         "gas": 0,
                         "value": 0
-                    },
-                    "expectException": "TransactionException.TYPE_4_EMPTY_AUTHORIZATION_LIST"
+                    }
                 }
             ]
         },
         "_info": {
-            "hash": "0x788f21edf76141c5163c432ed5e485973960bc6914413e6eb27c20245222f5b2",
+            "hash": "0x954073be90cfdce2a66c38189014137d51817c1dcda1ccc87b4364ca1be0e5ba",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereumjs t8n v1",
-            "description": "Test function documentation:\n\n    Test attempting to set the code of an account with invalid authorization tuple.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_set_code_txs.py#L1945",
+            "description": "Test function documentation:\n\n    Test sending a transaction where the nonce field of an authorization overflows the maximum\n    value, or almost overflows the maximum value.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-4@v1.0.0/tests/prague/eip7702_set_code_tx/test_set_code_txs.py#L2372",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7702.md",
             "reference-spec-version": "4334df83395693dc3f629bb43c18320d9e22e8c9"
         }
