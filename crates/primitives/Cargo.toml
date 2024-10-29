@@ -6,7 +6,7 @@ keywords = ["no_std", "ethereum", "evm", "revm", "types"]
 license = "MIT"
 name = "revm-primitives"
 repository = "https://github.com/bluealloy/revm"
-version = "9.0.1"
+version = "9.0.2"
 readme = "../../README.md"
 
 [package.metadata.docs.rs]
@@ -23,7 +23,7 @@ all = "warn"
 
 [dependencies]
 alloy-eips = { version = "0.3", default-features = false, features = ["k256"] }
-alloy-primitives = { version = "0.8.0", default-features = false, features = [
+alloy-primitives = { version = "0.8.2", default-features = false, features = [
     "rlp",
 ] }
 hashbrown = "0.14"
