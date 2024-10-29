@@ -98,6 +98,17 @@ source = "git+https://github.com/scroll-tech/alloy-eips?branch=v0.1.0#06cb417f8b
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
+ "serde",
+]
+
+[[package]]
+name = "alloy-eip7702"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eeffd2590ce780ddfaa9d0ae340eb2b4e08627650c4676eef537cef0b4bf535d"
+dependencies = [
+ "alloy-primitives",
+ "alloy-rlp",
  "arbitrary",
  "k256",
  "rand",
@@ -110,7 +121,7 @@ version = "0.3.0"
 source = "git+https://github.com/scroll-tech/alloy.git?branch=v0.3.0#41bbe34a38a2b1536c58b7c938313a2db4e9369a"
 dependencies = [
  "alloy-eip2930",
- "alloy-eip7702",
+ "alloy-eip7702 0.1.0",
  "alloy-primitives",
  "alloy-rlp",
  "alloy-serde 0.3.0",
@@ -3187,7 +3198,7 @@ dependencies = [
 
 [[package]]
 name = "revm"
-version = "15.0.0"
+version = "16.0.0"
 dependencies = [
  "alloy-eips",
  "alloy-provider",
@@ -3213,7 +3224,7 @@ dependencies = [
 
 [[package]]
 name = "revm-interpreter"
-version = "11.0.0"
+version = "12.0.0"
 dependencies = [
  "bincode",
  "cfg-if",
@@ -3227,7 +3238,7 @@ dependencies = [
 
 [[package]]
 name = "revm-precompile"
-version = "12.0.0"
+version = "13.0.0"
 dependencies = [
  "aurora-engine-modexp",
  "blst",
@@ -3253,10 +3264,10 @@ dependencies = [
 
 [[package]]
 name = "revm-primitives"
-version = "11.0.0"
+version = "12.0.0"
 dependencies = [
  "alloy-eip2930",
- "alloy-eip7702",
+ "alloy-eip7702 0.2.0",
  "alloy-primitives",
  "auto_impl",
  "bitflags 2.6.0",
@@ -3273,7 +3284,7 @@ dependencies = [
 
 [[package]]
 name = "revm-test"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "alloy-sol-macro",
  "alloy-sol-types",
@@ -3287,11 +3298,10 @@ dependencies = [
 
 [[package]]
 name = "revme"
-version = "0.11.0"
+version = "1.0.0"
 dependencies = [
  "alloy-rlp",
  "hash-db",
- "hashbrown 0.14.5",
  "hex",
  "indicatif",
  "k256",
