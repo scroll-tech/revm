@@ -354,11 +354,6 @@ pub fn execute_test_suite(
                 env.block.prevrandao = Some(B256::default());
             }
 
-            if spec_id.is_enabled_in(SpecId::MERGE) && env.block.prevrandao.is_none() {
-                // if spec is merge and prevrandao is not set, set it to default
-                env.block.prevrandao = Some(B256::default());
-            }
-
             for (index, test) in tests.into_iter().enumerate() {
                 env.tx.gas_limit = unit.transaction.gas_limit[test.indexes.gas].saturating_to();
 

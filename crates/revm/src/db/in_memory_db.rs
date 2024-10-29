@@ -52,14 +52,14 @@ impl<ExtDB: Default> Default for CacheDB<ExtDB> {
 
 impl<ExtDB> CacheDB<ExtDB> {
     pub fn new(db: ExtDB) -> Self {
-        let mut contracts = HashMap::new();
+        let mut contracts = HashMap::default();
         contracts.insert(KECCAK_EMPTY, Bytecode::default());
         contracts.insert(B256::ZERO, Bytecode::default());
         Self {
             accounts: DbMap::new(),
             contracts,
             logs: Vec::default(),
-            block_hashes: HashMap::new(),
+            block_hashes: HashMap::default(),
             db,
         }
     }
@@ -450,7 +450,7 @@ impl Database for BenchmarkDB {
 #[cfg(test)]
 mod tests {
     use super::{CacheDB, EmptyDB};
-    use crate::primitives::{db::Database, AccountInfo, Address, U256};
+    use crate::primitives::{db::Database, AccountInfo, Address, HashMap, U256};
 
     #[test]
     fn test_insert_account_storage() {
@@ -496,7 +496,7 @@ mod tests {
 
         let mut new_state = CacheDB::new(init_state);
         new_state
-            .replace_account_storage(account, [(key1, value1)].into())
+            .replace_account_storage(account, HashMap::from_iter([(key1, value1)]))
             .unwrap();
 
         assert_eq!(new_state.basic(account).unwrap().unwrap().nonce, nonce);

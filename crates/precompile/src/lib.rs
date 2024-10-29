@@ -340,7 +340,7 @@ impl PrecompileSpecId {
             #[cfg(feature = "optimism")]
             BEDROCK | REGOLITH | CANYON => Self::BERLIN,
             #[cfg(feature = "optimism")]
-            ECOTONE | FJORD | GRANITE => Self::CANCUN,
+            ECOTONE | FJORD | GRANITE | HOLOCENE => Self::CANCUN,
             #[cfg(feature = "scroll")]
             PRE_BERNOULLI => Self::PRE_BERNOULLI,
             #[cfg(feature = "scroll")]
