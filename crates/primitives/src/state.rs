@@ -310,7 +310,7 @@ impl AccountInfo {
     /// - balance is zero
     /// - nonce is zero
     pub fn is_empty(&self) -> bool {
-        let code_empty = self.is_empty_code_hash() || self.code_hash == B256::ZERO;
+        let code_empty = self.is_empty_code_hash() || self.code_hash.is_zero();
 
         #[cfg(all(feature = "scroll", debug_assertions))]
         if code_empty {

@@ -1,71 +1,105 @@
 {
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
     "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py::test_code_section_header_body_mismatch[fork_PragueEIP7692-eof_test-skip_header_listing_True-skip_body_listing_True-skip_types_body_listing_False-skip_types_header_listing_False-expected_code_ef000101000802000100030400040000800001000000003050000bad60A7-expected_exception_EOFException.INVALID_TYPE_SECTION_SIZE]": {
+========
+    "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py::test_code_section_header_body_mismatch[fork_CancunEIP7692-eof_test-drop_code_section_and_header]": {
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
         "vectors": {
             "0": {
                 "code": "0xef000101000802000100030400040000800001000000003050000bad60a7",
                 "results": {
                     "Prague": {
-                        "exception": "EOFException.INVALID_TYPE_SECTION_SIZE",
+                        "exception": "EOFException.INVALID_TYPE_SECTION_SIZE|EOFException.INVALID_SECTION_BODIES_SIZE",
                         "result": false
                     }
                 }
             }
         },
         "_info": {
-            "hash": "0xd6082ab098d43ad394a9b38ce609f5909a91e825f8b97f07a224ea9e28290c80",
+            "hash": "0xfaa4939b081c1e789dfc25ced9c46036d0b592e466cd47f2f6b71510e83390ea",
             "comment": "`execution-spec-tests` generated test",
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
             "filling-transition-tool": "Hyperledger Besu evm 24.7-develop-30c96c7",
             "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
             "url": "https://github.com/ethereum/execution-spec-tests/blob/eip7692-prague@v1.0.7/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py#L264",
+========
+            "filling-transition-tool": "evmone-t8n 0.12.0-6+commit.2d20cc63.dirty",
+            "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/60b2036d3a8090e36595948846578af102666e65/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py#L21",
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3540.md",
             "reference-spec-version": "8dcb0a8c1c0102c87224308028632cc986a61183"
         }
     },
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
     "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py::test_code_section_header_body_mismatch[fork_PragueEIP7692-eof_test-skip_header_listing_True-skip_body_listing_False-skip_types_body_listing_False-skip_types_header_listing_False-expected_code_ef000101000802000100030400040000800001000000003050003050000bad60A7-expected_exception_EOFException.INVALID_TYPE_SECTION_SIZE]": {
+========
+    "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py::test_code_section_header_body_mismatch[fork_CancunEIP7692-eof_test-drop_code_header]": {
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
         "vectors": {
             "0": {
                 "code": "0xef000101000802000100030400040000800001000000003050003050000bad60a7",
                 "results": {
                     "Prague": {
-                        "exception": "EOFException.INVALID_TYPE_SECTION_SIZE",
+                        "exception": "EOFException.INVALID_TYPE_SECTION_SIZE|EOFException.INVALID_SECTION_BODIES_SIZE",
                         "result": false
                     }
                 }
             }
         },
         "_info": {
-            "hash": "0x36e0062b992bf43d3de390c79779fd6b94eba99b4a1dd57d2aed617378d6e281",
+            "hash": "0xd92162c6769ff40bae3fc4f7861a01c7b5830270682c134d5be00d10a58c51ae",
             "comment": "`execution-spec-tests` generated test",
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
             "filling-transition-tool": "Hyperledger Besu evm 24.7-develop-30c96c7",
             "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
             "url": "https://github.com/ethereum/execution-spec-tests/blob/eip7692-prague@v1.0.7/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py#L264",
+========
+            "filling-transition-tool": "evmone-t8n 0.12.0-6+commit.2d20cc63.dirty",
+            "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/60b2036d3a8090e36595948846578af102666e65/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py#L21",
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3540.md",
             "reference-spec-version": "8dcb0a8c1c0102c87224308028632cc986a61183"
         }
     },
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
     "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py::test_code_section_header_body_mismatch[fork_PragueEIP7692-eof_test-skip_header_listing_False-skip_body_listing_True-skip_types_body_listing_False-skip_types_header_listing_False-expected_code_ef0001010008020002000300030400040000800001000000003050000bad60A7-expected_exception_EOFException.UNREACHABLE_CODE_SECTIONS]": {
+========
+    "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py::test_code_section_header_body_mismatch[fork_CancunEIP7692-eof_test-drop_code_section]": {
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
         "vectors": {
             "0": {
                 "code": "0xef0001010008020002000300030400040000800001000000003050000bad60a7",
                 "results": {
                     "Prague": {
-                        "exception": "EOFException.UNREACHABLE_CODE_SECTIONS",
+                        "exception": "EOFException.UNREACHABLE_CODE_SECTIONS|EOFException.TOPLEVEL_CONTAINER_TRUNCATED",
                         "result": false
                     }
                 }
             }
         },
         "_info": {
-            "hash": "0x4ee50effde536c4b96d6c419d54251ab16f44591d14c1cce91525f7c588724cd",
+            "hash": "0x42b661b0d4b8854ca392b4bfa1df99a537a9d530277f11a7b1e537591b8df1d5",
             "comment": "`execution-spec-tests` generated test",
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
             "filling-transition-tool": "Hyperledger Besu evm 24.7-develop-30c96c7",
             "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
             "url": "https://github.com/ethereum/execution-spec-tests/blob/eip7692-prague@v1.0.7/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py#L264",
+========
+            "filling-transition-tool": "evmone-t8n 0.12.0-6+commit.2d20cc63.dirty",
+            "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/60b2036d3a8090e36595948846578af102666e65/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py#L21",
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3540.md",
             "reference-spec-version": "8dcb0a8c1c0102c87224308028632cc986a61183"
         }
     },
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
     "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py::test_code_section_header_body_mismatch[fork_PragueEIP7692-eof_test-skip_header_listing_False-skip_body_listing_False-skip_types_body_listing_False-skip_types_header_listing_False-expected_code_ef0001010008020002000300030400040000800001000000003050003050000bad60A7-expected_exception_EOFException.UNREACHABLE_CODE_SECTIONS]": {
+========
+    "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py::test_code_section_header_body_mismatch[fork_CancunEIP7692-eof_test-layout_ok_code_bad]": {
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
         "vectors": {
             "0": {
                 "code": "0xef0001010008020002000300030400040000800001000000003050003050000bad60a7",
@@ -80,36 +114,56 @@
         "_info": {
             "hash": "0x9d186b352b8be02b8b4a527ab2c02e1f90f3f2ae101db58c0c38918751dc2ac4",
             "comment": "`execution-spec-tests` generated test",
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
             "filling-transition-tool": "Hyperledger Besu evm 24.7-develop-30c96c7",
             "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
             "url": "https://github.com/ethereum/execution-spec-tests/blob/eip7692-prague@v1.0.7/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py#L264",
+========
+            "filling-transition-tool": "evmone-t8n 0.12.0-6+commit.2d20cc63.dirty",
+            "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/60b2036d3a8090e36595948846578af102666e65/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py#L21",
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3540.md",
             "reference-spec-version": "8dcb0a8c1c0102c87224308028632cc986a61183"
         }
     },
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
     "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py::test_code_section_header_body_mismatch[fork_PragueEIP7692-eof_test-skip_header_listing_True-skip_body_listing_True-skip_types_body_listing_True-skip_types_header_listing_False-expected_code_ef0001010008020001000304000400008000013050000bad60a7-expected_exception_EOFException.INVALID_TYPE_SECTION_SIZE]": {
+========
+    "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py::test_code_section_header_body_mismatch[fork_CancunEIP7692-eof_test-drop_types_header]": {
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
         "vectors": {
             "0": {
                 "code": "0xef0001010008020001000304000400008000013050000bad60a7",
                 "results": {
                     "Prague": {
-                        "exception": "EOFException.INVALID_TYPE_SECTION_SIZE",
+                        "exception": "EOFException.INVALID_TYPE_SECTION_SIZE|EOFException.INVALID_SECTION_BODIES_SIZE",
                         "result": false
                     }
                 }
             }
         },
         "_info": {
-            "hash": "0x097d6f1c7b55ed35cbff18cb52312ba6a23aaa6b0b866b1b20aa044e6c40e5b4",
+            "hash": "0xbae4199ed0071809ae9f705ab54a8d965e678f79b65456fc0e2154234554f108",
             "comment": "`execution-spec-tests` generated test",
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
             "filling-transition-tool": "Hyperledger Besu evm 24.7-develop-30c96c7",
             "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
             "url": "https://github.com/ethereum/execution-spec-tests/blob/eip7692-prague@v1.0.7/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py#L264",
+========
+            "filling-transition-tool": "evmone-t8n 0.12.0-6+commit.2d20cc63.dirty",
+            "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/60b2036d3a8090e36595948846578af102666e65/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py#L21",
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3540.md",
             "reference-spec-version": "8dcb0a8c1c0102c87224308028632cc986a61183"
         }
     },
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
     "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py::test_code_section_header_body_mismatch[fork_PragueEIP7692-eof_test-skip_header_listing_True-skip_body_listing_True-skip_types_body_listing_True-skip_types_header_listing_True-expected_code_ef0001010004020001000304000400008000013050000bad60a7-expected_exception_None]": {
+========
+    "tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py::test_code_section_header_body_mismatch[fork_CancunEIP7692-eof_test-drop_everything]": {
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
         "vectors": {
             "0": {
                 "code": "0xef0001010004020001000304000400008000013050000bad60a7",
@@ -123,9 +177,15 @@
         "_info": {
             "hash": "0xc5abcd166b1fea55d6f9d8e261bdad609b20fb8602fe811ac327fe4778e540ab",
             "comment": "`execution-spec-tests` generated test",
+<<<<<<<< HEAD:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/example_valid_invalid/code_section_header_body_mismatch.json
             "filling-transition-tool": "Hyperledger Besu evm 24.7-develop-30c96c7",
             "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
             "url": "https://github.com/ethereum/execution-spec-tests/blob/eip7692-prague@v1.0.7/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_example_valid_invalid.py#L264",
+========
+            "filling-transition-tool": "evmone-t8n 0.12.0-6+commit.2d20cc63.dirty",
+            "description": "Test function documentation:\n\n    Inconsistent number of code sections (between types and code)",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/60b2036d3a8090e36595948846578af102666e65/tests/prague/eip7692_eof_v1/eip3540_eof_v1/test_section_header_body_mismatch.py#L21",
+>>>>>>>> v43-upstream:tests/eof_suite/eest/eof_tests/prague/eip7692_eof_v1/eip3540_eof_v1/section_header_body_mismatch/code_section_header_body_mismatch.json
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3540.md",
             "reference-spec-version": "8dcb0a8c1c0102c87224308028632cc986a61183"
         }

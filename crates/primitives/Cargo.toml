@@ -6,7 +6,7 @@ keywords = ["no_std", "ethereum", "evm", "revm", "types"]
 license = "MIT"
 name = "revm-primitives"
 repository = "https://github.com/bluealloy/revm"
-version = "9.0.0"
+version = "9.0.1"
 readme = "../../README.md"
 
 [package.metadata.docs.rs]
@@ -37,7 +37,7 @@ c-kzg = { version = "1.0.3", default-features = false, optional = true, features
 ] }
 
 # Optionally use `kzg-rs` for a pure Rust implementation of KZG.
-kzg-rs = { version = "0.2.2", default-features = false, optional = true }
+kzg-rs = { version = "0.2.3", default-features = false, optional = true }
 
 # utility
 enumn = "0.1"
