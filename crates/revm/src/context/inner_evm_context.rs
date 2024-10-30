@@ -9,7 +9,7 @@ use crate::{
         AccessListItem, Account, Address, AnalysisKind, Bytecode, Bytes, CfgEnv, EVMError, Env,
         Eof, HashSet, Spec,
         SpecId::{self, *},
-        B256, EOF_MAGIC_BYTES, U256,
+        B256, EOF_MAGIC_BYTES, EOF_MAGIC_HASH, U256,
     },
     JournalCheckpoint,
 };
@@ -55,7 +55,7 @@ impl<DB: Database> InnerEvmContext<DB> {
     pub fn new(db: DB) -> Self {
         Self {
             env: Box::default(),
-            journaled_state: JournaledState::new(SpecId::LATEST, HashSet::new()),
+            journaled_state: JournaledState::new(SpecId::LATEST, HashSet::default()),
             db,
             error: Ok(()),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
@@ -68,7 +68,7 @@ impl<DB: Database> InnerEvmContext<DB> {
     pub fn new_with_env(db: DB, env: Box<Env>) -> Self {
         Self {
             env,
-            journaled_state: JournaledState::new(SpecId::LATEST, HashSet::new()),
+            journaled_state: JournaledState::new(SpecId::LATEST, HashSet::default()),
             db,
             error: Ok(()),
             #[cfg(any(feature = "optimism", feature = "scroll"))]
@@ -107,11 +107,33 @@ impl<DB: Database> InnerEvmContext<DB> {
             storage_keys,
         } in self.env.tx.access_list.iter()
         {
-            self.journaled_state.initial_account_load(
+            let result = self.journaled_state.initial_account_load(
                 *address,
                 storage_keys.iter().map(|i| U256::from_be_bytes(i.0)),
                 &mut self.db,
-            )?;
+            );
+            cfg_if::cfg_if! {
+                if #[cfg(feature = "scroll")] {
+                    // In scroll, we don't include the access list accounts/storages in the partial
+                    // merkle trie proofs if it was not actually accessed in the transaction.
+                    // The load will fail in that case, we just ignore the error.
+                    // This is not a problem as the accounts/storages was never accessed.
+                    match result {
+                         // the concrete error in scroll is
+                         // https://github.com/scroll-tech/stateless-block-verifier/blob/851f5141ded76ddba7594814b9761df1dc469a12/crates/core/src/error.rs#L4-L13
+                         // We cannot check it since `Database::Error` is an opaque type
+                         // without any trait bounds (like `Debug` or `Display`).
+                         // only thing we can do is to check the type name.
+                         Err(EVMError::Database(e))
+                             if core::any::type_name_of_val(&e) == "sbv_core::error::DatabaseError" => {}
+                         _ => {
+                             result?;
+                         }
+                    }
+                } else {
+                    result?;
+                }
+            }
         }
         Ok(())
     }
@@ -235,6 +257,7 @@ impl<DB: Database> InnerEvmContext<DB> {
     /// In case of EOF account it will return `EOF_MAGIC_HASH`
     /// (the hash of `0xEF00`).
     #[inline]
+    #[cfg_attr(feature = "scroll", allow(unreachable_code))]
     pub fn code_hash(
         &mut self,
         address: Address,
@@ -248,44 +271,43 @@ impl<DB: Database> InnerEvmContext<DB> {
             return Ok(Eip7702CodeLoad::new_not_delegated(B256::ZERO, acc.is_cold));
         }
 
-        cfg_if::cfg_if! {
-            if #[cfg(not(feature = "scroll"))] {
-                 // SAFETY: safe to unwrap as load_code will insert code if it is empty.
-                let code = acc.info.code.as_ref().unwrap();
+        #[cfg(feature = "scroll")]
+        return Ok(Eip7702CodeLoad::new_not_delegated(
+            acc.info.code_hash,
+            acc.is_cold,
+        ));
 
-                // If bytecode is EIP-7702 then we need to load the delegated account.
-                if let Bytecode::Eip7702(code) = code {
-                    let address = code.address();
-                    let is_cold = acc.is_cold;
+        // SAFETY: safe to unwrap as load_code will insert code if it is empty.
+        let code = acc.info.code.as_ref().unwrap();
 
-                    let delegated_account = self.journaled_state.load_code(address, &mut self.db)?;
+        // If bytecode is EIP-7702 then we need to load the delegated account.
+        if let Bytecode::Eip7702(code) = code {
+            let address = code.address();
+            let is_cold = acc.is_cold;
 
-                    let hash = if delegated_account.is_empty() {
-                        B256::ZERO
-                    } else if delegated_account.info.code.as_ref().unwrap().is_eof() {
-                        crate::primitives::EOF_MAGIC_HASH
-                    } else {
-                        delegated_account.info.code_hash
-                    };
+            let delegated_account = self.journaled_state.load_code(address, &mut self.db)?;
 
-                    return Ok(Eip7702CodeLoad::new(
-                        StateLoad::new(hash, is_cold),
-                        delegated_account.is_cold,
-                    ));
-                }
-
-                let hash = if code.is_eof() {
-                    crate::primitives::EOF_MAGIC_HASH
-                } else {
-                    acc.info.code_hash
-                };
-
-                Ok(Eip7702CodeLoad::new_not_delegated(hash, acc.is_cold))
+            let hash = if delegated_account.is_empty() {
+                B256::ZERO
+            } else if delegated_account.info.code.as_ref().unwrap().is_eof() {
+                EOF_MAGIC_HASH
             } else {
-                // Scroll does not support EOF yet
-                Ok(Eip7702CodeLoad::new_not_delegated(acc.info.code_hash, acc.is_cold))
-            }
+                delegated_account.info.code_hash
+            };
+
+            return Ok(Eip7702CodeLoad::new(
+                StateLoad::new(hash, is_cold),
+                delegated_account.is_cold,
+            ));
         }
+
+        let hash = if code.is_eof() {
+            EOF_MAGIC_HASH
+        } else {
+            acc.info.code_hash
+        };
+
+        Ok(Eip7702CodeLoad::new_not_delegated(hash, acc.is_cold))
     }
 
     /// Load storage slot, if storage is not present inside the account then it will be loaded from database.

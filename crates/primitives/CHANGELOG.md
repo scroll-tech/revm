@@ -6,6 +6,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [13.0.0](https://github.com/bluealloy/revm/compare/revm-primitives-v12.0.0...revm-primitives-v13.0.0) - 2024-10-23
+
+### Other
+
+- bump alloy-eip7702 ([#1829](https://github.com/bluealloy/revm/pull/1829))
+
+## [12.0.0](https://github.com/bluealloy/revm/compare/revm-primitives-v11.0.0...revm-primitives-v12.0.0) - 2024-10-17
+
+### Other
+
+- update Cargo.toml dependencies
+
+## [11.0.0](https://github.com/bluealloy/revm/compare/revm-primitives-v10.0.0...revm-primitives-v11.0.0) - 2024-10-17
+
+### Added
+
+- EIP-7702 Add u8 validity ([#1824](https://github.com/bluealloy/revm/pull/1824))
+- Rename PRAGUE_EOF to OSAKA ([#1822](https://github.com/bluealloy/revm/pull/1822))
+- *(EIP-7702)* devnet-4 changes ([#1821](https://github.com/bluealloy/revm/pull/1821))
+
+### Other
+
+- bump newest primitives ([#1823](https://github.com/bluealloy/revm/pull/1823))
+
+## [10.0.1](https://github.com/bluealloy/revm/compare/revm-primitives-v10.0.0...revm-primitives-v10.0.1) - 2024-09-26
+
+### Other
+
+- update Cargo.toml dependencies
+
+## [9.0.2](https://github.com/bluealloy/revm/compare/revm-primitives-v9.0.1...revm-primitives-v9.0.2) - 2024-09-18
+
+### Other
+
+- *(deps)* bump alloy-primitives from 0.8.0 to 0.8.2 ([#1761](https://github.com/bluealloy/revm/pull/1761))
+
+## [9.0.1](https://github.com/bluealloy/revm/compare/revm-primitives-v9.0.0...revm-primitives-v9.0.1) - 2024-08-30
+
+### Other
+- Bump new logo ([#1735](https://github.com/bluealloy/revm/pull/1735))
+- bump kzg-rs version ([#1734](https://github.com/bluealloy/revm/pull/1734))
+
 ## [9.0.0](https://github.com/bluealloy/revm/compare/revm-primitives-v8.0.0...revm-primitives-v9.0.0) - 2024-08-29
 
 ### Added

@@ -6,6 +6,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [13.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v12.0.0...revm-interpreter-v13.0.0) - 2024-10-23
+
+### Other
+
+- updated the following local packages: revm-primitives
+
+## [12.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v11.0.0...revm-interpreter-v12.0.0) - 2024-10-17
+
+### Other
+
+- updated the following local packages: revm-primitives
+
+## [11.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v10.0.3...revm-interpreter-v11.0.0) - 2024-10-17
+
+### Other
+
+- updated the following local packages: revm-primitives
+
+## [10.0.3](https://github.com/bluealloy/revm/compare/revm-interpreter-v10.0.2...revm-interpreter-v10.0.3) - 2024-09-26
+
+### Other
+
+- updated the following local packages: revm-primitives
+
+## [10.0.2](https://github.com/bluealloy/revm/compare/revm-interpreter-v10.0.1...revm-interpreter-v10.0.2) - 2024-09-18
+
+### Other
+
+- make clippy happy ([#1755](https://github.com/bluealloy/revm/pull/1755))
+
+## [10.0.1](https://github.com/bluealloy/revm/compare/revm-interpreter-v10.0.0...revm-interpreter-v10.0.1) - 2024-08-30
+
+### Other
+- Bump new logo ([#1735](https://github.com/bluealloy/revm/pull/1735))
+
 ## [10.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v9.0.0...revm-interpreter-v10.0.0) - 2024-08-29
 
 ### Added

@@ -29,6 +29,7 @@ jobs:
           repository: ethereum/tests
           path: ethtests
           submodules: recursive
+          ref: 66cb421ab8460f04f7cf2fee2818bcf8784ff5e2
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable

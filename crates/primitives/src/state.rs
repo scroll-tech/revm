@@ -57,7 +57,7 @@ impl Account {
     pub fn new_not_existing() -> Self {
         Self {
             info: AccountInfo::default(),
-            storage: HashMap::new(),
+            storage: HashMap::default(),
             status: AccountStatus::LoadedAsNotExisting,
         }
     }
@@ -158,7 +158,7 @@ impl From<AccountInfo> for Account {
     fn from(info: AccountInfo) -> Self {
         Self {
             info,
-            storage: HashMap::new(),
+            storage: HashMap::default(),
             status: AccountStatus::Loaded,
         }
     }
@@ -310,7 +310,7 @@ impl AccountInfo {
     /// - balance is zero
     /// - nonce is zero
     pub fn is_empty(&self) -> bool {
-        let code_empty = self.is_empty_code_hash() || self.code_hash == B256::ZERO;
+        let code_empty = self.is_empty_code_hash() || self.code_hash.is_zero();
 
         #[cfg(all(feature = "scroll", debug_assertions))]
         if code_empty {
