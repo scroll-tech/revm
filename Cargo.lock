@@ -75,7 +75,7 @@ dependencies = [
  "alloy-eips",
  "alloy-primitives",
  "alloy-rlp",
- "alloy-serde",
+ "alloy-serde 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "auto_impl",
  "c-kzg",
  "derive_more 1.0.0",
@@ -85,7 +85,7 @@ dependencies = [
 [[package]]
 name = "alloy-eip2930"
 version = "0.1.0"
-source = "git+https://github.com/scroll-tech/alloy-eips?branch=v0.1.0#06cb417f8b3df8c29a8bf69a8a10663ceb5a2c37"
+source = "git+https://github.com/scroll-tech/alloy-eips?branch=v0.3.2#8d5fc83fc257b09510dc8d76561188218d9c0c32"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
@@ -97,8 +97,7 @@ dependencies = [
 [[package]]
 name = "alloy-eip7702"
 version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64ffc577390ce50234e02d841214b3dc0bea6aaaae8e04bbf3cb82e9a45da9eb"
+source = "git+https://github.com/scroll-tech/alloy-eips?branch=v0.3.2#8d5fc83fc257b09510dc8d76561188218d9c0c32"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
@@ -112,14 +111,13 @@ dependencies = [
 [[package]]
 name = "alloy-eips"
 version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b69e06cf9c37be824b9d26d6d101114fdde6af0c87de2828b414c05c4b3daa71"
+source = "git+https://github.com/scroll-tech/alloy.git?branch=v0.5.4#b2278c40b2693908e4e5108d65ade26e8d716765"
 dependencies = [
  "alloy-eip2930",
  "alloy-eip7702",
  "alloy-primitives",
  "alloy-rlp",
- "alloy-serde",
+ "alloy-serde 0.5.4 (git+https://github.com/scroll-tech/alloy.git?branch=v0.5.4)",
  "c-kzg",
  "derive_more 1.0.0",
  "once_cell",
@@ -130,8 +128,7 @@ dependencies = [
 [[package]]
 name = "alloy-json-abi"
 version = "0.8.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31a0f0d51db8a1a30a4d98a9f90e090a94c8f44cb4d9eafc7e03aa6d00aae984"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10#66d76d8f7e17501ce13df584122887bee088c6bb"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-type-parser",
@@ -165,7 +162,7 @@ dependencies = [
  "alloy-network-primitives",
  "alloy-primitives",
  "alloy-rpc-types-eth",
- "alloy-serde",
+ "alloy-serde 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "alloy-signer",
  "alloy-sol-types",
  "async-trait",
@@ -183,15 +180,14 @@ dependencies = [
  "alloy-consensus",
  "alloy-eips",
  "alloy-primitives",
- "alloy-serde",
+ "alloy-serde 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
 ]
 
 [[package]]
 name = "alloy-primitives"
 version = "0.8.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8edae627382349b56cd6a7a2106f4fd69b243a9233e560c55c2e03cabb7e1d3c"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10#66d76d8f7e17501ce13df584122887bee088c6bb"
 dependencies = [
  "alloy-rlp",
  "arbitrary",
@@ -312,7 +308,7 @@ dependencies = [
  "alloy-network-primitives",
  "alloy-primitives",
  "alloy-rlp",
- "alloy-serde",
+ "alloy-serde 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "alloy-sol-types",
  "derive_more 1.0.0",
  "itertools 0.13.0",
@@ -325,6 +321,16 @@ name = "alloy-serde"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "028e72eaa9703e4882344983cfe7636ce06d8cce104a78ea62fd19b46659efc4"
+dependencies = [
+ "alloy-primitives",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "alloy-serde"
+version = "0.5.4"
+source = "git+https://github.com/scroll-tech/alloy.git?branch=v0.5.4#b2278c40b2693908e4e5108d65ade26e8d716765"
 dependencies = [
  "alloy-primitives",
  "serde",
@@ -351,8 +357,21 @@ version = "0.8.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "841eabaa4710f719fddbc24c95d386eae313f07e6da4babc25830ee37945be0c"
 dependencies = [
- "alloy-sol-macro-expander",
- "alloy-sol-macro-input",
+ "alloy-sol-macro-expander 0.8.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "alloy-sol-macro-input 0.8.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.79",
+]
+
+[[package]]
+name = "alloy-sol-macro"
+version = "0.8.10"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10#66d76d8f7e17501ce13df584122887bee088c6bb"
+dependencies = [
+ "alloy-sol-macro-expander 0.8.10 (git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10)",
+ "alloy-sol-macro-input 0.8.10 (git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10)",
  "proc-macro-error2",
  "proc-macro2",
  "quote",
@@ -365,7 +384,7 @@ version = "0.8.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6672337f19d837b9f7073c45853aeb528ed9f7dd6a4154ce683e9e5cb7794014"
 dependencies = [
- "alloy-sol-macro-input",
+ "alloy-sol-macro-input 0.8.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "const-hex",
  "heck 0.5.0",
  "indexmap",
@@ -373,7 +392,24 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.79",
- "syn-solidity",
+ "syn-solidity 0.8.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "alloy-sol-macro-expander"
+version = "0.8.10"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10#66d76d8f7e17501ce13df584122887bee088c6bb"
+dependencies = [
+ "alloy-sol-macro-input 0.8.10 (git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10)",
+ "const-hex",
+ "heck 0.5.0",
+ "indexmap",
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.79",
+ "syn-solidity 0.8.10 (git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10)",
  "tiny-keccak",
 ]
 
@@ -389,14 +425,27 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.79",
- "syn-solidity",
+ "syn-solidity 0.8.10 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "alloy-sol-macro-input"
+version = "0.8.10"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10#66d76d8f7e17501ce13df584122887bee088c6bb"
+dependencies = [
+ "const-hex",
+ "dunce",
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.79",
+ "syn-solidity 0.8.10 (git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10)",
 ]
 
 [[package]]
 name = "alloy-sol-type-parser"
 version = "0.8.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b853d42292dbb159671a3edae3b2750277ff130f32b726fe07dc2b17aa6f2b5"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10#66d76d8f7e17501ce13df584122887bee088c6bb"
 dependencies = [
  "serde",
  "winnow",
@@ -405,12 +454,11 @@ dependencies = [
 [[package]]
 name = "alloy-sol-types"
 version = "0.8.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa828bb1b9a6dc52208fbb18084fb9ce2c30facc2bfda6a5d922349b4990354f"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10#66d76d8f7e17501ce13df584122887bee088c6bb"
 dependencies = [
  "alloy-json-abi",
  "alloy-primitives",
- "alloy-sol-macro",
+ "alloy-sol-macro 0.8.10 (git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10)",
  "const-hex",
  "serde",
 ]
@@ -3288,7 +3336,7 @@ dependencies = [
 name = "revm-test"
 version = "1.0.0"
 dependencies = [
- "alloy-sol-macro",
+ "alloy-sol-macro 0.8.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "alloy-sol-types",
  "bytes",
  "eyre",
@@ -4068,6 +4116,17 @@ name = "syn-solidity"
 version = "0.8.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16320d4a2021ba1a32470b3759676114a918885e9800e68ad60f2c67969fba62"
+dependencies = [
+ "paste",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.79",
+]
+
+[[package]]
+name = "syn-solidity"
+version = "0.8.10"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.10#66d76d8f7e17501ce13df584122887bee088c6bb"
 dependencies = [
  "paste",
  "proc-macro2",
@@ -5021,23 +5080,3 @@ dependencies = [
  "quote",
  "syn 2.0.79",
 ]
-
-[[patch.unused]]
-name = "alloy-eip7702"
-version = "0.1.0"
-source = "git+https://github.com/scroll-tech/alloy-eips?branch=v0.1.0#06cb417f8b3df8c29a8bf69a8a10663ceb5a2c37"
-
-[[patch.unused]]
-name = "alloy-eips"
-version = "0.3.0"
-source = "git+https://github.com/scroll-tech/alloy.git?branch=v0.3.0#41bbe34a38a2b1536c58b7c938313a2db4e9369a"
-
-[[patch.unused]]
-name = "alloy-primitives"
-version = "0.8.0"
-source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.0#4642d710a73aec9513222db586498951f84534cd"
-
-[[patch.unused]]
-name = "alloy-sol-types"
-version = "0.8.0"
-source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.0#4642d710a73aec9513222db586498951f84534cd"
