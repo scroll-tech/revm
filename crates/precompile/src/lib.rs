@@ -209,7 +209,6 @@ impl Precompiles {
     /// Returns precompiles for Scroll
     #[cfg(feature = "scroll")]
     pub fn bernoulli() -> &'static Self {
-        println!("Bernoulli");
         static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Self::pre_bernoulli().clone();
