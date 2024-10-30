@@ -416,6 +416,10 @@ pub fn call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if account_load.is_cold && host.is_address_in_access_list(to) {
+        panic!("access list account should be either loaded or never accessed");
+    }
     let Some(mut gas_limit) =
         calc_call_gas::<SPEC>(interpreter, account_load, has_transfer, local_gas_limit)
     else {
@@ -464,6 +468,10 @@ pub fn call_code<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
     };
     // set is_empty to false as we are not creating this account.
     load.is_empty = false;
+    #[cfg(feature = "scroll")]
+    if load.is_cold && host.is_address_in_access_list(to) {
+        panic!("access list account should be either loaded or never accessed");
+    }
     let Some(mut gas_limit) =
         calc_call_gas::<SPEC>(interpreter, load, !value.is_zero(), local_gas_limit)
     else {
@@ -512,6 +520,10 @@ pub fn delegate_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter
     };
     // set is_empty to false as we are not creating this account.
     load.is_empty = false;
+    #[cfg(feature = "scroll")]
+    if load.is_cold && host.is_address_in_access_list(to) {
+        panic!("access list account should be either loaded or never accessed");
+    }
     let Some(gas_limit) = calc_call_gas::<SPEC>(interpreter, load, false, local_gas_limit) else {
         return;
     };
@@ -553,6 +565,10 @@ pub fn static_call<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     };
     // set is_empty to false as we are not creating this account.
     load.is_empty = false;
+    #[cfg(feature = "scroll")]
+    if load.is_cold && host.is_address_in_access_list(to) {
+        panic!("access list account should be either loaded or never accessed");
+    }
     let Some(gas_limit) = calc_call_gas::<SPEC>(interpreter, load, false, local_gas_limit) else {
         return;
     };

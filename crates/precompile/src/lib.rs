@@ -64,6 +64,8 @@ impl Precompiles {
             PrecompileSpecId::PRE_BERNOULLI => Self::pre_bernoulli(),
             #[cfg(feature = "scroll")]
             PrecompileSpecId::BERNOULLI => Self::bernoulli(),
+            #[cfg(feature = "scroll")]
+            PrecompileSpecId::EUCLID => Self::euclid(),
             PrecompileSpecId::CANCUN => Self::cancun(),
             PrecompileSpecId::PRAGUE => Self::prague(),
             PrecompileSpecId::LATEST => Self::latest(),
@@ -213,6 +215,20 @@ impl Precompiles {
             precompiles.extend([
                 hash::SHA256, // 0x02
             ]);
+
+            Box::new(precompiles)
+        })
+    }
+
+    /// Returns precompiles for Scroll
+    #[cfg(feature = "scroll")]
+    pub fn euclid() -> &'static Self {
+        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        INSTANCE.get_or_init(|| {
+            let mut precompiles = Self::bernoulli().clone();
+            precompiles.extend([
+                secp256r1::P256VERIFY, // 0x100
+            ]);
             Box::new(precompiles)
         })
     }
@@ -318,6 +334,8 @@ pub enum PrecompileSpecId {
     PRE_BERNOULLI,
     #[cfg(feature = "scroll")]
     BERNOULLI,
+    #[cfg(feature = "scroll")]
+    EUCLID,
     CANCUN,
     PRAGUE,
     LATEST,
@@ -335,16 +353,18 @@ impl PrecompileSpecId {
             ISTANBUL | MUIR_GLACIER => Self::ISTANBUL,
             BERLIN | LONDON | ARROW_GLACIER | GRAY_GLACIER | MERGE | SHANGHAI => Self::BERLIN,
             CANCUN => Self::CANCUN,
-            PRAGUE | PRAGUE_EOF => Self::PRAGUE,
+            PRAGUE | OSAKA => Self::PRAGUE,
             LATEST => Self::LATEST,
             #[cfg(feature = "optimism")]
             BEDROCK | REGOLITH | CANYON => Self::BERLIN,
             #[cfg(feature = "optimism")]
-            ECOTONE | FJORD | GRANITE => Self::CANCUN,
+            ECOTONE | FJORD | GRANITE | HOLOCENE => Self::CANCUN,
             #[cfg(feature = "scroll")]
             PRE_BERNOULLI => Self::PRE_BERNOULLI,
             #[cfg(feature = "scroll")]
             BERNOULLI | CURIE => Self::BERNOULLI,
+            #[cfg(feature = "scroll")]
+            EUCLID => Self::EUCLID,
         }
     }
 }

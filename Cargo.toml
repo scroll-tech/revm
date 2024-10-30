@@ -26,10 +26,10 @@ opt-level = 3
 [patch.crates-io]
 ff = { git = "https://github.com/scroll-tech/ff", branch = "feat/sp1" }
 
-alloy-eips = { git = "https://github.com/scroll-tech/alloy.git", branch = "v0.3.0" }
+alloy-eips = { git = "https://github.com/scroll-tech/alloy.git", branch = "v0.5.4" }
 
-alloy-eip2930 = { git = "https://github.com/scroll-tech/alloy-eips", branch = "v0.1.0" }
-alloy-eip7702 = { git = "https://github.com/scroll-tech/alloy-eips", branch = "v0.1.0" }
+alloy-eip2930 = { git = "https://github.com/scroll-tech/alloy-eips", branch = "v0.3.2" }
+alloy-eip7702 = { git = "https://github.com/scroll-tech/alloy-eips", branch = "v0.3.2" }
 
-alloy-primitives = { git = "https://github.com/scroll-tech/alloy-core", branch = "v0.8.0" }
-alloy-sol-types = { git = "https://github.com/scroll-tech/alloy-core", branch = "v0.8.0" }
+alloy-primitives = { git = "https://github.com/scroll-tech/alloy-core", branch = "v0.8.10" }
+alloy-sol-types = { git = "https://github.com/scroll-tech/alloy-core", branch = "v0.8.10" }
