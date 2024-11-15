@@ -111,12 +111,12 @@ pub enum SpecId {
     /// Although the Curie update include new opcodes in Cancun, the most important change
     /// `EIP-4844` is not included. So we sort it before Cancun.
     CURIE = 19,
-    CANCUN = 20,
-    PRAGUE = 21,
-    OSAKA = 22,
     /// Euclid update introduces:
     ///   - Support `p256_verify` precompile.
-    EUCLID = 23,
+    EUCLID = 20,
+    CANCUN = 21,
+    PRAGUE = 22,
+    OSAKA = 23,
     #[default]
     LATEST = u8::MAX,
 }
@@ -831,7 +831,7 @@ mod scroll_tests {
         assert!(EuclidSpec::enabled(SpecId::PRE_BERNOULLI));
         assert!(EuclidSpec::enabled(SpecId::BERNOULLI));
         assert!(EuclidSpec::enabled(SpecId::CURIE));
-        assert!(EuclidSpec::enabled(SpecId::CANCUN));
+        assert!(!EuclidSpec::enabled(SpecId::CANCUN));
         assert!(!EuclidSpec::enabled(SpecId::LATEST));
     }
 }
