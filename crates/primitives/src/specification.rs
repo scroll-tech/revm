@@ -5,7 +5,10 @@ pub use SpecId::*;
 /// Specification IDs and their activation block.
 ///
 /// Information was obtained from the [Ethereum Execution Specifications](https://github.com/ethereum/execution-specs)
-#[cfg(not(any(feature = "optimism", feature = "scroll")))]
+#[cfg(any(
+    not(any(feature = "optimism", feature = "scroll")),
+    all(feature = "scroll", feature = "optimism")
+))]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, enumn::N)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -37,7 +40,7 @@ pub enum SpecId {
 /// Specification IDs and their activation block.
 ///
 /// Information was obtained from the [Ethereum Execution Specifications](https://github.com/ethereum/execution-specs)
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, enumn::N)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -77,7 +80,7 @@ pub enum SpecId {
 /// Specification IDs and their activation block.
 ///
 /// Information was obtained from the [Ethereum Execution Specifications](https://github.com/ethereum/execution-specs)
-#[cfg(feature = "scroll")]
+#[cfg(all(feature = "scroll", not(feature = "optimism")))]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, enumn::N)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -161,29 +164,29 @@ impl From<&str> for SpecId {
             "Cancun" => Self::CANCUN,
             "Prague" => Self::PRAGUE,
             "Osaka" => Self::OSAKA,
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             "Bedrock" => SpecId::BEDROCK,
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             "Regolith" => SpecId::REGOLITH,
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             "Canyon" => SpecId::CANYON,
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             "Ecotone" => SpecId::ECOTONE,
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             "Fjord" => SpecId::FJORD,
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             "Granite" => SpecId::GRANITE,
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             "Holocene" => SpecId::HOLOCENE,
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             "Isthmus" => SpecId::ISTHMUS,
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             "PreBernoulli" => SpecId::PRE_BERNOULLI,
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             "Bernoulli" => SpecId::BERNOULLI,
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             "Curie" => SpecId::CURIE,
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             "Euclid" => SpecId::EUCLID,
             _ => Self::LATEST,
         }
@@ -213,29 +216,29 @@ impl From<SpecId> for &'static str {
             SpecId::CANCUN => "Cancun",
             SpecId::PRAGUE => "Prague",
             SpecId::OSAKA => "Osaka",
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             SpecId::BEDROCK => "Bedrock",
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             SpecId::REGOLITH => "Regolith",
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             SpecId::CANYON => "Canyon",
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             SpecId::ECOTONE => "Ecotone",
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             SpecId::FJORD => "Fjord",
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             SpecId::GRANITE => "Granite",
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             SpecId::HOLOCENE => "Holocene",
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             SpecId::ISTHMUS => "Isthmus",
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             SpecId::PRE_BERNOULLI => "PreBernoulli",
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             SpecId::BERNOULLI => "Bernoulli",
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             SpecId::CURIE => "Curie",
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             SpecId::EUCLID => "Euclid",
             SpecId::LATEST => "Latest",
         }
@@ -288,34 +291,37 @@ spec!(OSAKA, OsakaSpec);
 spec!(LATEST, LatestSpec);
 
 // Optimism Hardforks
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 spec!(BEDROCK, BedrockSpec);
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 spec!(REGOLITH, RegolithSpec);
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 spec!(CANYON, CanyonSpec);
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 spec!(ECOTONE, EcotoneSpec);
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 spec!(FJORD, FjordSpec);
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 spec!(GRANITE, GraniteSpec);
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 spec!(HOLOCENE, HoloceneSpec);
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 spec!(ISTHMUS, IsthmusSpec);
 
 // Scroll Hardforks
-#[cfg(feature = "scroll")]
+#[cfg(all(feature = "scroll", not(feature = "optimism")))]
 spec!(PRE_BERNOULLI, PreBernoulliSpec);
-#[cfg(feature = "scroll")]
+#[cfg(all(feature = "scroll", not(feature = "optimism")))]
 spec!(BERNOULLI, BernoulliSpec);
-#[cfg(feature = "scroll")]
+#[cfg(all(feature = "scroll", not(feature = "optimism")))]
 spec!(CURIE, CurieSpec);
-#[cfg(feature = "scroll")]
+#[cfg(all(feature = "scroll", not(feature = "optimism")))]
 spec!(EUCLID, EuclidSpec);
 
-#[cfg(not(any(feature = "optimism", feature = "scroll")))]
+#[cfg(any(
+    not(any(feature = "optimism", feature = "scroll")),
+    all(feature = "scroll", feature = "optimism")
+))]
 #[macro_export]
 macro_rules! spec_to_generic {
     ($spec_id:expr, $e:expr) => {{
@@ -386,7 +392,7 @@ macro_rules! spec_to_generic {
     }};
 }
 
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 #[macro_export]
 macro_rules! spec_to_generic {
     ($spec_id:expr, $e:expr) => {{
@@ -489,7 +495,7 @@ macro_rules! spec_to_generic {
     }};
 }
 
-#[cfg(feature = "scroll")]
+#[cfg(all(feature = "scroll", not(feature = "optimism")))]
 #[macro_export]
 macro_rules! spec_to_generic {
     ($spec_id:expr, $e:expr) => {{
@@ -586,55 +592,56 @@ mod tests {
     fn spec_to_generic() {
         use SpecId::*;
 
-        spec_to_generic!(FRONTIER, assert_eq!(SPEC::SPEC_ID, FRONTIER));
-        spec_to_generic!(FRONTIER_THAWING, assert_eq!(SPEC::SPEC_ID, FRONTIER));
-        spec_to_generic!(HOMESTEAD, assert_eq!(SPEC::SPEC_ID, HOMESTEAD));
-        spec_to_generic!(DAO_FORK, assert_eq!(SPEC::SPEC_ID, HOMESTEAD));
-        spec_to_generic!(TANGERINE, assert_eq!(SPEC::SPEC_ID, TANGERINE));
-        spec_to_generic!(SPURIOUS_DRAGON, assert_eq!(SPEC::SPEC_ID, SPURIOUS_DRAGON));
-        spec_to_generic!(BYZANTIUM, assert_eq!(SPEC::SPEC_ID, BYZANTIUM));
-        spec_to_generic!(CONSTANTINOPLE, assert_eq!(SPEC::SPEC_ID, PETERSBURG));
-        spec_to_generic!(PETERSBURG, assert_eq!(SPEC::SPEC_ID, PETERSBURG));
-        spec_to_generic!(ISTANBUL, assert_eq!(SPEC::SPEC_ID, ISTANBUL));
-        spec_to_generic!(MUIR_GLACIER, assert_eq!(SPEC::SPEC_ID, ISTANBUL));
-        spec_to_generic!(BERLIN, assert_eq!(SPEC::SPEC_ID, BERLIN));
-        spec_to_generic!(LONDON, assert_eq!(SPEC::SPEC_ID, LONDON));
-        spec_to_generic!(ARROW_GLACIER, assert_eq!(SPEC::SPEC_ID, LONDON));
-        spec_to_generic!(GRAY_GLACIER, assert_eq!(SPEC::SPEC_ID, LONDON));
-        spec_to_generic!(MERGE, assert_eq!(SPEC::SPEC_ID, MERGE));
-        #[cfg(feature = "optimism")]
-        spec_to_generic!(BEDROCK, assert_eq!(SPEC::SPEC_ID, BEDROCK));
-        #[cfg(feature = "optimism")]
-        spec_to_generic!(REGOLITH, assert_eq!(SPEC::SPEC_ID, REGOLITH));
-        spec_to_generic!(SHANGHAI, assert_eq!(SPEC::SPEC_ID, SHANGHAI));
-        #[cfg(feature = "optimism")]
-        spec_to_generic!(CANYON, assert_eq!(SPEC::SPEC_ID, CANYON));
-        #[cfg(feature = "scroll")]
-        spec_to_generic!(PRE_BERNOULLI, assert_eq!(SPEC::SPEC_ID, PRE_BERNOULLI));
-        #[cfg(feature = "scroll")]
-        spec_to_generic!(BERNOULLI, assert_eq!(SPEC::SPEC_ID, BERNOULLI));
-        #[cfg(feature = "scroll")]
-        spec_to_generic!(CURIE, assert_eq!(SPEC::SPEC_ID, CURIE));
-        #[cfg(feature = "scroll")]
-        spec_to_generic!(EUCLID, assert_eq!(SPEC::SPEC_ID, EUCLID));
-        spec_to_generic!(CANCUN, assert_eq!(SPEC::SPEC_ID, CANCUN));
-        #[cfg(feature = "optimism")]
-        spec_to_generic!(ECOTONE, assert_eq!(SPEC::SPEC_ID, ECOTONE));
-        #[cfg(feature = "optimism")]
-        spec_to_generic!(FJORD, assert_eq!(SPEC::SPEC_ID, FJORD));
-        #[cfg(feature = "optimism")]
-        spec_to_generic!(GRANITE, assert_eq!(SPEC::SPEC_ID, GRANITE));
-        #[cfg(feature = "optimism")]
-        spec_to_generic!(HOLOCENE, assert_eq!(SPEC::SPEC_ID, HOLOCENE));
-        spec_to_generic!(PRAGUE, assert_eq!(SPEC::SPEC_ID, PRAGUE));
-        spec_to_generic!(OSAKA, assert_eq!(SPEC::SPEC_ID, OSAKA));
-        #[cfg(feature = "optimism")]
-        spec_to_generic!(ISTHMUS, assert_eq!(SPEC::SPEC_ID, ISTHMUS));
-        spec_to_generic!(LATEST, assert_eq!(SPEC::SPEC_ID, LATEST));
+        #[cfg(any(
+            not(any(feature = "optimism", feature = "scroll")),
+            all(feature = "scroll", feature = "optimism")
+        ))]
+        {
+            spec_to_generic!(FRONTIER, assert_eq!(SPEC::SPEC_ID, FRONTIER));
+            spec_to_generic!(FRONTIER_THAWING, assert_eq!(SPEC::SPEC_ID, FRONTIER));
+            spec_to_generic!(HOMESTEAD, assert_eq!(SPEC::SPEC_ID, HOMESTEAD));
+            spec_to_generic!(DAO_FORK, assert_eq!(SPEC::SPEC_ID, HOMESTEAD));
+            spec_to_generic!(TANGERINE, assert_eq!(SPEC::SPEC_ID, TANGERINE));
+            spec_to_generic!(SPURIOUS_DRAGON, assert_eq!(SPEC::SPEC_ID, SPURIOUS_DRAGON));
+            spec_to_generic!(BYZANTIUM, assert_eq!(SPEC::SPEC_ID, BYZANTIUM));
+            spec_to_generic!(CONSTANTINOPLE, assert_eq!(SPEC::SPEC_ID, PETERSBURG));
+            spec_to_generic!(PETERSBURG, assert_eq!(SPEC::SPEC_ID, PETERSBURG));
+            spec_to_generic!(ISTANBUL, assert_eq!(SPEC::SPEC_ID, ISTANBUL));
+            spec_to_generic!(MUIR_GLACIER, assert_eq!(SPEC::SPEC_ID, ISTANBUL));
+            spec_to_generic!(BERLIN, assert_eq!(SPEC::SPEC_ID, BERLIN));
+            spec_to_generic!(LONDON, assert_eq!(SPEC::SPEC_ID, LONDON));
+            spec_to_generic!(ARROW_GLACIER, assert_eq!(SPEC::SPEC_ID, LONDON));
+            spec_to_generic!(GRAY_GLACIER, assert_eq!(SPEC::SPEC_ID, LONDON));
+            spec_to_generic!(MERGE, assert_eq!(SPEC::SPEC_ID, MERGE));
+            spec_to_generic!(SHANGHAI, assert_eq!(SPEC::SPEC_ID, SHANGHAI));
+            spec_to_generic!(CANCUN, assert_eq!(SPEC::SPEC_ID, CANCUN));
+            spec_to_generic!(PRAGUE, assert_eq!(SPEC::SPEC_ID, PRAGUE));
+            spec_to_generic!(OSAKA, assert_eq!(SPEC::SPEC_ID, OSAKA));
+            spec_to_generic!(LATEST, assert_eq!(SPEC::SPEC_ID, LATEST));
+        }
+        #[cfg(all(feature = "optimism", not(feature = "scroll")))]
+        {
+            spec_to_generic!(BEDROCK, assert_eq!(SPEC::SPEC_ID, BEDROCK));
+            spec_to_generic!(REGOLITH, assert_eq!(SPEC::SPEC_ID, REGOLITH));
+            spec_to_generic!(CANYON, assert_eq!(SPEC::SPEC_ID, CANYON));
+            spec_to_generic!(ECOTONE, assert_eq!(SPEC::SPEC_ID, ECOTONE));
+            spec_to_generic!(FJORD, assert_eq!(SPEC::SPEC_ID, FJORD));
+            spec_to_generic!(GRANITE, assert_eq!(SPEC::SPEC_ID, GRANITE));
+            spec_to_generic!(HOLOCENE, assert_eq!(SPEC::SPEC_ID, HOLOCENE));
+            spec_to_generic!(ISTHMUS, assert_eq!(SPEC::SPEC_ID, ISTHMUS));
+            spec_to_generic!(LATEST, assert_eq!(SPEC::SPEC_ID, LATEST));
+        }
+        #[cfg(all(feature = "scroll", not(feature = "optimism")))]
+        {
+            spec_to_generic!(PRE_BERNOULLI, assert_eq!(SPEC::SPEC_ID, PRE_BERNOULLI));
+            spec_to_generic!(BERNOULLI, assert_eq!(SPEC::SPEC_ID, BERNOULLI));
+            spec_to_generic!(CURIE, assert_eq!(SPEC::SPEC_ID, CURIE));
+            spec_to_generic!(EUCLID, assert_eq!(SPEC::SPEC_ID, EUCLID));
+        }
     }
 }
 
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 #[cfg(test)]
 mod optimism_tests {
     use super::*;
@@ -802,7 +809,7 @@ mod optimism_tests {
     }
 }
 
-#[cfg(feature = "scroll")]
+#[cfg(all(feature = "scroll", not(feature = "optimism")))]
 #[cfg(test)]
 mod scroll_tests {
     use super::*;

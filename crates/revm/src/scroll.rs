@@ -1,3 +1,5 @@
+#![cfg(all(feature = "scroll", not(feature = "optimism")))]
+
 mod handler_register;
 mod l1block;
 

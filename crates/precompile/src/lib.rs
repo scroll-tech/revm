@@ -355,15 +355,15 @@ impl PrecompileSpecId {
             CANCUN => Self::CANCUN,
             PRAGUE | OSAKA => Self::PRAGUE,
             LATEST => Self::LATEST,
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             BEDROCK | REGOLITH | CANYON => Self::BERLIN,
-            #[cfg(feature = "optimism")]
+            #[cfg(all(feature = "optimism", not(feature = "scroll")))]
             ECOTONE | FJORD | GRANITE | HOLOCENE | ISTHMUS => Self::CANCUN,
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             PRE_BERNOULLI => Self::PRE_BERNOULLI,
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             BERNOULLI | CURIE => Self::BERNOULLI,
-            #[cfg(feature = "scroll")]
+            #[cfg(all(feature = "scroll", not(feature = "optimism")))]
             EUCLID => Self::EUCLID,
         }
     }

@@ -1,4 +1,5 @@
 //! Optimism-specific constants, types, and helpers.
+#![cfg(all(feature = "optimism", not(feature = "scroll")))]
 
 mod bn128;
 mod fast_lz;
