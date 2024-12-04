@@ -52,7 +52,7 @@ impl HandlerCfg {
     }
 
     /// Creates new `HandlerCfg` instance with the optimism feature.
-    #[cfg(feature = "optimism")]
+    #[cfg(all(feature = "optimism", not(feature = "scroll")))]
     pub fn new_with_optimism(spec_id: SpecId, is_optimism: bool) -> Self {
         Self {
             spec_id,
@@ -61,7 +61,7 @@ impl HandlerCfg {
     }
 
     /// Creates new `HandlerCfg` instance with the scroll feature.
-    #[cfg(feature = "scroll")]
+    #[cfg(all(feature = "scroll", not(feature = "optimism")))]
     pub fn new_with_scroll(spec_id: SpecId, is_scroll: bool) -> Self {
         Self { spec_id, is_scroll }
     }

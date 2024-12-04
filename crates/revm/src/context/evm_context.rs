@@ -532,7 +532,9 @@ pub(crate) mod test_utils {
                 journaled_state: JournaledState::new(SpecId::CANCUN, HashSet::default()),
                 db,
                 error: Ok(()),
-                #[cfg(any(feature = "optimism", feature = "scroll"))]
+                #[cfg(all(feature = "scroll", not(feature = "optimism")))]
+                l1_block_info: None,
+                #[cfg(all(feature = "optimism", not(feature = "scroll")))]
                 l1_block_info: None,
             },
             precompiles: ContextPrecompiles::default(),
@@ -547,7 +549,9 @@ pub(crate) mod test_utils {
                 journaled_state: JournaledState::new(SpecId::CANCUN, HashSet::default()),
                 db,
                 error: Ok(()),
-                #[cfg(any(feature = "optimism", feature = "scroll"))]
+                #[cfg(all(feature = "scroll", not(feature = "optimism")))]
+                l1_block_info: None,
+                #[cfg(all(feature = "optimism", not(feature = "scroll")))]
                 l1_block_info: None,
             },
             precompiles: ContextPrecompiles::default(),

@@ -6,6 +6,9 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc as std;
 
+#[cfg(feature = "optimism")]
+use once_cell as _;
+
 // Define modules.
 
 mod builder;
@@ -43,7 +46,7 @@ pub use handler::Handler;
 pub use inspector::{inspector_handle_register, inspectors, GetInspector, Inspector};
 pub use journaled_state::{JournalCheckpoint, JournalEntry, JournaledState};
 // export Optimism types, helpers, and constants
-#[cfg(feature = "optimism")]
+#[cfg(all(feature = "optimism", not(feature = "scroll")))]
 pub use optimism::{L1BlockInfo, BASE_FEE_RECIPIENT, L1_BLOCK_CONTRACT, L1_FEE_RECIPIENT};
 
 // Reexport libraries

@@ -164,7 +164,7 @@ impl<'a, EXT, DB: Database> EvmBuilder<'a, SetGenericStage, EXT, DB> {
     /// Sets the Optimism handler with latest spec.
     ///
     /// If `optimism-default-handler` feature is enabled this is not needed.
-    #[cfg(feature = "optimism")]
+    #[cfg(all(feature = "optimism", not(feature = "scroll")))]
     pub fn optimism(mut self) -> EvmBuilder<'a, HandlerStage, EXT, DB> {
         self.handler = Handler::optimism_with_spec(self.handler.cfg.spec_id);
         EvmBuilder {
@@ -177,7 +177,7 @@ impl<'a, EXT, DB: Database> EvmBuilder<'a, SetGenericStage, EXT, DB> {
     /// Sets the Scroll handler with latest spec.
     ///
     /// If `scroll-default-handler` feature is enabled this is not needed.
-    #[cfg(feature = "scroll")]
+    #[cfg(all(feature = "scroll", not(feature = "optimism")))]
     pub fn scroll(mut self) -> EvmBuilder<'a, HandlerStage, EXT, DB> {
         self.handler = Handler::scroll_with_spec(self.handler.cfg.spec_id);
         EvmBuilder {

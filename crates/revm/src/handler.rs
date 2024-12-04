@@ -45,13 +45,15 @@ impl<'a, EXT, DB: Database> EvmHandler<'a, EXT, DB> {
     /// Or `optimism_with_spec` if the optimism feature is enabled and `cfg.is_optimism` is set.
     pub fn new(cfg: HandlerCfg) -> Self {
         cfg_if::cfg_if! {
-            if #[cfg(feature = "optimism")] {
+            if #[cfg(all(feature = "optimism", not(feature = "scroll")))]
+            {
                 if cfg.is_optimism {
                     Handler::optimism_with_spec(cfg.spec_id)
                 } else {
                     Handler::mainnet_with_spec(cfg.spec_id)
                 }
-            } else if #[cfg(feature = "scroll")] {
+            } else if #[cfg(all(feature = "scroll", not(feature = "optimism")))]
+            {
                 if cfg.is_scroll {
                     Handler::scroll_with_spec(cfg.spec_id)
                 } else {
@@ -82,7 +84,7 @@ impl<'a, EXT, DB: Database> EvmHandler<'a, EXT, DB> {
     }
 
     /// Handler for optimism
-    #[cfg(feature = "optimism")]
+    #[cfg(all(feature = "optimism", not(feature = "scroll")))]
     pub fn optimism<SPEC: Spec>() -> Self {
         let mut handler = Self::mainnet::<SPEC>();
         handler.cfg.is_optimism = true;
@@ -93,7 +95,7 @@ impl<'a, EXT, DB: Database> EvmHandler<'a, EXT, DB> {
     }
 
     /// Handler for scroll
-    #[cfg(feature = "scroll")]
+    #[cfg(all(feature = "scroll", not(feature = "optimism")))]
     pub fn scroll<SPEC: Spec + 'static>() -> Self {
         let mut handler = Self::mainnet::<SPEC>();
         handler.cfg.is_scroll = true;
@@ -104,13 +106,13 @@ impl<'a, EXT, DB: Database> EvmHandler<'a, EXT, DB> {
     }
 
     /// Optimism with spec. Similar to [`Self::mainnet_with_spec`].
-    #[cfg(feature = "optimism")]
+    #[cfg(all(feature = "optimism", not(feature = "scroll")))]
     pub fn optimism_with_spec(spec_id: SpecId) -> Self {
         spec_to_generic!(spec_id, Self::optimism::<SPEC>())
     }
 
     /// Scroll with spec. Similar to [`Self::mainnet_with_spec`]
-    #[cfg(feature = "scroll")]
+    #[cfg(all(feature = "scroll", not(feature = "optimism")))]
     pub fn scroll_with_spec(spec_id: SpecId) -> Self {
         spec_to_generic!(spec_id, Self::scroll::<SPEC>())
     }
