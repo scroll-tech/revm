@@ -310,8 +310,12 @@ impl AccountInfo {
         Self {
             balance: self.balance,
             nonce: self.nonce,
+            #[cfg(feature = "scroll")]
+            code_size: self.code_size,
             code_hash: self.code_hash,
             code: None,
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            poseidon_code_hash: self.poseidon_code_hash,
         }
     }
 
