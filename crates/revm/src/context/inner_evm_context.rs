@@ -251,9 +251,6 @@ impl<DB: Database> InnerEvmContext<DB> {
 
     /// Get code hash of address.
     ///
-
-    /// Get code hash of address.
-    ///
     /// In case of EOF account it will return `EOF_MAGIC_HASH`
     /// (the hash of `0xEF00`).
     #[inline]
