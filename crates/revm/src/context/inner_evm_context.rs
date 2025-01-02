@@ -241,10 +241,7 @@ impl<DB: Database> InnerEvmContext<DB> {
         }
 
         #[cfg(feature = "scroll")]
-        return Ok(Eip7702CodeLoad::new_not_delegated(
-            acc.info.code_hash,
-            acc.is_cold,
-        ));
+        return Ok(StateLoad::new(acc.info.code_hash, acc.is_cold));
 
         // SAFETY: safe to unwrap as load_code will insert code if it is empty.
         let code = acc.info.code.as_ref().unwrap();
