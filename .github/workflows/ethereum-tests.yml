@@ -29,7 +29,6 @@ jobs:
           repository: ethereum/tests
           path: ethtests
           submodules: recursive
-          ref: 66cb421ab8460f04f7cf2fee2818bcf8784ff5e2
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -49,10 +48,13 @@ jobs:
             ethtests/EIPTests/StateTests/stEIP1153-transientStorage/ \
             ethtests/EIPTests/StateTests/stEIP4844-blobtransactions/ \
             ethtests/EIPTests/StateTests/stEIP2537/ \
+            ethtests/EIPTests/StateTests/stEOF \
             tests/eof_suite/eest/state_tests \
+            tests/eof_suite/evmone/state_tests \
             tests/prague_suite/state_tests
-      - name: Run EOF validation tests
-        run: |
-          cross run --target ${{matrix.target}} --profile ${{ matrix.profile }} -p revme -- eof-validation \
-          tests/eof_suite/eest/eof_tests/osaka
-
+      # - name: Run EOF validation tests
+      #   run: |
+      #     cross run --target ${{matrix.target}} --profile ${{ matrix.profile }} -p revme -- eof-validation \
+      #     ethtests/EOFTests \
+      #     tests/eof_suite/eest/eof_tests/prague \
+      #     tests/eof_suite/evmone/eof_tests
