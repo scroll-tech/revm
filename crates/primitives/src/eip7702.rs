@@ -2,11 +2,12 @@ pub mod authorization_list;
 pub mod bytecode;
 
 pub use authorization_list::{
-    Authorization, AuthorizationList, RecoveredAuthority, RecoveredAuthorization, Signature,
-    SignedAuthorization,
+    Authorization, AuthorizationList, PrimitiveSignature, RecoveredAuthority,
+    RecoveredAuthorization, SignedAuthorization,
 };
 pub use bytecode::{
-    Eip7702Bytecode, Eip7702DecodeError, EIP7702_MAGIC, EIP7702_MAGIC_BYTES, EIP7702_VERSION,
+    Eip7702Bytecode, Eip7702DecodeError, EIP7702_MAGIC, EIP7702_MAGIC_BYTES, EIP7702_MAGIC_HASH,
+    EIP7702_VERSION,
 };
 
 // Base cost of updating authorized account.

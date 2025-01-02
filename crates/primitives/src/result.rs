@@ -262,6 +262,11 @@ pub enum InvalidTransaction {
     /// - initial stipend gas
     /// - gas for access list and input data
     CallGasCostMoreThanGasLimit,
+    /// Gas floor calculated from EIP-7623 Increase calldata cost
+    /// is more than the gas limit.
+    ///
+    /// Tx data is too large to be executed.
+    GasFloorMoreThanGasLimit,
     /// EIP-3607 Reject transactions from senders with deployed code
     RejectCallerWithCode,
     /// Transaction account does not have enough amount of ether to cover transferred value and gas_limit*gas_price.
@@ -298,9 +303,8 @@ pub enum InvalidTransaction {
     /// Blob transaction can't be a create transaction.
     /// `to` must be present
     BlobCreateTransaction,
-    /// Transaction has more then [`crate::MAX_BLOB_NUMBER_PER_BLOCK`] blobs
+    /// Transaction has more then `max_blob_num_per_block` blobs.
     TooManyBlobs {
-        max: usize,
         have: usize,
     },
     /// Blob transaction contains a versioned hash with an incorrect version
@@ -352,6 +356,9 @@ impl fmt::Display for InvalidTransaction {
             Self::CallGasCostMoreThanGasLimit => {
                 write!(f, "call gas cost exceeds the gas limit")
             }
+            Self::GasFloorMoreThanGasLimit => {
+                write!(f, "gas floor exceeds the gas limit")
+            }
             Self::RejectCallerWithCode => {
                 write!(f, "reject transactions from senders with deployed code")
             }
@@ -386,8 +393,8 @@ impl fmt::Display for InvalidTransaction {
             }
             Self::EmptyBlobs => write!(f, "empty blobs"),
             Self::BlobCreateTransaction => write!(f, "blob create transaction"),
-            Self::TooManyBlobs { max, have } => {
-                write!(f, "too many blobs, have {have}, max {max}")
+            Self::TooManyBlobs { have } => {
+                write!(f, "too many blobs, have {have}")
             }
             Self::BlobVersionNotSupported => write!(f, "blob version not supported"),
             Self::EofCrateShouldHaveToAddress => write!(f, "EOF crate should have `to` address"),
