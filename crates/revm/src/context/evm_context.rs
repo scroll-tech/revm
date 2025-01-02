@@ -480,7 +480,7 @@ pub(crate) mod test_utils {
     use crate::{
         db::{CacheDB, EmptyDB},
         journaled_state::JournaledState,
-        primitives::{address, HashSet, SpecId},
+        primitives::{address, HashSet, SpecId, B256},
     };
 
     /// Mock caller address.
@@ -515,7 +515,8 @@ pub(crate) mod test_utils {
             crate::primitives::AccountInfo {
                 nonce: 0,
                 balance,
-                ..Default::default()
+                code_hash: B256::default(),
+                code: None,
             },
         );
         create_cache_db_evm_context(env, db)
@@ -532,7 +533,7 @@ pub(crate) mod test_utils {
                 journaled_state: JournaledState::new(SpecId::CANCUN, HashSet::default()),
                 db,
                 error: Ok(()),
-                #[cfg(any(feature = "optimism", feature = "scroll"))]
+                #[cfg(feature = "optimism")]
                 l1_block_info: None,
             },
             precompiles: ContextPrecompiles::default(),
@@ -547,7 +548,7 @@ pub(crate) mod test_utils {
                 journaled_state: JournaledState::new(SpecId::CANCUN, HashSet::default()),
                 db,
                 error: Ok(()),
-                #[cfg(any(feature = "optimism", feature = "scroll"))]
+                #[cfg(feature = "optimism")]
                 l1_block_info: None,
             },
             precompiles: ContextPrecompiles::default(),
@@ -638,11 +639,7 @@ mod tests {
             crate::primitives::AccountInfo {
                 nonce: 0,
                 balance: bal,
-                #[cfg(feature = "scroll")]
-                code_size: by.len(),
                 code_hash: by.clone().hash_slow(),
-                #[cfg(feature = "scroll-poseidon-codehash")]
-                poseidon_code_hash: by.clone().poseidon_hash_slow(),
                 code: Some(by),
             },
         );

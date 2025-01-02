@@ -56,9 +56,6 @@ serde = { version = "1.0", default-features = false, features = [
     "rc",
 ], optional = true }
 
-# scroll
-poseidon-bn254 = { git = "https://github.com/scroll-tech/poseidon-bn254", branch = "master", features = ["bn254"], optional = true }
-
 [build-dependencies]
 hex = { version = "0.4", default-features = false }
 
@@ -103,7 +100,6 @@ scroll = []
 # Scroll default handler enabled Scroll handler register by default in EvmBuilder.
 scroll-default-handler = ["scroll"]
 negate-scroll-default-handler = []
-scroll-poseidon-codehash = ["scroll", "poseidon-bn254"]
 
 dev = [
     "memory_limit",

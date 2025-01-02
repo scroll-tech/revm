@@ -887,19 +887,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bn254"
-version = "0.1.0"
-source = "git+https://github.com/scroll-tech/bn254.git?branch=master#81e1dcc92ee9a2798b13b84b24de182e9c42256e"
-dependencies = [
- "ff",
- "getrandom",
- "rand",
- "rand_core",
- "sp1-intrinsics",
- "subtle",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1571,7 +1558,6 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
 dependencies = [
- "bitvec",
  "byteorder",
  "ff_derive",
  "rand_core",
@@ -3060,16 +3046,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "280dc24453071f1b63954171985a0b0d30058d287960968b9b2aca264c8d4ee6"
 
 [[package]]
-name = "poseidon-bn254"
-version = "0.1.0"
-source = "git+https://github.com/scroll-tech/poseidon-bn254?branch=master#254baa0e3e85c0975c16fe6f33042b1fa9ae0a44"
-dependencies = [
- "bn254",
- "itertools 0.13.0",
- "sp1-intrinsics",
-]
-
-[[package]]
 name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3494,7 +3470,6 @@ dependencies = [
  "enumn",
  "hex",
  "kzg-rs",
- "poseidon-bn254",
  "serde",
 ]
 
@@ -4128,14 +4103,6 @@ checksum = "c970269d99b64e60ec3bd6ad27270092a5394c4e309314b18ae3fe575695fbe8"
 dependencies = [
  "libc",
  "windows-sys 0.52.0",
-]
-
-[[package]]
-name = "sp1-intrinsics"
-version = "0.0.0"
-source = "git+https://github.com/scroll-tech/sp1-intrinsics.git?branch=master#7e038e60db0b2e847f6d8f49e148ccac8c6fc394"
-dependencies = [
- "cfg-if",
 ]
 
 [[package]]

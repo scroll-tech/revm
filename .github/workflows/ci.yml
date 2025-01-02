@@ -26,9 +26,7 @@ jobs:
           "--no-default-features",
           "",
           "--features=\"scroll\"",
-          "--features=\"scroll, scroll-poseidon-codehash\"",
           "--features=\"all, scroll\"",
-          "--features=\"all, scroll, scroll-poseidon-codehash\"",
           "--features=\"optimism\"",
           "--features=\"all, optimism\""
         ]
@@ -47,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        features: ["", "optimism,kzg-rs"]
+        features: [ "", "optimism,kzg-rs" ]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -62,7 +60,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        features: ["", "serde", "std"]
+        features: [ "", "serde", "std" ]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

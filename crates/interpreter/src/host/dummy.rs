@@ -65,12 +65,6 @@ impl Host for DummyHost {
     }
 
     #[inline]
-    #[cfg(feature = "scroll")]
-    fn code_size(&mut self, _address: Address) -> Option<(usize, bool)> {
-        Some((0, false))
-    }
-
-    #[inline]
     fn code_hash(&mut self, _address: Address) -> Option<StateLoad<B256>> {
         Some(StateLoad::new(KECCAK_EMPTY, false))
     }

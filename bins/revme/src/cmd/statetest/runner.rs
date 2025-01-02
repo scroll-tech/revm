@@ -257,19 +257,11 @@ pub fn execute_test_suite(
         // Create database and insert cache
         let mut cache_state = revm::CacheState::new(false);
         for (address, info) in unit.pre {
-            #[cfg(feature = "scroll")]
-            let code_size = info.code.len();
-            let keccak_code_hash = keccak256(&info.code);
-            #[cfg(feature = "scroll-poseidon-codehash")]
-            let poseidon_code_hash = revm::primitives::poseidon(&info.code);
+            let code_hash = keccak256(&info.code);
             let bytecode = to_analysed(Bytecode::new_raw(info.code));
             let acc_info = revm::primitives::AccountInfo {
                 balance: info.balance,
-                #[cfg(feature = "scroll")]
-                code_size,
-                code_hash: keccak_code_hash,
-                #[cfg(feature = "scroll-poseidon-codehash")]
-                poseidon_code_hash,
+                code_hash,
                 code: Some(bytecode),
                 nonce: info.nonce,
             };
