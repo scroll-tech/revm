@@ -6,9 +6,9 @@ concurrency:
 
 on:
   push:
-    branches: [ main, "release/**", "scroll-evm-executor/**" ]
+    branches: [main, "release/**", "scroll-evm-executor/**"]
   pull_request:
-    branches: [ main, "release/**", "scroll-evm-executor/**" ]
+    branches: [main, "release/**", "scroll-evm-executor/**"]
 
 env:
   CARGO_TERM_COLOR: always
@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust: [ "stable", "beta", "nightly" ]
+        rust: ["stable", "beta", "nightly"]
         flags: [
           "--no-default-features",
           "",
@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        features: [ "", "optimism,kzg-rs" ]
+        features: ["", "optimism,kzg-rs"]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -60,7 +60,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        features: [ "", "serde", "std" ]
+        features: ["", "serde", "std"]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
