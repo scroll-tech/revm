@@ -85,7 +85,6 @@ asm-keccak = ["revm-interpreter/asm-keccak", "revm-precompile/asm-keccak"]
 portable = ["revm-precompile/portable", "revm-interpreter/portable"]
 
 test-utils = []
-ordered-cache-db = []
 
 optimism = [
     "revm-interpreter/optimism",
