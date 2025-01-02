@@ -13,10 +13,6 @@ pub fn balance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
-    #[cfg(feature = "scroll")]
-    if balance.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
-        panic!("access list account should be either loaded or never accessed");
-    }
     gas!(
         interpreter,
         if SPEC::enabled(BERLIN) {
@@ -69,10 +65,6 @@ pub fn extcodehash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
-    #[cfg(feature = "scroll")]
-    if code_hash.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
-        panic!("access list account should be either loaded or never accessed");
-    }
     if SPEC::enabled(BERLIN) {
         gas!(interpreter, warm_cold_cost(code_hash.is_cold))
     } else if SPEC::enabled(ISTANBUL) {
@@ -91,10 +83,6 @@ pub fn extcodecopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
-    #[cfg(feature = "scroll")]
-    if code.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
-        panic!("access list account should be either loaded or never accessed");
-    }
 
     let len = as_usize_or_fail!(interpreter, len_u256);
     gas_or_fail!(
@@ -142,7 +130,7 @@ pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
             let block_number = as_u64_or_fail!(interpreter, number);
 
             if SPEC::enabled(PRE_BERNOULLI) && diff <= BLOCK_HASH_HISTORY {
-                let mut hasher = crate::primitives::Keccak256::new();
+                let mut hasher = crate::primitives::alloy_primitives::Keccak256::new();
                 hasher.update(host.env().cfg.chain_id.to_be_bytes());
                 hasher.update(block_number.to_be_bytes());
                 *number = U256::from_be_bytes(*hasher.finalize());
@@ -164,12 +152,6 @@ pub fn sload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: 
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
-    #[cfg(feature = "scroll")]
-    if value.is_cold
-        && host.is_storage_key_in_access_list(interpreter.contract.target_address, *index)
-    {
-        panic!("access list account should be either loaded or never accessed");
-    }
     gas!(interpreter, gas::sload_cost(SPEC::SPEC_ID, value.is_cold));
     *index = value.data;
 }
@@ -182,13 +164,6 @@ pub fn sstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
-    #[cfg(feature = "scroll")]
-    if state_load.is_cold
-        && host.is_storage_key_in_access_list(interpreter.contract.target_address, index)
-    {
-        interpreter.instruction_result = InstructionResult::NotActivated;
-        return;
-    }
     gas_or_fail!(interpreter, {
         let remaining_gas = interpreter.gas.remaining();
         gas::sstore_cost(
