@@ -247,7 +247,6 @@ impl Default for AccountInfo {
 }
 
 impl PartialEq for AccountInfo {
-    #[allow(clippy::let_and_return)]
     fn eq(&self, other: &Self) -> bool {
         self.balance == other.balance
             && self.nonce == other.nonce
