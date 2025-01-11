@@ -44,13 +44,16 @@ pub fn selfbalance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     push!(interpreter, balance.data);
 }
 
-#[cfg(not(feature = "scroll"))]
 pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_address!(interpreter, address);
     let Some(code) = host.code(address) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if code.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        panic!("access list account should be either loaded or never accessed");
+    }
     if SPEC::enabled(BERLIN) {
         gas!(interpreter, warm_cold_cost(code.is_cold));
     } else if SPEC::enabled(TANGERINE) {
@@ -60,22 +63,6 @@ pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     }
 
     push!(interpreter, U256::from(code.len()));
-}
-
-#[cfg(feature = "scroll")]
-pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
-    pop_address!(interpreter, address);
-    let Some((code_size, is_cold)) = host.code_size(address) else {
-        interpreter.instruction_result = InstructionResult::FatalExternalError;
-        return;
-    };
-    #[cfg(feature = "scroll")]
-    if is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
-        panic!("access list account should be either loaded or never accessed");
-    }
-    gas!(interpreter, warm_cold_cost(is_cold));
-
-    push!(interpreter, U256::from(code_size));
 }
 
 /// EIP-1052: EXTCODEHASH opcode
