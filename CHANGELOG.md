@@ -1,5 +1,21 @@
 Because this is workspace with multi libraries, tags will be simplified, and with this document you can match version of project with git tag.
 
+# v53 tag
+
+date: 06.01.2025
+
+Fix for previous release related to Optimism.
+
+* `revm`: 19.1.0 -> 19.2.0
+
+# v52 tag
+
+date: 06.01.2025
+
+Optimism isthmus spec added.
+
+* `revm`: 19.0.0 -> 19.1.0
+
 # v51 tag
 date 26.12.2024
 devnet-5 release.
