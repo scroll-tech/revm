@@ -63,6 +63,13 @@ p256 = { version = "0.13.2", optional = true, default-features = false, features
 # utils
 cfg-if = { version = "1.0", default-features = false }
 
+# Optionally use openvm intrinsics
+openvm.workspace = true
+openvm-ecc-guest = { workspace = true, features = ["k256"] }
+openvm-keccak256-guest.workspace = true
+openvm-sha256-guest.workspace = true
+openvm-pairing-guest = { workspace = true, features = ["bn254"] }
+
 [dev-dependencies]
 criterion = "0.5"
 rand = { version = "0.8", features = ["std"] }
@@ -73,7 +80,7 @@ serde_json = "1.0"
 serde_derive = "1.0"
 
 [features]
-default = ["std", "c-kzg", "secp256k1", "portable", "blst"]
+default = ["std", "c-kzg", "portable", "blst"]
 std = [
     "revm-primitives/std",
     "k256/std",

@@ -42,7 +42,13 @@ pub fn sha256_run(input: &Bytes, gas_limit: u64) -> PrecompileResult {
     if cost > gas_limit {
         Err(Error::OutOfGas.into())
     } else {
+        #[cfg(any(
+            not(target_os = "zkvm"),
+            all(target_os = "zkvm", target_vendor = "succinct")
+        ))]
         let output = sha2::Sha256::digest(input);
+        #[cfg(all(target_os = "zkvm", not(target_vendor = "succinct")))]
+        let output = openvm_sha256_guest::sha256(input);
         Ok(PrecompileOutput::new(cost, output.to_vec().into()))
     }
 }

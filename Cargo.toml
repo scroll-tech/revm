@@ -14,6 +14,26 @@ default-members = ["crates/revm"]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
+[workspace.dependencies]
+# openvm
+openvm = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-ecc-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-pairing-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-keccak256-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-sha256-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-sdk = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-build = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-pairing-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-rv32im-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-algebra-circuit = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-algebra-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-ecc-circuit = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-ecc-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-pairing-circuit = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-circuit = { git = "https://github.com/openvm-org/openvm.git", tag = "v0.1.1-alpha" }
+openvm-stark-sdk = { git = "https://github.com/openvm-org/stark-backend.git", tag = "v0.1.3-alpha" }
+
 [profile.release]
 lto = true
 codegen-units = 1
