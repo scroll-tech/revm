@@ -17,6 +17,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 unreachable_pub = "warn"
 unused_must_use = "deny"
 rust_2018_idioms = "deny"
+unexpected_cfgs = "allow"
 
 [lints.rustdoc]
 all = "warn"
