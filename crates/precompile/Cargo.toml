@@ -64,6 +64,7 @@ p256 = { version = "0.13.2", optional = true, default-features = false, features
 cfg-if = { version = "1.0", default-features = false }
 
 # Optionally use openvm intrinsics
+[target.'cfg(all(target_os = "zkvm", not(target_vendor = "succinct")))'.dependencies]
 openvm.workspace = true
 openvm-ecc-guest = { workspace = true, features = ["k256"] }
 openvm-keccak256-guest.workspace = true
