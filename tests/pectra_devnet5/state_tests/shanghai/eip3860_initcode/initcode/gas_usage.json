@@ -1957,16 +1957,24 @@
                         "gas": 0,
                         "value": 0
                     },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x00",
+                            "balance": "0x3635c9adc5dea00000",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    },
                     "expectException": "TransactionException.INTRINSIC_GAS_TOO_LOW"
                 }
             ]
         },
         "_info": {
-            "hash": "0xedfbae4b9d562a82ffeb3a2271e424cbe0d0f4d68185127902f80b1c3c88f488",
+            "hash": "0xa0edae6dbece183938a9f874248eeb7f46ad0a61c726c7a4824fb01a2556fb33",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -3930,16 +3938,24 @@
                         "gas": 0,
                         "value": 0
                     },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x00",
+                            "balance": "0x3635c9adc5dea00000",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    },
                     "expectException": "TransactionException.INTRINSIC_GAS_TOO_LOW"
                 }
             ]
         },
         "_info": {
-            "hash": "0x2c36ce0f0c20d153b072033c61ec3badd31b578ee3a146bf0266e54a0ae558df",
+            "hash": "0x1463feab0cd2c85a2d8dc0f68de0cc54e0a4feb95ce5c5845ebd37c363ab9071",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -5903,16 +5919,24 @@
                         "gas": 0,
                         "value": 0
                     },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x00",
+                            "balance": "0x3635c9adc5dea00000",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    },
                     "expectException": "TransactionException.INTRINSIC_GAS_TOO_LOW"
                 }
             ]
         },
         "_info": {
-            "hash": "0x9f8a6943676fda75dc62d17e662fe82232873559a1ac48548c7c440a76b2c205",
+            "hash": "0x751360f5826c8baa626dae925a02740f08005a0d25fa72711ce9a1eb8fe950d1",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -7876,16 +7900,24 @@
                         "gas": 0,
                         "value": 0
                     },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x00",
+                            "balance": "0x3635c9adc5dea00000",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    },
                     "expectException": "TransactionException.INTRINSIC_GAS_TOO_LOW"
                 }
             ]
         },
         "_info": {
-            "hash": "0x99e1f32a4c7f46dcf5944d600032a4387370ef72645d103238802439780aa8e4",
+            "hash": "0x18b07aa5e0994aa22eb9972d0460afde61d0be2089d1ca3cc764ae1f40242724",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -9849,16 +9881,24 @@
                         "gas": 0,
                         "value": 0
                     },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x00",
+                            "balance": "0x3635c9adc5dea00000",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    },
                     "expectException": "TransactionException.INTRINSIC_GAS_TOO_LOW"
                 }
             ]
         },
         "_info": {
-            "hash": "0xed48d08f457ddc7cb2f62aebd02a22a2044ec01dac728e4e5fbd4f60bdf5c4a8",
+            "hash": "0xe0d18bff62b4af40215d3cd50e577ccf72dea0139fa46d82ff6520edc7fc0d7d",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -11822,16 +11862,24 @@
                         "gas": 0,
                         "value": 0
                     },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x00",
+                            "balance": "0x3635c9adc5dea00000",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    },
                     "expectException": "TransactionException.INTRINSIC_GAS_TOO_LOW"
                 }
             ]
         },
         "_info": {
-            "hash": "0x5f5f199ec9cc9d4c09c2c7af3be43f36ea4402450107f01101d833438b590cb7",
+            "hash": "0xcd6cbea3acee7f3050a03f223aa4fca123a913f133ae6a46b8edafc2a5f2c09c",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -13795,16 +13843,24 @@
                         "gas": 0,
                         "value": 0
                     },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x00",
+                            "balance": "0x3635c9adc5dea00000",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    },
                     "expectException": "TransactionException.INTRINSIC_GAS_TOO_LOW"
                 }
             ]
         },
         "_info": {
-            "hash": "0x525b8cde049d8e20c616cf8630196f6b50c870282b89e49bf6a219b9b4c82128",
+            "hash": "0xeb79e809dd87416ba1c746ba7c7e3ee3701d7ebbc86c809129e3c4832ada231c",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -15768,16 +15824,24 @@
                         "gas": 0,
                         "value": 0
                     },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x00",
+                            "balance": "0x3635c9adc5dea00000",
+                            "code": "0x",
+                            "storage": {}
+                        }
+                    },
                     "expectException": "TransactionException.INTRINSIC_GAS_TOO_LOW"
                 }
             ]
         },
         "_info": {
-            "hash": "0xe8fdf27db42c09ffa04fa3526a24a5ced8c055040e8558ed0c197e3f829c6f5a",
+            "hash": "0xb0369e238bb64dc14a56c7f660d4ac68680887a5021b7a67b17786f61f7e7658",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -17740,16 +17804,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5ddcabeb8",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x3ff9fc",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0xd1be7ac9cbe8d91da7c9e773e6a926be349bc2cadfcdecd29b60967776065cd4",
+            "hash": "0x5e9d85d2f3a14f6acbbe2d0fd6151cbde7de6e0c61028720ae6de8be9dfe31e2",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -19712,16 +19790,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dd70c458",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x5af84c",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x2930218f0ba8cf8cb5af7c5579d7a5bac05f49ae0a0e2af1a0f488b1b0002811",
+            "hash": "0x777a2aeae30c312a496b19d7d3bd8ad2c2c5059717feba2f6bdbd2df20886359",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -21684,16 +21776,36 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dde93af0",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x36d4b8",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x7b30e6113501c35df755d8249ee787751e4f77b166011123436646368b290700",
+            "hash": "0xd17d4d3206dfa3be1541d2cd87651aadd1706590ab5e9377b581a1b01ffa7274",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -23656,16 +23768,36 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dde93ab4",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x36d4ca",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x65393c67d20b13679bc28c6b514e7b7bcbae231583b29fe4d55682649fc4b95b",
+            "hash": "0x37715b665f21c304ce8d24f3b6e7714e2135bad28390966c294b3b5ba77f9f15",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -25628,16 +25760,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dde931a4",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x36d782",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0xa46090e6e5d78f609bc8725fda28a7459b0b819c75b28f32e8cda95461162e27",
+            "hash": "0x4e837ca9353f90d9f310f0b2261f84c2bfc7dc9c6e269732a2c2847ebbf0d3ff",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -27600,16 +27746,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dde93168",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x36d794",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0xd60ce818c772e740f3b23148a62fee9f0ee4b6113d8ae610a2c0e1249011903b",
+            "hash": "0x0f16707d4bebccd9c9f4900b970249411159aeafc0a6157e7d8df0c314eca437",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -29572,16 +29732,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5ddcac3cc",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x3ff876",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0xab3a5d0f2515bd74469ccbee978e7905024d30ba381851c46e20c05647cdc9a1",
+            "hash": "0xfc26449952fb972d09f78c6830a7101fa41b34ef531090a822555564a7b30c5a",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -31544,16 +31718,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5ddcac390",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x3ff888",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x7ee1810c4367d6d04facb2f3b95bf04fac495ef90f0143fff1c8d5c77245737b",
+            "hash": "0x9432040c5b5de21485ee26f53eeef0900847aa8f05197245cf7f9e3ed8f11089",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -33516,16 +33704,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5ddcab602",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x3ffc99",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0xf8fe0a7976f14ae358a4013d87b08d89b024e847908a0c052b24c14025e5a7d7",
+            "hash": "0xf5f7205fdd5232d9dc90981eeafef7a2a68b25939b6932d3939f9d47bbabdf41",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -35488,16 +35690,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dd70bba2",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x5afae9",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x7f37fbb8623aaaaf5b885047fba227fb74a56e7189c1e591f598291af84d7eae",
+            "hash": "0x7972f53e2347778834d90d963fe597530c767a731ddb17cd70e684d744fa25a3",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -37460,16 +37676,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dde928ee",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x36da1f",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x6d543a65f79f4b0587f53d21f046a6f16d2c774f059d379e9d71c3503b938c6a",
+            "hash": "0x5e978b5d2ae412b804bf5b2e716b4c1ca6da36af87d0dfadceee8f0acbccebcf",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -39432,16 +39662,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dde928b2",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x36da31",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x5eb7c3fb8d885adc8ab5062e4a067cac3019d1fcdcedf95271fea802a07cd834",
+            "hash": "0x6ff0cd2ae0ae7e05e2c1e9882127fec3eccefb3957a597ac46e898ca8c6fb322",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -41404,16 +41648,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5ddcabb16",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x3ffb13",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x3c484d4395fafee02794d201e53eb0d74b109254108c2dbb52b170759e8f6c04",
+            "hash": "0x16b6738fe8a9fe4fa655a2a63d1477bafce083a317f429fe1044b6356a19bc06",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -43376,16 +43634,30 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5ddcabada",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x3ffb25",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x00b065337ad07180788e6668cbada01e0c3438529a125eadb96f6775a36dd47e",
+            "hash": "0xe2f86d3d39c9e84872295e4295f37c31d9de4e18be508c7f9f5ddc7b9060debc",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -45348,16 +45620,36 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5ddcab5f8",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x00",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x3ffc9c",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x0ef2e8a191612c4f7c7334b4764d90c15abc0b17368ff7efa124caef867fc086",
+            "hash": "0xde40901a416477b5f4f53586804222233687bfa59d1c7d1174b9dfa3537734aa",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -47320,16 +47612,36 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dd70bb98",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x00",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x5afaec",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0xa1883fb895e14de6007e6a2c3d7048310d9334cbf3a3701b03b65e6b009130ad",
+            "hash": "0x44d822bf1a974faf0344e1ba32126913e22699b2376c63a8b9a2eaa10b4e0729",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -49292,16 +49604,36 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dde93af0",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x36d4b8",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x7b30e6113501c35df755d8249ee787751e4f77b166011123436646368b290700",
+            "hash": "0xd17d4d3206dfa3be1541d2cd87651aadd1706590ab5e9377b581a1b01ffa7274",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -51264,16 +51596,36 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dde93ab4",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x36d4ca",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x65393c67d20b13679bc28c6b514e7b7bcbae231583b29fe4d55682649fc4b95b",
+            "hash": "0x37715b665f21c304ce8d24f3b6e7714e2135bad28390966c294b3b5ba77f9f15",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -53236,16 +53588,36 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dde928e4",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x00",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x36da22",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0xc86c25d059b207d050436760ab432dde8b4bd48241a608cc0e5cd0ac30e3e1a3",
+            "hash": "0xd1c38f60682b15290f8e3a36e86e4ecac0b8ea96204d1f0070664a2b1cfc6d4b",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -55208,16 +55580,36 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5dde928a8",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x00",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x36da34",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x5a2fd9d6b2fdcc6343314a131f0a610225777f2e057f22b4b5c868129b578184",
+            "hash": "0xf5a2850e0908b268a7f639bbc3bce83d7708fef4dd90d0104135c77e6511acac",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -57180,16 +57572,36 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5ddcabb0c",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x00",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x3ffb16",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0x42ed5495043a3f2b9cacab80e45d726a6d51a4a3bc45fbc28a91e9f173d75ff8",
+            "hash": "0x32ba030188157062ef61fef7ada5fd376937f8830cf811049579e4a1e1fbb763",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
@@ -59152,16 +59564,36 @@
                         "data": 0,
                         "gas": 0,
                         "value": 0
+                    },
+                    "state": {
+                        "0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b": {
+                            "nonce": "0x01",
+                            "balance": "0x3635c9adc5ddcabad0",
+                            "code": "0x",
+                            "storage": {}
+                        },
+                        "0x6295ee1b4f6dd65047762f924ecd367c17eabf8f": {
+                            "nonce": "0x01",
+                            "balance": "0x00",
+                            "code": "0x00",
+                            "storage": {}
+                        },
+                        "0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba": {
+                            "nonce": "0x00",
+                            "balance": "0x3ffb28",
+                            "code": "0x",
+                            "storage": {}
+                        }
                     }
                 }
             ]
         },
         "_info": {
-            "hash": "0xa9132eda21a8d52050fe6530f49a299243e55ff221c8dba085a642b608f45043",
+            "hash": "0xc1e48abe6fceb281e208f18bd4275172cde79296a4313f037730380b9abfe836",
             "comment": "`execution-spec-tests` generated test",
             "filling-transition-tool": "ethereum-spec-evm-resolver 0.0.1",
-            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction:\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
-            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.0.0/tests/shanghai/eip3860_initcode/test_initcode.py#L325",
+            "description": "Test class documentation:\n\n    Tests the following cases that verify the gas cost behavior of a\n    contract creating transaction.\n\n    1. Test with exact intrinsic gas minus one, contract create fails\n        and tx is invalid.\n    2. Test with exact intrinsic gas, contract create fails,\n        but tx is valid.\n    3. Test with exact execution gas minus one, contract create fails,\n        but tx is valid.\n    4. Test with exact execution gas, contract create succeeds.\n\n    Initcode must be within a valid EIP-3860 length.\n    \n\nTest function documentation:\n\n        Test transaction and contract creation behavior for different gas\n        limits.",
+            "url": "https://github.com/ethereum/execution-spec-tests/blob/pectra-devnet-5@v1.2.0/tests/shanghai/eip3860_initcode/test_initcode.py#L324",
             "fixture_format": "state_test",
             "reference-spec": "https://github.com/ethereum/EIPs/blob/master/EIPS/eip-3860.md",
             "reference-spec-version": "5f8151e19ad1c99da4bafd514ce0e8ab89783c8f"
