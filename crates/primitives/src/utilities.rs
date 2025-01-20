@@ -1,7 +1,10 @@
 use crate::{
     b256, B256, BLOB_GASPRICE_UPDATE_FRACTION, MIN_BLOB_GASPRICE, TARGET_BLOB_GAS_PER_BLOCK,
 };
+#[cfg(not(feature = "openvm"))]
 pub use alloy_primitives::{keccak256, Keccak256};
+#[cfg(feature = "openvm")]
+pub use openvm_keccak::*;
 
 /// The Keccak-256 hash of the empty string `""`.
 pub const KECCAK_EMPTY: B256 =
@@ -10,6 +13,99 @@ pub const KECCAK_EMPTY: B256 =
 #[cfg(feature = "scroll-poseidon-codehash")]
 pub const POSEIDON_EMPTY: B256 =
     b256!("2098f5fb9e239eab3ceac3f27b81e481dc3124d55ffed523a839ee8446b64864");
+
+#[cfg(feature = "openvm")]
+mod openvm_keccak {
+    use alloy_primitives::B256;
+    use core::fmt;
+    use core::mem::MaybeUninit;
+
+    /// Simple interface to the [`Keccak-256`] hash function.
+    ///
+    /// [`Keccak-256`]: https://en.wikipedia.org/wiki/SHA-3
+    pub fn keccak256<T: AsRef<[u8]>>(bytes: T) -> B256 {
+        openvm_keccak256_guest::keccak256(bytes.as_ref()).into()
+    }
+
+    /// Simple [`Keccak-256`] hasher.
+    ///
+    /// Note that the "native-keccak" feature is not supported for this struct, and will default to the
+    /// [`tiny_keccak`] implementation.
+    ///
+    /// [`Keccak-256`]: https://en.wikipedia.org/wiki/SHA-3
+    #[derive(Clone)]
+    pub struct Keccak256 {
+        buffer: Vec<u8>,
+    }
+
+    impl Default for Keccak256 {
+        #[inline]
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
+    impl fmt::Debug for Keccak256 {
+        #[inline]
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            f.debug_struct("Keccak256").finish_non_exhaustive()
+        }
+    }
+
+    impl Keccak256 {
+        /// Creates a new [`Keccak256`] hasher.
+        #[inline]
+        pub fn new() -> Self {
+            Self {
+                buffer: Vec::with_capacity(64),
+            }
+        }
+
+        /// Absorbs additional input. Can be called multiple times.
+        #[inline]
+        pub fn update(&mut self, bytes: impl AsRef<[u8]>) {
+            self.buffer.extend_from_slice(bytes.as_ref());
+        }
+
+        /// Pad and squeeze the state.
+        #[inline]
+        pub fn finalize(self) -> B256 {
+            let mut output = MaybeUninit::<B256>::uninit();
+            // SAFETY: The output is 32-bytes.
+            unsafe { self.finalize_into_raw(output.as_mut_ptr().cast()) };
+            // SAFETY: Initialized above.
+            unsafe { output.assume_init() }
+        }
+
+        /// Pad and squeeze the state into `output`.
+        ///
+        /// # Panics
+        ///
+        /// Panics if `output` is not 32 bytes long.
+        #[inline]
+        #[track_caller]
+        pub fn finalize_into(self, output: &mut [u8]) {
+            self.finalize_into_array(output.try_into().unwrap())
+        }
+
+        /// Pad and squeeze the state into `output`.
+        #[inline]
+        #[allow(clippy::useless_conversion)]
+        pub fn finalize_into_array(self, output: &mut [u8; 32]) {
+            openvm_keccak256_guest::set_keccak256(&self.buffer, output);
+        }
+
+        /// Pad and squeeze the state into `output`.
+        ///
+        /// # Safety
+        ///
+        /// `output` must point to a buffer that is at least 32-bytes long.
+        #[inline]
+        pub unsafe fn finalize_into_raw(self, output: *mut u8) {
+            self.finalize_into_array(&mut *output.cast::<[u8; 32]>())
+        }
+    }
+}
 
 /// Poseidon code hash
 #[cfg(feature = "scroll-poseidon-codehash")]

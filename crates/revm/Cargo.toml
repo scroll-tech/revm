@@ -66,7 +66,7 @@ rstest = "0.22.0"
 alloy-provider = "0.5.3"
 
 [features]
-default = ["std", "c-kzg", "secp256k1", "portable", "blst"]
+default = ["std", "c-kzg", "portable", "blst"]
 std = [
     "serde?/std",
     "serde_json?/std",
@@ -111,6 +111,8 @@ scroll-poseidon-codehash = [
     "scroll",
     "revm-interpreter/scroll-poseidon-codehash",
 ]
+
+openvm = ["revm-precompile/openvm"]
 
 ethersdb = ["std", "dep:tokio", "dep:ethers-providers", "dep:ethers-core"]
 

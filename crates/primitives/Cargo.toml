@@ -59,6 +59,9 @@ serde = { version = "1.0", default-features = false, features = [
 # scroll
 poseidon-bn254 = { git = "https://github.com/scroll-tech/poseidon-bn254", branch = "master", features = ["bn254"], optional = true }
 
+# Optionally use openvm intrinsics
+openvm-keccak256-guest = { workspace = true, optional = true }
+
 [build-dependencies]
 hex = { version = "0.4", default-features = false }
 
@@ -104,6 +107,8 @@ scroll = []
 scroll-default-handler = ["scroll"]
 negate-scroll-default-handler = []
 scroll-poseidon-codehash = ["scroll", "poseidon-bn254"]
+
+openvm = ["dep:openvm-keccak256-guest"]
 
 dev = [
     "memory_limit",

@@ -3699,7 +3699,6 @@ dependencies = [
  "k256",
  "kzg-rs",
  "once_cell",
- "openvm",
  "openvm-ecc-guest",
  "openvm-keccak256-guest",
  "openvm-pairing-guest",
@@ -3733,6 +3732,7 @@ dependencies = [
  "enumn",
  "hex",
  "kzg-rs",
+ "openvm-keccak256-guest",
  "poseidon-bn254",
  "serde",
 ]
