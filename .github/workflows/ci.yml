@@ -29,6 +29,9 @@ jobs:
           "--features=\"scroll, scroll-poseidon-codehash\"",
           "--features=\"all, scroll\"",
           "--features=\"all, scroll, scroll-poseidon-codehash\"",
+          "--features=\"openvm\"",
+          "--features=\"openvm, scroll\"",
+          "--features=\"all, openvm\"",
           "--features=\"optimism\"",
           "--features=\"all, optimism\""
         ]
