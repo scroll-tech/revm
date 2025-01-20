@@ -65,7 +65,6 @@ p256 = { version = "0.13.2", optional = true, default-features = false, features
 cfg-if = { version = "1.0", default-features = false }
 
 # Optionally use openvm intrinsics
-openvm = { workspace = true, optional = true }
 openvm-ecc-guest = { workspace = true, optional = true }
 openvm-keccak256-guest = { workspace = true, optional = true }
 openvm-sha256-guest = { workspace = true, optional = true }
@@ -115,7 +114,6 @@ negate-scroll-default-handler = [
 ]
 
 openvm = [
-    "dep:openvm",
     "dep:openvm-ecc-guest",
     "dep:openvm-keccak256-guest",
     "dep:openvm-sha256-guest",

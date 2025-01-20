@@ -18,6 +18,8 @@ mod secp256k1 {
     use openvm_ecc_guest::{algebra::IntMod, ecdsa::VerifyingKey, weierstrass::WeierstrassPoint};
     use openvm_keccak256_guest::keccak256;
     use revm_primitives::{alloy_primitives::B512, B256};
+    #[cfg(feature = "secp256k1")]
+    use secp256k1 as _;
 
     pub fn ecrecover(sig: &B512, mut recid: u8, msg: &B256) -> Result<B256, Error> {
         // parse signature

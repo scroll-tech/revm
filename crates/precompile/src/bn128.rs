@@ -8,6 +8,7 @@ use revm_primitives::PrecompileOutput;
 use std::vec::Vec;
 #[cfg(feature = "openvm")]
 use {
+    bn as _,
     openvm_ecc_guest::{
         weierstrass::{IntrinsicCurve, WeierstrassPoint},
         AffinePoint,
