@@ -112,6 +112,8 @@ scroll-poseidon-codehash = [
     "revm-interpreter/scroll-poseidon-codehash",
 ]
 
+openvm = ["revm-precompile/openvm"]
+
 ethersdb = ["std", "dep:tokio", "dep:ethers-providers", "dep:ethers-core"]
 
 alloydb = [

@@ -8,7 +8,7 @@ pub const ECRECOVER: PrecompileWithAddress = PrecompileWithAddress(
 
 pub use self::secp256k1::ecrecover;
 
-#[cfg(all(target_os = "zkvm", not(target_vendor = "succinct")))]
+#[cfg(feature = "openvm")]
 #[allow(clippy::module_inception)]
 mod secp256k1 {
     use k256::{
@@ -46,10 +46,7 @@ mod secp256k1 {
     }
 }
 
-#[cfg(any(
-    all(not(feature = "secp256k1"), not(target_os = "zkvm")),
-    all(target_os = "zkvm", target_vendor = "succinct")
-))]
+#[cfg(not(any(feature = "secp256k1", feature = "openvm")))]
 #[allow(clippy::module_inception)]
 mod secp256k1 {
     use k256::ecdsa::{Error, RecoveryId, Signature, VerifyingKey};
@@ -81,7 +78,7 @@ mod secp256k1 {
     }
 }
 
-#[cfg(all(feature = "secp256k1", not(target_os = "zkvm")))]
+#[cfg(all(feature = "secp256k1", not(feature = "openvm")))]
 #[allow(clippy::module_inception)]
 mod secp256k1 {
     use revm_primitives::{alloy_primitives::B512, keccak256, B256};
