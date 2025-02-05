@@ -16,23 +16,23 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [workspace.dependencies]
 # openvm
-openvm = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-ecc-guest = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-pairing-guest = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-keccak256-guest = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-sha256-guest = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-sdk = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-build = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-pairing-transpiler = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-rv32im-transpiler = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-transpiler = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-algebra-circuit = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-algebra-transpiler = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-ecc-circuit = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-ecc-transpiler = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-pairing-circuit = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-circuit = { git = "https://github.com/openvm-org/openvm.git", branch = "main" }
-openvm-stark-sdk = { git = "https://github.com/openvm-org/stark-backend.git", branch = "main" }
+openvm = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-ecc-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-pairing-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-keccak256-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-sha256-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-sdk = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-build = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-pairing-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-rv32im-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-algebra-circuit = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-algebra-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-ecc-circuit = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-ecc-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-pairing-circuit = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-circuit = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.0" }
+openvm-stark-sdk = { git = "https://github.com/openvm-org/stark-backend.git", tag = "v1.0.0-rc.0" }
 
 [profile.release]
 lto = true
