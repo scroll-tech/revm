@@ -51,6 +51,12 @@ impl<'a, EXT, DB: Database> EvmHandler<'a, EXT, DB> {
                 } else {
                     Handler::mainnet_with_spec(cfg.spec_id)
                 }
+            } else if #[cfg(feature = "scroll")] {
+                if cfg.is_scroll {
+                    Handler::scroll_with_spec(cfg.spec_id)
+                } else {
+                    Handler::mainnet_with_spec(cfg.spec_id)
+                }
             } else {
                 Handler::mainnet_with_spec(cfg.spec_id)
             }
@@ -86,10 +92,27 @@ impl<'a, EXT, DB: Database> EvmHandler<'a, EXT, DB> {
         handler
     }
 
+    /// Handler for scroll
+    #[cfg(feature = "scroll")]
+    pub fn scroll<SPEC: Spec + 'static>() -> Self {
+        let mut handler = Self::mainnet::<SPEC>();
+        handler.cfg.is_scroll = true;
+        handler.append_handler_register(HandleRegisters::Plain(
+            crate::scroll::scroll_handle_register::<DB, EXT>,
+        ));
+        handler
+    }
+
     /// Optimism with spec. Similar to [`Self::mainnet_with_spec`].
     #[cfg(feature = "optimism")]
     pub fn optimism_with_spec(spec_id: SpecId) -> Self {
         spec_to_generic!(spec_id, Self::optimism::<SPEC>())
+    }
+
+    /// Scroll with spec. Similar to [`Self::mainnet_with_spec`]
+    #[cfg(feature = "scroll")]
+    pub fn scroll_with_spec(spec_id: SpecId) -> Self {
+        spec_to_generic!(spec_id, Self::scroll::<SPEC>())
     }
 
     /// Creates handler with variable spec id, inside it will call `mainnet::<SPEC>` for

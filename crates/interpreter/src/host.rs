@@ -12,6 +12,27 @@ pub trait Host {
     /// Returns a mutable reference to the environment.
     fn env_mut(&mut self) -> &mut Env;
 
+    #[cfg(feature = "scroll")]
+    /// Check an address is in the access list.
+    fn is_address_in_access_list(&self, address: Address) -> bool {
+        self.env()
+            .tx
+            .access_list
+            .iter()
+            .any(|item| item.address == address)
+    }
+
+    #[cfg(feature = "scroll")]
+    /// Check a storage key is in the access list.
+    fn is_storage_key_in_access_list(&self, address: Address, index: U256) -> bool {
+        self.env()
+            .tx
+            .access_list
+            .iter()
+            .filter(|item| item.address == address)
+            .any(|item| item.storage_keys.contains(&B256::from(index)))
+    }
+
     /// Load an account code.
     fn load_account_delegated(&mut self, address: Address) -> Option<AccountLoad>;
 
@@ -26,6 +47,10 @@ pub trait Host {
 
     /// Get code hash of `address` and if the account is cold.
     fn code_hash(&mut self, address: Address) -> Option<StateLoad<B256>>;
+
+    #[cfg(feature = "scroll")]
+    /// Get code size of `address` and if the account is cold.
+    fn code_size(&mut self, address: Address) -> Option<StateLoad<usize>>;
 
     /// Get storage value of `address` at `index` and if the account is cold.
     fn sload(&mut self, address: Address, index: U256) -> Option<StateLoad<U256>>;

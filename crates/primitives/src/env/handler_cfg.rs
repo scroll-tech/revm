@@ -12,6 +12,9 @@ pub struct HandlerCfg {
     /// Optimism related field, it will append the Optimism handle register to the EVM.
     #[cfg(feature = "optimism")]
     pub is_optimism: bool,
+    /// Scroll related field, it will append the Scroll handle register to the EVM.
+    #[cfg(feature = "scroll")]
+    pub is_scroll: bool,
 }
 
 impl Default for HandlerCfg {
@@ -31,10 +34,20 @@ impl HandlerCfg {
                 let is_optimism = false;
             }
         }
+        cfg_if::cfg_if! {
+            if #[cfg(all(feature = "scroll-default-handler",
+                not(feature = "negate-scroll-default-handler")))] {
+                    let is_scroll = true;
+            } else if #[cfg(feature = "scroll")] {
+                let is_scroll = false;
+            }
+        }
         Self {
             spec_id,
             #[cfg(feature = "optimism")]
             is_optimism,
+            #[cfg(feature = "scroll")]
+            is_scroll,
         }
     }
 
@@ -52,6 +65,23 @@ impl HandlerCfg {
         cfg_if::cfg_if! {
             if #[cfg(feature = "optimism")] {
                 self.is_optimism
+            } else {
+                false
+            }
+        }
+    }
+
+    /// Creates new `HandlerCfg` instance with the scroll feature.
+    #[cfg(feature = "scroll")]
+    pub fn new_with_scroll(spec_id: SpecId, is_scroll: bool) -> Self {
+        Self { spec_id, is_scroll }
+    }
+
+    /// Returns true if the scroll feature is enabled and flag is set to true.
+    pub fn is_scroll(&self) -> bool {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "scroll")] {
+                self.is_scroll
             } else {
                 false
             }
@@ -80,6 +110,8 @@ impl CfgEnvWithHandlerCfg {
     /// Returns new `CfgEnvWithHandlerCfg` instance with the chain spec id.
     ///
     /// is_optimism will be set to default value depending on `optimism-default-handler` feature.
+    ///
+    /// is_scroll will be set to default value depending on `scroll-default-handler` feature.
     pub fn new_with_spec_id(cfg_env: CfgEnv, spec_id: SpecId) -> Self {
         Self::new(cfg_env, HandlerCfg::new(spec_id))
     }
@@ -121,6 +153,8 @@ impl EnvWithHandlerCfg {
     }
 
     /// Returns new `EnvWithHandlerCfg` instance with the chain spec id.
+    ///
+    /// is_scroll will be set to default value depending on `scroll-default-handler` feature.
     ///
     /// is_optimism will be set to default value depending on `optimism-default-handler` feature.
     pub fn new_with_spec_id(env: Box<Env>, spec_id: SpecId) -> Self {

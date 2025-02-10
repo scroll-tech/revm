@@ -623,6 +623,11 @@ pub struct TxEnv {
     #[cfg(feature = "optimism")]
     /// Optimism fields.
     pub optimism: OptimismFields,
+
+    #[cfg_attr(feature = "serde", serde(flatten))]
+    #[cfg(feature = "scroll")]
+    /// Scroll fields
+    pub scroll: ScrollFields,
 }
 
 pub enum TxType {
@@ -666,6 +671,8 @@ impl Default for TxEnv {
             authorization_list: None,
             #[cfg(feature = "optimism")]
             optimism: OptimismFields::default(),
+            #[cfg(feature = "scroll")]
+            scroll: ScrollFields::default(),
         }
     }
 }
@@ -747,6 +754,17 @@ pub struct OptimismFields {
     /// for non-optimism chains when the `optimism` feature is enabled,
     /// but the [CfgEnv] `optimism` field is set to false.
     pub enveloped_tx: Option<Bytes>,
+}
+
+/// Additional [TxEnv] fields for scroll.
+#[cfg(feature = "scroll")]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct ScrollFields {
+    pub is_l1_msg: bool,
+    /// The RLP-encoded bytes of the transaction. This is used
+    /// to compute the L1 tx cost using the L1 block info.
+    pub rlp_bytes: Option<Bytes>,
 }
 
 /// Transaction destination

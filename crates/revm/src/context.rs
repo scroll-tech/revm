@@ -152,6 +152,14 @@ impl<EXT, DB: Database> Host for Context<EXT, DB> {
             .ok()
     }
 
+    #[cfg(feature = "scroll")]
+    fn code_size(&mut self, address: Address) -> Option<StateLoad<usize>> {
+        self.evm
+            .code_size(address)
+            .map_err(|e| self.evm.error = Err(e))
+            .ok()
+    }
+
     fn code_hash(&mut self, address: Address) -> Option<StateLoad<B256>> {
         self.evm
             .code_hash(address)
