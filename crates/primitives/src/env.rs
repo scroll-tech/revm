@@ -94,8 +94,16 @@ impl Env {
     pub fn validate_tx<SPEC: Spec>(&self) -> Result<(), InvalidTransaction> {
         // Check if the transaction's chain id is correct
         if let Some(tx_chain_id) = self.tx.chain_id {
-            if tx_chain_id != self.cfg.chain_id {
-                return Err(InvalidTransaction::InvalidChainId);
+            cfg_if::cfg_if! {
+                if #[cfg(not(feature = "scroll"))] {
+                    if tx_chain_id != self.cfg.chain_id {
+                        return Err(InvalidTransaction::InvalidChainId);
+                    }
+                } else {
+                    if !self.tx.scroll.is_l1_msg && tx_chain_id != self.cfg.chain_id {
+                        return Err(InvalidTransaction::InvalidChainId);
+                    }
+                }
             }
         }
 
