@@ -480,7 +480,7 @@ pub(crate) mod test_utils {
     use crate::{
         db::{CacheDB, EmptyDB},
         journaled_state::JournaledState,
-        primitives::{address, HashSet, SpecId, B256},
+        primitives::{address, HashSet, SpecId},
     };
 
     /// Mock caller address.

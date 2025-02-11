@@ -257,7 +257,6 @@ pub fn execute_test_suite(
         // Create database and insert cache
         let mut cache_state = revm::CacheState::new(false);
         for (address, info) in unit.pre {
-            let code_hash = keccak256(&info.code);
             #[cfg(feature = "scroll")]
             let code_size = info.code.len();
             let keccak_code_hash = keccak256(&info.code);
