@@ -22,6 +22,8 @@ mod inspector;
 mod journaled_state;
 #[cfg(feature = "optimism")]
 pub mod optimism;
+#[cfg(feature = "scroll")]
+pub mod scroll;
 
 // Export items.
 

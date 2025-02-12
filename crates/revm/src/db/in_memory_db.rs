@@ -66,6 +66,18 @@ impl<ExtDB> CacheDB<ExtDB> {
                 if account.code_hash == KECCAK_EMPTY {
                     account.code_hash = code.hash_slow();
                 }
+                #[cfg(feature = "scroll")]
+                {
+                    account.code_size = code.len();
+                    #[cfg(feature = "scroll-poseidon-codehash")]
+                    {
+                        if account.poseidon_code_hash == crate::primitives::POSEIDON_EMPTY
+                            || account.poseidon_code_hash == B256::ZERO
+                        {
+                            account.poseidon_code_hash = code.poseidon_hash_slow();
+                        }
+                    }
+                }
                 self.contracts
                     .entry(account.code_hash)
                     .or_insert_with(|| code.clone());
@@ -363,6 +375,8 @@ impl AccountState {
 pub struct BenchmarkDB {
     pub bytecode: Bytecode,
     pub hash: B256,
+    #[cfg(feature = "scroll-poseidon-codehash")]
+    pub poseidon_hash: B256,
     pub target: Address,
     pub caller: Address,
 }
@@ -371,9 +385,13 @@ impl BenchmarkDB {
     /// Create a new benchmark database with the given bytecode.
     pub fn new_bytecode(bytecode: Bytecode) -> Self {
         let hash = bytecode.hash_slow();
+        #[cfg(feature = "scroll-poseidon-codehash")]
+        let poseidon_hash = bytecode.poseidon_hash_slow();
         Self {
             bytecode,
             hash,
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            poseidon_hash,
             target: Address::ZERO,
             caller: Address::with_last_byte(1),
         }
@@ -397,17 +415,19 @@ impl Database for BenchmarkDB {
         if address == self.target {
             return Ok(Some(AccountInfo {
                 nonce: 1,
+                #[cfg(feature = "scroll")]
+                code_size: self.bytecode.len(),
                 balance: U256::from(10000000),
                 code: Some(self.bytecode.clone()),
                 code_hash: self.hash,
+                #[cfg(feature = "scroll-poseidon-codehash")]
+                poseidon_code_hash: self.poseidon_hash,
             }));
         }
         if address == self.caller {
             return Ok(Some(AccountInfo {
-                nonce: 0,
                 balance: U256::from(10000000),
-                code: None,
-                code_hash: KECCAK_EMPTY,
+                ..Default::default()
             }));
         }
         Ok(None)

@@ -60,6 +60,20 @@ negate-optimism-default-handler = [
     "revm-primitives/negate-optimism-default-handler",
 ]
 
+scroll = ["revm-primitives/scroll"]
+# Scroll default handler enabled Scroll handler register by default in EvmBuilder.
+scroll-default-handler = [
+    "scroll",
+    "revm-primitives/scroll-default-handler",
+]
+negate-scroll-default-handler = [
+    "revm-primitives/negate-scroll-default-handler",
+]
+scroll-poseidon-codehash = [
+    "scroll",
+    "revm-primitives/scroll-poseidon-codehash",
+]
+
 dev = [
     "memory_limit",
     "optional_balance_check",
@@ -78,3 +92,14 @@ optional_no_base_fee = ["revm-primitives/optional_no_base_fee"]
 optional_beneficiary_reward = ["revm-primitives/optional_beneficiary_reward"]
 
 kzg-rs = ["revm-primitives/kzg-rs"]
+
+all = [
+    "std",
+    "serde",
+    "arbitrary",
+    "asm-keccak",
+    "portable",
+    "parse",
+    "dev",
+    "kzg-rs",
+]

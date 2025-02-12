@@ -14,6 +14,14 @@ default-members = ["crates/revm"]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
+[workspace.dependencies]
+# openvm
+openvm = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.1" }
+openvm-ecc-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.1" }
+openvm-pairing-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.1" }
+openvm-keccak256-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.1" }
+openvm-sha256-guest = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.0.0-rc.1" }
+
 [profile.release]
 lto = true
 codegen-units = 1
@@ -22,3 +30,14 @@ debug = true
 [profile.ethtests]
 inherits = "test"
 opt-level = 3
+
+[patch.crates-io]
+ff = { git = "https://github.com/scroll-tech/ff", branch = "feat/sp1" }
+
+alloy-eips = { git = "https://github.com/scroll-tech/alloy.git", branch = "v0.7.3" }
+
+alloy-eip2930 = { git = "https://github.com/scroll-tech/alloy-eips", branch = "v0.4.2" }
+alloy-eip7702 = { git = "https://github.com/scroll-tech/alloy-eips", branch = "v0.4.2" }
+
+alloy-primitives = { git = "https://github.com/scroll-tech/alloy-core", branch = "v0.8.18" }
+alloy-sol-types = { git = "https://github.com/scroll-tech/alloy-core", branch = "v0.8.18" }

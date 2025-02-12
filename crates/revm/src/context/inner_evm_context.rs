@@ -30,6 +30,9 @@ pub struct InnerEvmContext<DB: Database> {
     /// Used as temporary value holder to store L1 block info.
     #[cfg(feature = "optimism")]
     pub l1_block_info: Option<crate::optimism::L1BlockInfo>,
+    /// Used as temporary value holder to store L1 block info.
+    #[cfg(feature = "scroll")]
+    pub l1_block_info: Option<crate::scroll::L1BlockInfo>,
 }
 
 impl<DB: Database + Clone> Clone for InnerEvmContext<DB>
@@ -42,7 +45,7 @@ where
             journaled_state: self.journaled_state.clone(),
             db: self.db.clone(),
             error: self.error.clone(),
-            #[cfg(feature = "optimism")]
+            #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: self.l1_block_info.clone(),
         }
     }
@@ -55,7 +58,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: JournaledState::new(SpecId::LATEST, HashSet::default()),
             db,
             error: Ok(()),
-            #[cfg(feature = "optimism")]
+            #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: None,
         }
     }
@@ -68,7 +71,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: JournaledState::new(SpecId::LATEST, HashSet::default()),
             db,
             error: Ok(()),
-            #[cfg(feature = "optimism")]
+            #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: None,
         }
     }
@@ -83,7 +86,7 @@ impl<DB: Database> InnerEvmContext<DB> {
             journaled_state: self.journaled_state,
             db,
             error: Ok(()),
-            #[cfg(feature = "optimism")]
+            #[cfg(any(feature = "optimism", feature = "scroll"))]
             l1_block_info: self.l1_block_info,
         }
     }
@@ -104,11 +107,33 @@ impl<DB: Database> InnerEvmContext<DB> {
             storage_keys,
         } in self.env.tx.access_list.iter()
         {
-            self.journaled_state.initial_account_load(
+            let result = self.journaled_state.initial_account_load(
                 *address,
                 storage_keys.iter().map(|i| U256::from_be_bytes(i.0)),
                 &mut self.db,
-            )?;
+            );
+            cfg_if::cfg_if! {
+                if #[cfg(feature = "scroll")] {
+                    // In scroll, we don't include the access list accounts/storages in the partial
+                    // merkle trie proofs if it was not actually accessed in the transaction.
+                    // The load will fail in that case, we just ignore the error.
+                    // This is not a problem as the accounts/storages was never accessed.
+                    match result {
+                         // the concrete error in scroll is
+                         // https://github.com/scroll-tech/stateless-block-verifier/blob/851f5141ded76ddba7594814b9761df1dc469a12/crates/core/src/error.rs#L4-L13
+                         // We cannot check it since `Database::Error` is an opaque type
+                         // without any trait bounds (like `Debug` or `Display`).
+                         // only thing we can do is to check the type name.
+                         Err(EVMError::Database(e))
+                             if core::any::type_name_of_val(&e) == "sbv_core::error::DatabaseError" => {}
+                         _ => {
+                             result?;
+                         }
+                    }
+                } else {
+                    result?;
+                }
+            }
         }
         Ok(())
     }
@@ -189,16 +214,33 @@ impl<DB: Database> InnerEvmContext<DB> {
         Ok(StateLoad::new(code, a.is_cold))
     }
 
+    #[inline]
+    #[cfg(feature = "scroll")]
+    pub fn code_size(&mut self, address: Address) -> Result<StateLoad<usize>, EVMError<DB::Error>> {
+        self.journaled_state
+            .load_account(address, &mut self.db)
+            .map(|acc| StateLoad::new(acc.info.code_size, acc.is_cold))
+    }
+
     /// Get code hash of address.
     ///
     /// In case of EOF account it will return `EOF_MAGIC_HASH`
     /// (the hash of `0xEF00`).
     #[inline]
+    #[cfg_attr(feature = "scroll", allow(unreachable_code))]
     pub fn code_hash(&mut self, address: Address) -> Result<StateLoad<B256>, EVMError<DB::Error>> {
+        #[cfg(not(feature = "scroll"))]
         let acc = self.journaled_state.load_code(address, &mut self.db)?;
+        // Scroll does not support EOF yet, code won't be loaded if only EXTCODEHASH is called.
+        #[cfg(feature = "scroll")]
+        let acc = self.journaled_state.load_account(address, &mut self.db)?;
         if acc.is_empty() {
             return Ok(StateLoad::new(B256::ZERO, acc.is_cold));
         }
+
+        #[cfg(feature = "scroll")]
+        return Ok(StateLoad::new(acc.info.code_hash, acc.is_cold));
+
         // SAFETY: safe to unwrap as load_code will insert code if it is empty.
         let code = acc.info.code.as_ref().unwrap();
 

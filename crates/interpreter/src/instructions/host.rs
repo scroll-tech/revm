@@ -13,6 +13,10 @@ pub fn balance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if balance.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        panic!("access list account should be either loaded or never accessed");
+    }
     gas!(
         interpreter,
         if SPEC::enabled(BERLIN) {
@@ -40,6 +44,7 @@ pub fn selfbalance<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     push!(interpreter, balance.data);
 }
 
+#[cfg(not(feature = "scroll"))]
 pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_address!(interpreter, address);
     let Some(code) = host.code(address) else {
@@ -57,6 +62,21 @@ pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
     push!(interpreter, U256::from(code.len()));
 }
 
+#[cfg(feature = "scroll")]
+pub fn extcodesize<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
+    pop_address!(interpreter, address);
+    let Some(code_size) = host.code_size(address) else {
+        interpreter.instruction_result = InstructionResult::FatalExternalError;
+        return;
+    };
+    if code_size.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        panic!("access list account should be either loaded or never accessed");
+    }
+    gas!(interpreter, warm_cold_cost(code_size.is_cold));
+
+    push!(interpreter, U256::from(*code_size));
+}
+
 /// EIP-1052: EXTCODEHASH opcode
 pub fn extcodehash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     check!(interpreter, CONSTANTINOPLE);
@@ -65,6 +85,10 @@ pub fn extcodehash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if code_hash.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        panic!("access list account should be either loaded or never accessed");
+    }
     if SPEC::enabled(BERLIN) {
         gas!(interpreter, warm_cold_cost(code_hash.is_cold))
     } else if SPEC::enabled(ISTANBUL) {
@@ -83,6 +107,10 @@ pub fn extcodecopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if code.is_cold && host.is_address_in_access_list(interpreter.contract.target_address) {
+        panic!("access list account should be either loaded or never accessed");
+    }
 
     let len = as_usize_or_fail!(interpreter, len_u256);
     gas_or_fail!(
@@ -102,6 +130,7 @@ pub fn extcodecopy<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, 
         .set_data(memory_offset, code_offset, len, &code);
 }
 
+#[cfg(not(feature = "scroll"))]
 pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     gas!(interpreter, gas::BLOCKHASH);
     pop_top!(interpreter, number);
@@ -114,12 +143,49 @@ pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
     *number = U256::from_be_bytes(hash.0);
 }
 
+#[cfg(feature = "scroll")]
+pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
+    use revm_primitives::BLOCK_HASH_HISTORY;
+
+    gas!(interpreter, gas::BLOCKHASH);
+    pop_top!(interpreter, number);
+
+    let block_number = host.env().block.number;
+
+    match block_number.checked_sub(*number) {
+        Some(diff) if !diff.is_zero() => {
+            let diff = as_u64_saturated!(diff);
+            let block_number = as_u64_or_fail!(interpreter, number);
+
+            if SPEC::enabled(PRE_BERNOULLI) && diff <= BLOCK_HASH_HISTORY {
+                let mut hasher = crate::primitives::Keccak256::new();
+                hasher.update(host.env().cfg.chain_id.to_be_bytes());
+                hasher.update(block_number.to_be_bytes());
+                *number = U256::from_be_bytes(*hasher.finalize());
+                return;
+            }
+        }
+        _ => {
+            // If blockhash is requested for the current block, the hash should be 0, so we fall
+            // through.
+        }
+    }
+
+    *number = U256::ZERO;
+}
+
 pub fn sload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_top!(interpreter, index);
     let Some(value) = host.sload(interpreter.contract.target_address, *index) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if value.is_cold
+        && host.is_storage_key_in_access_list(interpreter.contract.target_address, *index)
+    {
+        panic!("access list account should be either loaded or never accessed");
+    }
     gas!(interpreter, gas::sload_cost(SPEC::SPEC_ID, value.is_cold));
     *index = value.data;
 }
@@ -132,6 +198,13 @@ pub fn sstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
     };
+    #[cfg(feature = "scroll")]
+    if state_load.is_cold
+        && host.is_storage_key_in_access_list(interpreter.contract.target_address, index)
+    {
+        interpreter.instruction_result = InstructionResult::NotActivated;
+        return;
+    }
     gas_or_fail!(interpreter, {
         let remaining_gas = interpreter.gas.remaining();
         gas::sstore_cost(
@@ -150,6 +223,9 @@ pub fn sstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
 /// EIP-1153: Transient storage opcodes
 /// Store value to transient storage
 pub fn tstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
+    #[cfg(feature = "scroll")]
+    check!(interpreter, CURIE);
+    #[cfg(not(feature = "scroll"))]
     check!(interpreter, CANCUN);
     require_non_staticcall!(interpreter);
     gas!(interpreter, gas::WARM_STORAGE_READ_COST);
@@ -162,6 +238,9 @@ pub fn tstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
 /// EIP-1153: Transient storage opcodes
 /// Load value from transient storage
 pub fn tload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
+    #[cfg(feature = "scroll")]
+    check!(interpreter, CURIE);
+    #[cfg(not(feature = "scroll"))]
     check!(interpreter, CANCUN);
     gas!(interpreter, gas::WARM_STORAGE_READ_COST);
 
@@ -206,6 +285,12 @@ pub fn log<const N: usize, H: Host + ?Sized>(interpreter: &mut Interpreter, host
 pub fn selfdestruct<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     require_non_staticcall!(interpreter);
     pop_address!(interpreter, target);
+
+    #[cfg(feature = "scroll")]
+    if SPEC::enabled(PRE_BERNOULLI) {
+        interpreter.instruction_result = InstructionResult::NotActivated;
+        return;
+    }
 
     let Some(res) = host.selfdestruct(interpreter.contract.target_address, target) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;

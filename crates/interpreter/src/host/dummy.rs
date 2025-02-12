@@ -70,6 +70,12 @@ impl Host for DummyHost {
     }
 
     #[inline]
+    #[cfg(feature = "scroll")]
+    fn code_size(&mut self, _address: Address) -> Option<StateLoad<usize>> {
+        Some(StateLoad::new(0, false))
+    }
+
+    #[inline]
     fn sload(&mut self, _address: Address, index: U256) -> Option<StateLoad<U256>> {
         match self.storage.entry(index) {
             Entry::Occupied(entry) => Some(StateLoad::new(*entry.get(), false)),

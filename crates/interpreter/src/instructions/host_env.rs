@@ -47,6 +47,12 @@ pub fn gasprice<H: Host + ?Sized>(interpreter: &mut Interpreter, host: &mut H) {
 
 /// EIP-3198: BASEFEE opcode
 pub fn basefee<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
+    #[cfg(feature = "scroll")]
+    if !SPEC::enabled(CURIE) {
+        interpreter.instruction_result = crate::InstructionResult::NotActivated;
+        return;
+    }
+
     check!(interpreter, LONDON);
     gas!(interpreter, gas::BASE);
     push!(interpreter, host.env().block.basefee);

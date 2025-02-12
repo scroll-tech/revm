@@ -5,7 +5,7 @@ pub use SpecId::*;
 /// Specification IDs and their activation block.
 ///
 /// Information was obtained from the [Ethereum Execution Specifications](https://github.com/ethereum/execution-specs)
-#[cfg(not(feature = "optimism"))]
+#[cfg(not(any(feature = "optimism", feature = "scroll")))]
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, enumn::N)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -74,6 +74,52 @@ pub enum SpecId {
     LATEST = u8::MAX,
 }
 
+/// Specification IDs and their activation block.
+///
+/// Information was obtained from the [Ethereum Execution Specifications](https://github.com/ethereum/execution-specs)
+#[cfg(feature = "scroll")]
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, enumn::N)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum SpecId {
+    FRONTIER = 0,
+    FRONTIER_THAWING = 1,
+    HOMESTEAD = 2,
+    DAO_FORK = 3,
+    TANGERINE = 4,
+    SPURIOUS_DRAGON = 5,
+    BYZANTIUM = 6,
+    CONSTANTINOPLE = 7,
+    PETERSBURG = 8,
+    ISTANBUL = 9,
+    MUIR_GLACIER = 10,
+    BERLIN = 11,
+    LONDON = 12,
+    ARROW_GLACIER = 13,
+    GRAY_GLACIER = 14,
+    MERGE = 15,
+    SHANGHAI = 16,
+    /// The scroll network initially started with Shanghai with some features disabled.
+    PRE_BERNOULLI = 17,
+    /// Bernoulli update introduces:
+    ///   - Enable `SHA-256` precompile.
+    ///   - Use `EIP-4844` blobs for Data Availability (not part of layer2).
+    BERNOULLI = 18,
+    /// Curie update introduces:
+    ///   - Support `EIP-1559` transactions.
+    ///   - Support the `BASEFEE`, `MCOPY`, `TLOAD`, `TSTORE` opcodes.
+    ///
+    /// Although the Curie update include new opcodes in Cancun, the most important change
+    /// `EIP-4844` is not included. So we sort it before Cancun.
+    CURIE = 19,
+    EUCLID = 20,
+    CANCUN = 21,
+    PRAGUE = 22,
+    OSAKA = 23,
+    #[default]
+    LATEST = u8::MAX,
+}
+
 impl SpecId {
     /// Returns the `SpecId` for the given `u8`.
     #[inline]
@@ -129,6 +175,14 @@ impl From<&str> for SpecId {
             "Holocene" => SpecId::HOLOCENE,
             #[cfg(feature = "optimism")]
             "Isthmus" => SpecId::ISTHMUS,
+            #[cfg(feature = "scroll")]
+            "PreBernoulli" => SpecId::PRE_BERNOULLI,
+            #[cfg(feature = "scroll")]
+            "Bernoulli" => SpecId::BERNOULLI,
+            #[cfg(feature = "scroll")]
+            "Curie" => SpecId::CURIE,
+            #[cfg(feature = "scroll")]
+            "Euclid" => SpecId::EUCLID,
             _ => Self::LATEST,
         }
     }
@@ -173,6 +227,14 @@ impl From<SpecId> for &'static str {
             SpecId::HOLOCENE => "Holocene",
             #[cfg(feature = "optimism")]
             SpecId::ISTHMUS => "Isthmus",
+            #[cfg(feature = "scroll")]
+            SpecId::PRE_BERNOULLI => "PreBernoulli",
+            #[cfg(feature = "scroll")]
+            SpecId::BERNOULLI => "Bernoulli",
+            #[cfg(feature = "scroll")]
+            SpecId::CURIE => "Curie",
+            #[cfg(feature = "scroll")]
+            SpecId::EUCLID => "Euclid",
             SpecId::LATEST => "Latest",
         }
     }
@@ -241,7 +303,17 @@ spec!(HOLOCENE, HoloceneSpec);
 #[cfg(feature = "optimism")]
 spec!(ISTHMUS, IsthmusSpec);
 
-#[cfg(not(feature = "optimism"))]
+// Scroll Hardforks
+#[cfg(feature = "scroll")]
+spec!(PRE_BERNOULLI, PreBernoulliSpec);
+#[cfg(feature = "scroll")]
+spec!(BERNOULLI, BernoulliSpec);
+#[cfg(feature = "scroll")]
+spec!(CURIE, CurieSpec);
+#[cfg(feature = "scroll")]
+spec!(EUCLID, EuclidSpec);
+
+#[cfg(not(any(feature = "optimism", feature = "scroll")))]
 #[macro_export]
 macro_rules! spec_to_generic {
     ($spec_id:expr, $e:expr) => {{
@@ -415,6 +487,95 @@ macro_rules! spec_to_generic {
     }};
 }
 
+#[cfg(feature = "scroll")]
+#[macro_export]
+macro_rules! spec_to_generic {
+    ($spec_id:expr, $e:expr) => {{
+        // We are transitioning from var to generic spec.
+        match $spec_id {
+            $crate::SpecId::FRONTIER | SpecId::FRONTIER_THAWING => {
+                use $crate::FrontierSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::HOMESTEAD | SpecId::DAO_FORK => {
+                use $crate::HomesteadSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::TANGERINE => {
+                use $crate::TangerineSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::SPURIOUS_DRAGON => {
+                use $crate::SpuriousDragonSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::BYZANTIUM => {
+                use $crate::ByzantiumSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::PETERSBURG | $crate::SpecId::CONSTANTINOPLE => {
+                use $crate::PetersburgSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::ISTANBUL | $crate::SpecId::MUIR_GLACIER => {
+                use $crate::IstanbulSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::BERLIN => {
+                use $crate::BerlinSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::LONDON
+            | $crate::SpecId::ARROW_GLACIER
+            | $crate::SpecId::GRAY_GLACIER => {
+                use $crate::LondonSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::MERGE => {
+                use $crate::MergeSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::SHANGHAI => {
+                use $crate::ShanghaiSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::CANCUN => {
+                use $crate::CancunSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::LATEST => {
+                use $crate::LatestSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::PRAGUE => {
+                use $crate::PragueSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::OSAKA => {
+                use $crate::OsakaSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::PRE_BERNOULLI => {
+                use $crate::PreBernoulliSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::BERNOULLI => {
+                use $crate::BernoulliSpec as SPEC;
+                $e
+            }
+            $crate::SpecId::CURIE => {
+                use $crate::CurieSpec as SPEC;
+                $e
+            }
+            #[cfg(feature = "scroll")]
+            $crate::SpecId::EUCLID => {
+                use $crate::EuclidSpec as SPEC;
+                $e
+            }
+        }
+    }};
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -446,6 +607,14 @@ mod tests {
         spec_to_generic!(SHANGHAI, assert_eq!(SPEC::SPEC_ID, SHANGHAI));
         #[cfg(feature = "optimism")]
         spec_to_generic!(CANYON, assert_eq!(SPEC::SPEC_ID, CANYON));
+        #[cfg(feature = "scroll")]
+        spec_to_generic!(PRE_BERNOULLI, assert_eq!(SPEC::SPEC_ID, PRE_BERNOULLI));
+        #[cfg(feature = "scroll")]
+        spec_to_generic!(BERNOULLI, assert_eq!(SPEC::SPEC_ID, BERNOULLI));
+        #[cfg(feature = "scroll")]
+        spec_to_generic!(CURIE, assert_eq!(SPEC::SPEC_ID, CURIE));
+        #[cfg(feature = "scroll")]
+        spec_to_generic!(EUCLID, assert_eq!(SPEC::SPEC_ID, EUCLID));
         spec_to_generic!(CANCUN, assert_eq!(SPEC::SPEC_ID, CANCUN));
         #[cfg(feature = "optimism")]
         spec_to_generic!(ECOTONE, assert_eq!(SPEC::SPEC_ID, ECOTONE));
@@ -628,5 +797,52 @@ mod optimism_tests {
             }
         }
         assert!(!SpecId::enabled(SpecId::HOLOCENE, SpecId::LATEST));
+    }
+}
+
+#[cfg(feature = "scroll")]
+#[cfg(test)]
+mod scroll_tests {
+    use super::*;
+
+    #[test]
+    fn test_pre_bernoulli_post_merge_hardforks() {
+        assert!(PreBernoulliSpec::enabled(SpecId::MERGE));
+        assert!(PreBernoulliSpec::enabled(SpecId::SHANGHAI));
+        assert!(!PreBernoulliSpec::enabled(SpecId::BERNOULLI));
+        assert!(!PreBernoulliSpec::enabled(SpecId::CURIE));
+        assert!(!PreBernoulliSpec::enabled(SpecId::CANCUN));
+        assert!(!PreBernoulliSpec::enabled(SpecId::LATEST));
+    }
+
+    #[test]
+    fn test_bernoulli_post_merge_hardforks() {
+        assert!(BernoulliSpec::enabled(SpecId::MERGE));
+        assert!(BernoulliSpec::enabled(SpecId::SHANGHAI));
+        assert!(BernoulliSpec::enabled(SpecId::PRE_BERNOULLI));
+        assert!(!BernoulliSpec::enabled(SpecId::CURIE));
+        assert!(!BernoulliSpec::enabled(SpecId::CANCUN));
+        assert!(!BernoulliSpec::enabled(SpecId::LATEST));
+    }
+
+    #[test]
+    fn test_curie_post_merge_hardforks() {
+        assert!(CurieSpec::enabled(SpecId::MERGE));
+        assert!(CurieSpec::enabled(SpecId::SHANGHAI));
+        assert!(CurieSpec::enabled(SpecId::PRE_BERNOULLI));
+        assert!(CurieSpec::enabled(SpecId::BERNOULLI));
+        assert!(!CurieSpec::enabled(SpecId::CANCUN));
+        assert!(!CurieSpec::enabled(SpecId::LATEST));
+    }
+
+    #[test]
+    fn test_euclid_post_merge_hardforks() {
+        assert!(EuclidSpec::enabled(SpecId::MERGE));
+        assert!(EuclidSpec::enabled(SpecId::SHANGHAI));
+        assert!(EuclidSpec::enabled(SpecId::PRE_BERNOULLI));
+        assert!(EuclidSpec::enabled(SpecId::BERNOULLI));
+        assert!(EuclidSpec::enabled(SpecId::CURIE));
+        assert!(!EuclidSpec::enabled(SpecId::CANCUN));
+        assert!(!EuclidSpec::enabled(SpecId::LATEST));
     }
 }

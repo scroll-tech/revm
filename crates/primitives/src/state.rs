@@ -228,8 +228,14 @@ pub struct AccountInfo {
     pub balance: U256,
     /// Account nonce.
     pub nonce: u64,
+    #[cfg(feature = "scroll")]
+    /// code size,
+    pub code_size: usize,
     /// code hash,
     pub code_hash: B256,
+    #[cfg(feature = "scroll-poseidon-codehash")]
+    /// poseidon code hash, won't be calculated if code is not changed.
+    pub poseidon_code_hash: B256,
     /// code: if None, `code_by_hash` will be used to fetch it if code needs to be loaded from
     /// inside `revm`.
     pub code: Option<Bytecode>,
@@ -239,7 +245,11 @@ impl Default for AccountInfo {
     fn default() -> Self {
         Self {
             balance: U256::ZERO,
+            #[cfg(feature = "scroll")]
+            code_size: 0,
             code_hash: KECCAK_EMPTY,
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            poseidon_code_hash: crate::POSEIDON_EMPTY,
             code: Some(Bytecode::default()),
             nonce: 0,
         }
@@ -248,9 +258,19 @@ impl Default for AccountInfo {
 
 impl PartialEq for AccountInfo {
     fn eq(&self, other: &Self) -> bool {
-        self.balance == other.balance
+        let eq = self.balance == other.balance
             && self.nonce == other.nonce
-            && self.code_hash == other.code_hash
+            && self.code_hash == other.code_hash;
+
+        #[cfg(all(debug_assertions, feature = "scroll"))]
+        if eq {
+            assert_eq!(self.code_size, other.code_size);
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            if self.poseidon_code_hash != B256::ZERO && other.poseidon_code_hash != B256::ZERO {
+                assert_eq!(self.poseidon_code_hash, other.poseidon_code_hash);
+            }
+        }
+        eq
     }
 }
 
@@ -267,8 +287,12 @@ impl AccountInfo {
         Self {
             balance,
             nonce,
+            #[cfg(feature = "scroll")]
+            code_size: code.len(),
             code: Some(code),
             code_hash,
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            poseidon_code_hash: B256::ZERO,
         }
     }
 
@@ -285,8 +309,12 @@ impl AccountInfo {
         Self {
             balance: self.balance,
             nonce: self.nonce,
+            #[cfg(feature = "scroll")]
+            code_size: self.code_size,
             code_hash: self.code_hash,
             code: None,
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            poseidon_code_hash: self.poseidon_code_hash,
         }
     }
 
@@ -312,6 +340,15 @@ impl AccountInfo {
     /// - nonce is zero
     pub fn is_empty(&self) -> bool {
         let code_empty = self.is_empty_code_hash() || self.code_hash.is_zero();
+
+        #[cfg(all(feature = "scroll", debug_assertions))]
+        if code_empty {
+            assert_eq!(
+                self.code_size, 0,
+                "code size should be zero if code hash is empty"
+            );
+        }
+
         code_empty && self.balance.is_zero() && self.nonce == 0
     }
 
@@ -334,6 +371,15 @@ impl AccountInfo {
     /// Returns true if the code hash is the Keccak256 hash of the empty string `""`.
     #[inline]
     pub fn is_empty_code_hash(&self) -> bool {
+        #[cfg(all(debug_assertions, feature = "scroll-poseidon-codehash"))]
+        if self.code_hash == KECCAK_EMPTY {
+            assert_eq!(self.code_size, 0);
+            assert!(
+                self.poseidon_code_hash == crate::POSEIDON_EMPTY
+                    || self.poseidon_code_hash == B256::ZERO
+            );
+        }
+
         self.code_hash == KECCAK_EMPTY
     }
 
@@ -350,13 +396,30 @@ impl AccountInfo {
     }
 
     pub fn from_bytecode(bytecode: Bytecode) -> Self {
-        let hash = bytecode.hash_slow();
+        let code_hash = bytecode.hash_slow();
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "scroll"))] {
+                AccountInfo {
+                    balance: U256::ZERO,
+                    nonce: 1,
+                    code: Some(bytecode),
+                    code_hash,
+                }
+            } else {
+                let code_size = bytecode.len();
+                #[cfg(feature = "scroll-poseidon-codehash")]
+                let poseidon_code_hash = bytecode.poseidon_hash_slow();
 
-        AccountInfo {
-            balance: U256::ZERO,
-            nonce: 1,
-            code: Some(bytecode),
-            code_hash: hash,
+                AccountInfo {
+                    balance: U256::ZERO,
+                    nonce: 1,
+                    code_size,
+                    code: Some(bytecode),
+                    code_hash,
+                    #[cfg(feature = "scroll-poseidon-codehash")]
+                    poseidon_code_hash,
+                }
+            }
         }
     }
 }

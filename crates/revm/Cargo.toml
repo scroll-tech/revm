@@ -69,7 +69,7 @@ rstest = "0.22.0"
 alloy-provider = "0.7"
 
 [features]
-default = ["std", "c-kzg", "secp256k1", "portable", "blst"]
+default = ["std", "c-kzg", "portable", "blst"]
 std = [
     "serde?/std",
     "serde_json?/std",
@@ -101,6 +101,24 @@ negate-optimism-default-handler = [
     "revm-precompile/negate-optimism-default-handler",
     "revm-interpreter/negate-optimism-default-handler",
 ]
+
+scroll = ["revm-interpreter/scroll", "revm-precompile/scroll"]
+# Scroll default handler enabled Scroll handler register by default in EvmBuilder.
+scroll-default-handler = [
+    "scroll",
+    "revm-precompile/scroll-default-handler",
+    "revm-interpreter/scroll-default-handler",
+]
+negate-scroll-default-handler = [
+    "revm-precompile/negate-scroll-default-handler",
+    "revm-interpreter/negate-scroll-default-handler",
+]
+scroll-poseidon-codehash = [
+    "scroll",
+    "revm-interpreter/scroll-poseidon-codehash",
+]
+
+openvm = ["revm-precompile/openvm"]
 
 ethersdb = ["std", "dep:tokio", "dep:ethers-providers", "dep:ethers-core"]
 
@@ -135,6 +153,21 @@ c-kzg = ["revm-precompile/c-kzg"]
 # `kzg-rs` is not audited but useful for `no_std` environment, use it with causing and default to `c-kzg` if possible.
 kzg-rs = ["revm-precompile/kzg-rs"]
 blst = ["revm-precompile/blst"]
+
+all = [
+    "std",
+    "hashbrown",
+    "serde",
+    "serde-json",
+    "arbitrary",
+    "asm-keccak",
+    "portable",
+    "ethersdb",
+    "alloydb",
+    "dev",
+    "revm-interpreter/all",
+    "revm-precompile/all",
+]
 
 [[example]]
 name = "fork_ref_transact"

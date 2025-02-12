@@ -17,6 +17,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 unreachable_pub = "warn"
 unused_must_use = "deny"
 rust_2018_idioms = "deny"
+unexpected_cfgs = "allow"
 
 [lints.rustdoc]
 all = "warn"
@@ -63,6 +64,12 @@ p256 = { version = "0.13.2", optional = true, default-features = false, features
 # utils
 cfg-if = { version = "1.0", default-features = false }
 
+# Optionally use openvm intrinsics
+openvm-ecc-guest = { workspace = true, optional = true }
+openvm-keccak256-guest = { workspace = true, optional = true }
+openvm-sha256-guest = { workspace = true, optional = true }
+openvm-pairing-guest = { workspace = true, optional = true }
+
 [dev-dependencies]
 criterion = "0.5"
 rand = { version = "0.8", features = ["std"] }
@@ -73,7 +80,7 @@ serde_json = "1.0"
 serde_derive = "1.0"
 
 [features]
-default = ["std", "c-kzg", "secp256k1", "portable", "blst"]
+default = ["std", "c-kzg", "portable", "blst"]
 std = [
     "revm-primitives/std",
     "k256/std",
@@ -96,6 +103,25 @@ negate-optimism-default-handler = [
     "revm-primitives/negate-optimism-default-handler",
 ]
 
+scroll = ["revm-primitives/scroll", "secp256r1"]
+# Scroll default handler enabled Scroll handler register by default in EvmBuilder.
+scroll-default-handler = [
+    "scroll",
+    "revm-primitives/scroll-default-handler",
+]
+negate-scroll-default-handler = [
+    "revm-primitives/negate-scroll-default-handler",
+]
+
+openvm = [
+    "dep:openvm-ecc-guest",
+    "dep:openvm-keccak256-guest",
+    "dep:openvm-sha256-guest",
+    "dep:openvm-pairing-guest",
+    "openvm-ecc-guest/k256",
+    "openvm-pairing-guest/bn254",
+]
+
 # Enables the p256verify precompile.
 secp256r1 = ["dep:p256"]
 
@@ -115,6 +141,16 @@ secp256k1 = ["dep:secp256k1"]
 
 # Enables the BLS12-381 precompiles.
 blst = ["dep:blst"]
+
+all = [
+    "std",
+    "hashbrown",
+    "asm-keccak",
+    "secp256r1",
+    "c-kzg",
+    "portable",
+    "secp256k1",
+]
 
 [[bench]]
 name = "bench"
