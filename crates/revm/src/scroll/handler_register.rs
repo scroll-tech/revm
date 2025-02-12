@@ -21,6 +21,8 @@ pub fn scroll_handle_register<DB: Database, EXT>(handler: &mut EvmHandler<'_, EX
         handler.pre_execution.deduct_caller = Arc::new(deduct_caller::<SPEC, EXT, DB>);
         // basefee is sent to coinbase
         handler.post_execution.reward_beneficiary = Arc::new(reward_beneficiary::<SPEC, EXT, DB>);
+        // include l1 message with insufficient balance after euclid phase2
+        handler.validation.tx_against_state = Arc::new(validate_tx_against_state::<SPEC, EXT, DB>);
     });
 }
 
@@ -130,6 +132,95 @@ pub fn reward_beneficiary<SPEC: Spec, EXT, DB: Database>(
             .balance
             .saturating_add(coinbase_gas_price * U256::from(gas.spent() - gas.refunded() as u64))
             .saturating_add(l1_cost);
+    }
+
+    Ok(())
+}
+
+/// Validates transaction against the state.
+pub fn validate_tx_against_state<SPEC: Spec, EXT, DB: Database>(
+    context: &mut Context<EXT, DB>,
+) -> Result<(), EVMError<DB::Error>> {
+    // load acc
+    let tx_caller = context.evm.env.tx.caller;
+    let is_l1_msg = context.evm.env.tx.scroll.is_l1_msg;
+    let caller_account = context
+        .evm
+        .inner
+        .journaled_state
+        .load_code(tx_caller, &mut context.evm.inner.db)?;
+
+    let account = caller_account.data;
+    let env = context.evm.inner.env.as_ref();
+
+    // EIP-3607: Reject transactions from senders with deployed code
+    // This EIP is introduced after london but there was no collision in past
+    // so we can leave it enabled always
+    if !env.cfg.is_eip3607_disabled() {
+        let bytecode = &account.info.code.as_ref().unwrap();
+        // allow EOAs whose code is a valid delegation designation,
+        // i.e. 0xef0100 || address, to continue to originate transactions.
+        if !bytecode.is_empty() && !bytecode.is_eip7702() {
+            return Err(EVMError::Transaction(
+                InvalidTransaction::RejectCallerWithCode,
+            ));
+        }
+    }
+
+    // Check that the transaction's nonce is correct
+    if let Some(tx_nonce) = env.tx.nonce {
+        use core::cmp::Ordering;
+
+        let state = account.info.nonce;
+        match tx_nonce.cmp(&state) {
+            Ordering::Greater => {
+                return Err(EVMError::Transaction(InvalidTransaction::NonceTooHigh {
+                    tx: tx_nonce,
+                    state,
+                }));
+            }
+            Ordering::Less => {
+                return Err(EVMError::Transaction(InvalidTransaction::NonceTooLow {
+                    tx: tx_nonce,
+                    state,
+                }));
+            }
+            _ => {}
+        }
+    }
+
+    let mut balance_check = U256::from(env.tx.gas_limit)
+        .checked_mul(env.tx.gas_price)
+        .and_then(|gas_cost| gas_cost.checked_add(env.tx.value))
+        .ok_or(EVMError::Transaction(
+            InvalidTransaction::OverflowPaymentInTransaction,
+        ))?;
+
+    if SPEC::enabled(SpecId::CANCUN) {
+        // if the tx is not a blob tx, this will be None, so we add zero
+        let data_fee = env.calc_max_data_fee().unwrap_or_default();
+        balance_check =
+            balance_check
+                .checked_add(U256::from(data_fee))
+                .ok_or(EVMError::Transaction(
+                    InvalidTransaction::OverflowPaymentInTransaction,
+                ))?;
+    }
+
+    // Check if account has enough balance for gas_limit*gas_price and value transfer.
+    // Transfer will be done inside `*_inner` functions.
+    if balance_check > account.info.balance {
+        if env.cfg.is_balance_check_disabled() {
+            // Add transaction cost to balance to ensure execution doesn't fail.
+            account.info.balance = balance_check;
+        } else if !is_l1_msg {
+            return Err(EVMError::Transaction(
+                InvalidTransaction::LackOfFundForMaxFee {
+                    fee: Box::new(balance_check),
+                    balance: Box::new(account.info.balance),
+                },
+            ));
+        }
     }
 
     Ok(())
