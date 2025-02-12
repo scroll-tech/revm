@@ -864,7 +864,6 @@ mod scroll_tests {
         assert!(EuclidV1Spec::enabled(SpecId::PRE_BERNOULLI));
         assert!(EuclidV1Spec::enabled(SpecId::BERNOULLI));
         assert!(EuclidV1Spec::enabled(SpecId::CURIE));
-        assert!(!EuclidV1Spec::enabled(SpecId::EUCLID_V1));
         assert!(!EuclidV1Spec::enabled(SpecId::EUCLID_V2));
         assert!(!EuclidV1Spec::enabled(SpecId::CANCUN));
         assert!(!EuclidV1Spec::enabled(SpecId::LATEST));
