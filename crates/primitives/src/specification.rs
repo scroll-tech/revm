@@ -112,10 +112,13 @@ pub enum SpecId {
     /// Although the Curie update include new opcodes in Cancun, the most important change
     /// `EIP-4844` is not included. So we sort it before Cancun.
     CURIE = 19,
-    EUCLID = 20,
-    CANCUN = 21,
-    PRAGUE = 22,
-    OSAKA = 23,
+    /// EuclidV1 does not change the EVM behavior.
+    EUCLID_V1 = 20,
+    /// EuclidV2
+    EUCLID_V2 = 21,
+    CANCUN = 22,
+    PRAGUE = 23,
+    OSAKA = 24,
     #[default]
     LATEST = u8::MAX,
 }
@@ -182,7 +185,9 @@ impl From<&str> for SpecId {
             #[cfg(feature = "scroll")]
             "Curie" => SpecId::CURIE,
             #[cfg(feature = "scroll")]
-            "Euclid" => SpecId::EUCLID,
+            "EuclidV1" => SpecId::EUCLID_V1,
+            #[cfg(feature = "scroll")]
+            "EuclidV2" => SpecId::EUCLID_V2,
             _ => Self::LATEST,
         }
     }
@@ -234,7 +239,9 @@ impl From<SpecId> for &'static str {
             #[cfg(feature = "scroll")]
             SpecId::CURIE => "Curie",
             #[cfg(feature = "scroll")]
-            SpecId::EUCLID => "Euclid",
+            SpecId::EUCLID_V1 => "EuclidV1",
+            #[cfg(feature = "scroll")]
+            SpecId::EUCLID_V2 => "EuclidV2",
             SpecId::LATEST => "Latest",
         }
     }
@@ -311,7 +318,9 @@ spec!(BERNOULLI, BernoulliSpec);
 #[cfg(feature = "scroll")]
 spec!(CURIE, CurieSpec);
 #[cfg(feature = "scroll")]
-spec!(EUCLID, EuclidSpec);
+spec!(EUCLID_V1, EuclidV1Spec);
+#[cfg(feature = "scroll")]
+spec!(EUCLID_V2, EuclidV2Spec);
 
 #[cfg(not(any(feature = "optimism", feature = "scroll")))]
 #[macro_export]
@@ -568,8 +577,13 @@ macro_rules! spec_to_generic {
                 $e
             }
             #[cfg(feature = "scroll")]
-            $crate::SpecId::EUCLID => {
-                use $crate::EuclidSpec as SPEC;
+            $crate::SpecId::EUCLID_V1 => {
+                use $crate::EuclidV1Spec as SPEC;
+                $e
+            }
+            #[cfg(feature = "scroll")]
+            $crate::SpecId::EUCLID_V2 => {
+                use $crate::EuclidV2Spec as SPEC;
                 $e
             }
         }
@@ -614,7 +628,9 @@ mod tests {
         #[cfg(feature = "scroll")]
         spec_to_generic!(CURIE, assert_eq!(SPEC::SPEC_ID, CURIE));
         #[cfg(feature = "scroll")]
-        spec_to_generic!(EUCLID, assert_eq!(SPEC::SPEC_ID, EUCLID));
+        spec_to_generic!(EUCLID_V1, assert_eq!(SPEC::SPEC_ID, EUCLID_V1));
+        #[cfg(feature = "scroll")]
+        spec_to_generic!(EUCLID_V2, assert_eq!(SPEC::SPEC_ID, EUCLID_V2));
         spec_to_generic!(CANCUN, assert_eq!(SPEC::SPEC_ID, CANCUN));
         #[cfg(feature = "optimism")]
         spec_to_generic!(ECOTONE, assert_eq!(SPEC::SPEC_ID, ECOTONE));
@@ -811,6 +827,8 @@ mod scroll_tests {
         assert!(PreBernoulliSpec::enabled(SpecId::SHANGHAI));
         assert!(!PreBernoulliSpec::enabled(SpecId::BERNOULLI));
         assert!(!PreBernoulliSpec::enabled(SpecId::CURIE));
+        assert!(!PreBernoulliSpec::enabled(SpecId::EUCLID_V1));
+        assert!(!PreBernoulliSpec::enabled(SpecId::EUCLID_V2));
         assert!(!PreBernoulliSpec::enabled(SpecId::CANCUN));
         assert!(!PreBernoulliSpec::enabled(SpecId::LATEST));
     }
@@ -821,6 +839,8 @@ mod scroll_tests {
         assert!(BernoulliSpec::enabled(SpecId::SHANGHAI));
         assert!(BernoulliSpec::enabled(SpecId::PRE_BERNOULLI));
         assert!(!BernoulliSpec::enabled(SpecId::CURIE));
+        assert!(!BernoulliSpec::enabled(SpecId::EUCLID_V1));
+        assert!(!BernoulliSpec::enabled(SpecId::EUCLID_V2));
         assert!(!BernoulliSpec::enabled(SpecId::CANCUN));
         assert!(!BernoulliSpec::enabled(SpecId::LATEST));
     }
@@ -831,18 +851,34 @@ mod scroll_tests {
         assert!(CurieSpec::enabled(SpecId::SHANGHAI));
         assert!(CurieSpec::enabled(SpecId::PRE_BERNOULLI));
         assert!(CurieSpec::enabled(SpecId::BERNOULLI));
+        assert!(!CurieSpec::enabled(SpecId::EUCLID_V1));
+        assert!(!CurieSpec::enabled(SpecId::EUCLID_V2));
         assert!(!CurieSpec::enabled(SpecId::CANCUN));
         assert!(!CurieSpec::enabled(SpecId::LATEST));
     }
 
     #[test]
-    fn test_euclid_post_merge_hardforks() {
-        assert!(EuclidSpec::enabled(SpecId::MERGE));
-        assert!(EuclidSpec::enabled(SpecId::SHANGHAI));
-        assert!(EuclidSpec::enabled(SpecId::PRE_BERNOULLI));
-        assert!(EuclidSpec::enabled(SpecId::BERNOULLI));
-        assert!(EuclidSpec::enabled(SpecId::CURIE));
-        assert!(!EuclidSpec::enabled(SpecId::CANCUN));
-        assert!(!EuclidSpec::enabled(SpecId::LATEST));
+    fn test_euclid_v1_post_merge_hardforks() {
+        assert!(EuclidV1Spec::enabled(SpecId::MERGE));
+        assert!(EuclidV1Spec::enabled(SpecId::SHANGHAI));
+        assert!(EuclidV1Spec::enabled(SpecId::PRE_BERNOULLI));
+        assert!(EuclidV1Spec::enabled(SpecId::BERNOULLI));
+        assert!(EuclidV1Spec::enabled(SpecId::CURIE));
+        assert!(!EuclidV1Spec::enabled(SpecId::EUCLID_V1));
+        assert!(!EuclidV1Spec::enabled(SpecId::EUCLID_V2));
+        assert!(!EuclidV1Spec::enabled(SpecId::CANCUN));
+        assert!(!EuclidV1Spec::enabled(SpecId::LATEST));
+    }
+
+    #[test]
+    fn test_euclid_v2_post_merge_hardforks() {
+        assert!(EuclidV2Spec::enabled(SpecId::MERGE));
+        assert!(EuclidV2Spec::enabled(SpecId::SHANGHAI));
+        assert!(EuclidV2Spec::enabled(SpecId::PRE_BERNOULLI));
+        assert!(EuclidV2Spec::enabled(SpecId::BERNOULLI));
+        assert!(EuclidV2Spec::enabled(SpecId::CURIE));
+        assert!(EuclidV2Spec::enabled(SpecId::EUCLID_V1));
+        assert!(!EuclidV2Spec::enabled(SpecId::CANCUN));
+        assert!(!EuclidV2Spec::enabled(SpecId::LATEST));
     }
 }
