@@ -166,6 +166,14 @@ impl JournaledState {
             .push(JournalEntry::CodeChange { address });
 
         account.info.code_hash = hash;
+        #[cfg(feature = "scroll")]
+        {
+            account.info.code_size = code.len();
+            #[cfg(feature = "scroll-poseidon-codehash")]
+            {
+                account.info.poseidon_code_hash = code.poseidon_hash_slow();
+            }
+        }
         account.info.code = Some(code);
     }
 
@@ -274,7 +282,7 @@ impl JournaledState {
         // Bytecode is not empty.
         // Nonce is not zero
         // Account is not precompile.
-        if account.info.code_hash != KECCAK_EMPTY || account.info.nonce != 0 {
+        if !account.info.is_empty_code_hash() || account.info.nonce != 0 {
             self.checkpoint_revert(checkpoint);
             return Err(InstructionResult::CreateCollision);
         }
@@ -420,6 +428,14 @@ impl JournaledState {
                     let acc = state.get_mut(&address).unwrap();
                     acc.info.code_hash = KECCAK_EMPTY;
                     acc.info.code = None;
+                    #[cfg(feature = "scroll")]
+                    {
+                        acc.info.code_size = 0;
+                        #[cfg(feature = "scroll-poseidon-codehash")]
+                        {
+                            acc.info.poseidon_code_hash = crate::primitives::POSEIDON_EMPTY;
+                        }
+                    }
                 }
             }
         }

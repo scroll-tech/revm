@@ -26,3 +26,7 @@ name = "transfer"
 
 [[bin]]
 name = "burntpix"
+
+[features]
+scroll = ["revm/scroll"]
+scroll-poseidon-codehash = ["scroll", "revm/scroll-poseidon-codehash"]

@@ -1,11 +1,22 @@
 use crate::{Error, Precompile, PrecompileResult, PrecompileWithAddress};
 use revm_primitives::{Bytes, PrecompileOutput};
 
+#[cfg(feature = "scroll")]
+use revm_primitives::PrecompileError;
+
 const F_ROUND: u64 = 1;
 const INPUT_LENGTH: usize = 213;
 
 pub const FUN: PrecompileWithAddress =
     PrecompileWithAddress(crate::u64_to_address(9), Precompile::Standard(run));
+
+#[cfg(feature = "scroll")]
+pub const BERNOULLI: PrecompileWithAddress = PrecompileWithAddress(
+    crate::u64_to_address(9),
+    Precompile::Standard(|_input: &Bytes, _gas_limit: u64| {
+        Err(PrecompileError::NotImplemented.into())
+    }),
+);
 
 /// reference: <https://eips.ethereum.org/EIPS/eip-152>
 /// input format:

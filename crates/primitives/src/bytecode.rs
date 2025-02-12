@@ -60,6 +60,18 @@ impl Bytecode {
         }
     }
 
+    /// Calculate poseidon hash of the bytecode.
+    #[cfg(feature = "scroll-poseidon-codehash")]
+    pub fn poseidon_hash_slow(&self) -> B256 {
+        use crate::{poseidon, POSEIDON_EMPTY};
+
+        if self.is_empty() {
+            POSEIDON_EMPTY
+        } else {
+            poseidon(self.original_byte_slice())
+        }
+    }
+
     /// Return reference to the EOF if bytecode is EOF.
     #[inline]
     pub const fn eof(&self) -> Option<&Arc<Eof>> {
