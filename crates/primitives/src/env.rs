@@ -274,6 +274,11 @@ impl Env {
                 // Add transaction cost to balance to ensure execution doesn't fail.
                 account.info.balance = balance_check;
             } else {
+                #[cfg(feature = "scroll")]
+                if self.tx.scroll.is_l1_msg && SPEC::enabled(SpecId::EUCLID_V2) {
+                    return Ok(());
+                }
+
                 return Err(InvalidTransaction::LackOfFundForMaxFee {
                     fee: Box::new(balance_check),
                     balance: Box::new(account.info.balance),
