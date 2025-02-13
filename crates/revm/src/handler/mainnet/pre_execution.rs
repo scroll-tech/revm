@@ -12,6 +12,7 @@ use crate::{
     },
     Context, ContextPrecompiles,
 };
+use revm_precompile::primitives::SpecId;
 
 /// Main precompile load
 #[inline]
@@ -103,7 +104,12 @@ pub fn apply_eip7702_auth_list<SPEC: Spec, EXT, DB: Database>(
     context: &mut Context<EXT, DB>,
 ) -> Result<u64, EVMError<DB::Error>> {
     // EIP-7702. Load bytecode to authorized accounts.
+    #[cfg(not(feature = "scroll"))]
     if !SPEC::enabled(PRAGUE) {
+        return Ok(0);
+    }
+    #[cfg(feature = "scroll")]
+    if !SPEC::enabled(SpecId::EUCLID_V2) {
         return Ok(0);
     }
 

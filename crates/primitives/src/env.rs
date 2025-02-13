@@ -199,7 +199,11 @@ impl Env {
         }
 
         // check if EIP-7702 transaction is enabled.
-        if !SPEC::enabled(SpecId::PRAGUE) && self.tx.authorization_list.is_some() {
+        #[cfg(not(feature = "scroll"))]
+        let eip7702_enabled = SPEC::enabled(SpecId::PRAGUE);
+        #[cfg(feature = "scroll")]
+        let eip7702_enabled = SPEC::enabled(SpecId::EUCLID_V2);
+        if !eip7702_enabled && self.tx.authorization_list.is_some() {
             return Err(InvalidTransaction::AuthorizationListNotSupported);
         }
 
