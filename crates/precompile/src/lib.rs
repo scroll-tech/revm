@@ -359,7 +359,7 @@ impl PrecompileSpecId {
             #[cfg(feature = "scroll")]
             PRE_BERNOULLI => Self::PRE_BERNOULLI,
             #[cfg(feature = "scroll")]
-            BERNOULLI | CURIE | EUCLID_V1 => Self::BERNOULLI,
+            BERNOULLI | CURIE => Self::BERNOULLI,
             #[cfg(feature = "scroll")]
             EUCLID_V2 => Self::EUCLID_V2,
             #[cfg(feature = "optimism")]

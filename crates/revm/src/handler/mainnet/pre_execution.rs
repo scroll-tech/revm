@@ -12,7 +12,6 @@ use crate::{
     },
     Context, ContextPrecompiles,
 };
-use revm_precompile::primitives::SpecId;
 
 /// Main precompile load
 #[inline]
@@ -109,7 +108,7 @@ pub fn apply_eip7702_auth_list<SPEC: Spec, EXT, DB: Database>(
         return Ok(0);
     }
     #[cfg(feature = "scroll")]
-    if !SPEC::enabled(SpecId::EUCLID_V2) {
+    if !SPEC::enabled(crate::primitives::SpecId::EUCLID_V2) {
         return Ok(0);
     }
 
