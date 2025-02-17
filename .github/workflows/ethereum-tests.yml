@@ -48,11 +48,11 @@ jobs:
             ethtests/EIPTests/StateTests/stEIP1153-transientStorage/ \
             ethtests/EIPTests/StateTests/stEIP4844-blobtransactions/ \
             tests/eof_suite/eest/state_tests \
-            tests/eof_suite/evmone/state_tests \
-            tests/prague_suite/state_tests
+            tests/pectra/state_tests
       # - name: Run EOF validation tests
       #   run: |
       #     cross run --target ${{matrix.target}} --profile ${{ matrix.profile }} -p revme -- eof-validation \
       #     ethtests/EOFTests \
       #     tests/eof_suite/eest/eof_tests/prague \
       #     tests/eof_suite/evmone/eof_tests
+
