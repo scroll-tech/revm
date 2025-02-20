@@ -420,9 +420,12 @@ pub fn calculate_initial_tx_gas(
     let eip7702_enabled = spec_id.is_enabled_in(SpecId::PRAGUE);
     #[cfg(feature = "scroll")]
     let eip7702_enabled = spec_id.is_enabled_in(SpecId::EUCLID_V2);
+
     if eip7702_enabled {
         gas.initial_gas += authorization_list_num * eip7702::PER_EMPTY_ACCOUNT_COST;
+    }
 
+    if spec_id.is_enabled_in(SpecId::PRAGUE) {
         // Calculate gas floor for EIP-7623
         gas.floor_gas = calc_tx_floor_cost(tokens_in_calldata);
     }
