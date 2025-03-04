@@ -8,7 +8,7 @@
 //! with the address that it is currently deployed at.
 use crate::{u64_to_address, Precompile, PrecompileWithAddress};
 use p256::ecdsa::{signature::hazmat::PrehashVerifier, Signature, VerifyingKey};
-use revm_primitives::{Bytes, PrecompileError, PrecompileOutput, PrecompileResult, B256};
+use revm_primitives::{Bytes, PrecompileError, PrecompileOutput, PrecompileResult, B256, U256};
 
 /// Base gas fee for secp256r1 p256verify operation.
 const P256VERIFY_BASE: u64 = 3450;
@@ -62,12 +62,45 @@ pub fn verify_impl(input: &[u8]) -> Option<()> {
     uncompressed_pk[0] = 0x04;
     uncompressed_pk[1..].copy_from_slice(pk);
 
-    // Can fail only if the input is not exact length.
-    let signature = Signature::from_slice(sig).ok()?;
-    // Can fail if the input is not valid, so we have to propagate the error.
-    let public_key = VerifyingKey::from_sec1_bytes(&uncompressed_pk).ok()?;
+    #[cfg(feature = "openvm")]
+    {
+        use openvm_ecc_guest::ecdsa::Coordinate;
+        use openvm_ecc_guest::p256::{P256Coord, P256Scalar};
+        use openvm_ecc_guest::weierstrass::IntrinsicCurve;
+        use openvm_ecc_guest::{
+            algebra::IntMod, ecdsa::VerifyingKey, weierstrass::WeierstrassPoint,
+        };
+        use openvm_keccak256_guest::keccak256;
 
-    public_key.verify_prehash(msg, &signature).ok()
+        let (r_be, s_be) = sig.split_at(32);
+        let r_be: [u8; 32] = r_be.try_into().unwrap();
+        let s_be: [u8; 32] = s_be.try_into().unwrap();
+        let r_bigint = U256::from_be_bytes(r_be);
+        if r_bigint == U256::ZERO || r_bigint >= U256::from_le_bytes(P256Scalar::MODULUS) {
+            return None;
+        }
+        let s_bigint = U256::from_be_bytes(s_be);
+        if s_bigint == U256::ZERO || s_bigint >= U256::from_le_bytes(P256Scalar::MODULUS) {
+            return None;
+        }
+
+        let x = Coordinate::<p256::NistP256>::from_be_bytes(&pk[..32]);
+        let y = Coordinate::<p256::NistP256>::from_be_bytes(&pk[32..]);
+        let point = <p256::NistP256 as IntrinsicCurve>::Point::from_xy(x, y)?;
+
+        let public_key = openvm_ecc_guest::ecdsa::PublicKey::<p256::NistP256>::new(point);
+        let verifying_key =
+            openvm_ecc_guest::ecdsa::VerifyingKey::<p256::NistP256>::new(public_key);
+        verifying_key.verify_prehashed(&msg, &sig).ok()
+    }
+    #[cfg(not(feature = "openvm"))]
+    {
+        // Can fail only if the input is not exact length.
+        let signature = Signature::from_slice(sig).ok()?;
+        // Can fail if the input is not valid, so we have to propagate the error.
+        let public_key = VerifyingKey::from_sec1_bytes(&uncompressed_pk).ok()?;
+        public_key.verify_prehash(msg, &signature).ok()
+    }
 }
 
 #[cfg(test)]
