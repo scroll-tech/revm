@@ -35,7 +35,7 @@ mod secp256k1 {
             &msg[..],
             &sig.to_bytes(),
             recid,
-        );
+        )?;
         let public_key = recovered_key.as_affine();
         let mut encoded = [0u8; 64];
         encoded[..32].copy_from_slice(&public_key.x().to_be_bytes());

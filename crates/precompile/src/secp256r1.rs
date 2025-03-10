@@ -70,7 +70,6 @@ pub fn verify_impl(input: &[u8]) -> Option<()> {
         use openvm_ecc_guest::{
             algebra::IntMod, ecdsa::VerifyingKey, weierstrass::WeierstrassPoint,
         };
-        use openvm_keccak256_guest::keccak256;
 
         let (r_be, s_be) = sig.split_at(32);
         let r_be: [u8; 32] = r_be.try_into().unwrap();
@@ -84,13 +83,8 @@ pub fn verify_impl(input: &[u8]) -> Option<()> {
             return None;
         }
 
-        let x = Coordinate::<p256::NistP256>::from_be_bytes(&pk[..32]);
-        let y = Coordinate::<p256::NistP256>::from_be_bytes(&pk[32..]);
-        let point = <p256::NistP256 as IntrinsicCurve>::Point::from_xy(x, y)?;
-
-        let public_key = openvm_ecc_guest::ecdsa::PublicKey::<p256::NistP256>::new(point);
-        let verifying_key =
-            openvm_ecc_guest::ecdsa::VerifyingKey::<p256::NistP256>::new(public_key);
+        // Can fail if the input is not valid, so we have to propagate the error.
+        let verifying_key = VerifyingKey::<p256::NistP256>::from_sec1_bytes(&uncompressed_pk).ok()?;
         verifying_key.verify_prehashed(&msg, &sig).ok()
     }
     #[cfg(not(feature = "openvm"))]
