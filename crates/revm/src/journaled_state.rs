@@ -645,7 +645,7 @@ impl JournaledState {
     ) -> Result<AccountLoad, EVMError<DB::Error>> {
         let spec = self.spec;
         #[cfg(not(feature = "scroll"))]
-        let eip7702_enabled = spec_id.is_enabled_in(SpecId::PRAGUE);
+        let eip7702_enabled = spec.is_enabled_in(SpecId::PRAGUE);
         #[cfg(feature = "scroll")]
         let eip7702_enabled = spec.is_enabled_in(SpecId::EUCLID_V2);
         let account = if eip7702_enabled {
