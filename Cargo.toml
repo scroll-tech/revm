@@ -16,11 +16,11 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [workspace.dependencies]
 # openvm
-openvm = { git = "https://github.com/openvm-org/openvm.git", rev = "0eb7b2c" }
-openvm-ecc-guest = { git = "https://github.com/openvm-org/openvm.git", rev = "0eb7b2c" }
-openvm-pairing-guest = { git = "https://github.com/openvm-org/openvm.git", rev = "0eb7b2c" }
-openvm-keccak256-guest = { git = "https://github.com/openvm-org/openvm.git", rev = "0eb7b2c" }
-openvm-sha256-guest = { git = "https://github.com/openvm-org/openvm.git", rev = "0eb7b2c" }
+openvm = { git = "https://github.com/openvm-org/openvm.git", rev = "6169765" }
+openvm-ecc-guest = { git = "https://github.com/openvm-org/openvm.git", rev = "6169765" }
+openvm-pairing-guest = { git = "https://github.com/openvm-org/openvm.git", rev = "6169765" }
+openvm-keccak256-guest = { git = "https://github.com/openvm-org/openvm.git", rev = "6169765" }
+openvm-sha256-guest = { git = "https://github.com/openvm-org/openvm.git", rev = "6169765" }
 
 [profile.release]
 lto = true
