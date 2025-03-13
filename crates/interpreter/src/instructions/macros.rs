@@ -377,7 +377,7 @@ macro_rules! as_u64_or_fail_ret {
                     $interp.instruction_result = $reason;
                     return $ret;
                 }
-                x[0] as usize
+                x[0] as u64
             }
         }
     };
