@@ -644,7 +644,15 @@ impl JournaledState {
         db: &mut DB,
     ) -> Result<AccountLoad, EVMError<DB::Error>> {
         let spec = self.spec;
-        let account = self.load_code(address, db)?;
+        #[cfg(not(feature = "scroll"))]
+        let eip7702_enabled = spec.is_enabled_in(SpecId::PRAGUE);
+        #[cfg(feature = "scroll")]
+        let eip7702_enabled = spec.is_enabled_in(SpecId::EUCLID_V2);
+        let account = if eip7702_enabled {
+            self.load_code(address, db)?
+        } else {
+            self.load_account(address, db)?
+        };
         let is_empty = account.state_clear_aware_is_empty(spec);
 
         let mut account_load = AccountLoad {
