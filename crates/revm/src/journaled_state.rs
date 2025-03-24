@@ -692,6 +692,22 @@ impl JournaledState {
         Ok(account_load)
     }
 
+    /// Check a storage slot is code or not without change the access status.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the account is not present in the state.
+    #[inline]
+    pub fn is_storage_cold(&self, address: Address, key: U256) -> bool {
+        // assume acc is warm
+        let account = self.state.get(&address).unwrap();
+        account
+            .storage
+            .get(&key)
+            .map(|slot| slot.is_cold)
+            .unwrap_or(true)
+    }
+
     /// Load storage slot
     ///
     /// # Panics

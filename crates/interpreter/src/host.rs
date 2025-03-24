@@ -48,6 +48,13 @@ pub trait Host {
     /// Get code hash of `address` and if the account is cold.
     fn code_hash(&mut self, address: Address) -> Option<StateLoad<B256>>;
 
+    /// Check a storage slot is code or not without change the access status.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the account is not present in the state.
+    fn is_storage_cold(&self, address: Address, key: U256) -> bool;
+
     #[cfg(feature = "scroll")]
     /// Get code size of `address` and if the account is cold.
     fn code_size(&mut self, address: Address) -> Option<StateLoad<usize>>;

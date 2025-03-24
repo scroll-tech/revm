@@ -176,6 +176,13 @@ pub fn blockhash<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, ho
 
 pub fn sload<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host: &mut H) {
     pop_top!(interpreter, index);
+    min_gas!(
+        interpreter,
+        gas::sload_cost(
+            SPEC::SPEC_ID,
+            host.is_storage_cold(interpreter.contract.target_address, *index)
+        )
+    );
     let Some(value) = host.sload(interpreter.contract.target_address, *index) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
@@ -194,6 +201,13 @@ pub fn sstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
     require_non_staticcall!(interpreter);
 
     pop!(interpreter, index, value);
+    min_gas!(
+        interpreter,
+        gas::sload_cost(
+            SPEC::SPEC_ID,
+            host.is_storage_cold(interpreter.contract.target_address, *index)
+        )
+    );
     let Some(state_load) = host.sstore(interpreter.contract.target_address, index, value) else {
         interpreter.instruction_result = InstructionResult::FatalExternalError;
         return;
