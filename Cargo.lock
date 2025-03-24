@@ -155,7 +155,7 @@ dependencies = [
 [[package]]
 name = "alloy-json-abi"
 version = "0.8.18"
-source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#bf68bcf261fa819ff880ed89c7d17fbf31466f75"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#f81c6bd637b841097941b82594b0cf1277c8be82"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-type-parser",
@@ -218,7 +218,7 @@ dependencies = [
 [[package]]
 name = "alloy-primitives"
 version = "0.8.18"
-source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#bf68bcf261fa819ff880ed89c7d17fbf31466f75"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#f81c6bd637b841097941b82594b0cf1277c8be82"
 dependencies = [
  "alloy-rlp",
  "arbitrary",
@@ -234,8 +234,6 @@ dependencies = [
  "itoa",
  "k256",
  "keccak-asm",
- "openvm-ecc-guest",
- "openvm-keccak256-guest",
  "paste",
  "proptest",
  "proptest-derive",
@@ -412,7 +410,7 @@ dependencies = [
 [[package]]
 name = "alloy-sol-macro"
 version = "0.8.18"
-source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#bf68bcf261fa819ff880ed89c7d17fbf31466f75"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#f81c6bd637b841097941b82594b0cf1277c8be82"
 dependencies = [
  "alloy-sol-macro-expander 0.8.18",
  "alloy-sol-macro-input 0.8.18",
@@ -443,7 +441,7 @@ dependencies = [
 [[package]]
 name = "alloy-sol-macro-expander"
 version = "0.8.18"
-source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#bf68bcf261fa819ff880ed89c7d17fbf31466f75"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#f81c6bd637b841097941b82594b0cf1277c8be82"
 dependencies = [
  "alloy-sol-macro-input 0.8.18",
  "const-hex",
@@ -475,7 +473,7 @@ dependencies = [
 [[package]]
 name = "alloy-sol-macro-input"
 version = "0.8.18"
-source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#bf68bcf261fa819ff880ed89c7d17fbf31466f75"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#f81c6bd637b841097941b82594b0cf1277c8be82"
 dependencies = [
  "const-hex",
  "dunce",
@@ -489,7 +487,7 @@ dependencies = [
 [[package]]
 name = "alloy-sol-type-parser"
 version = "0.8.18"
-source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#bf68bcf261fa819ff880ed89c7d17fbf31466f75"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#f81c6bd637b841097941b82594b0cf1277c8be82"
 dependencies = [
  "serde",
  "winnow 0.6.18",
@@ -498,7 +496,7 @@ dependencies = [
 [[package]]
 name = "alloy-sol-types"
 version = "0.8.18"
-source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#bf68bcf261fa819ff880ed89c7d17fbf31466f75"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#f81c6bd637b841097941b82594b0cf1277c8be82"
 dependencies = [
  "alloy-json-abi",
  "alloy-primitives",
@@ -2797,7 +2795,7 @@ dependencies = [
 [[package]]
 name = "openvm"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "bytemuck",
  "hex-literal",
@@ -2812,7 +2810,7 @@ dependencies = [
 [[package]]
 name = "openvm-algebra-complex-macros"
 version = "0.1.0"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "openvm-macros-common",
  "quote",
@@ -2822,7 +2820,7 @@ dependencies = [
 [[package]]
 name = "openvm-algebra-guest"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "halo2curves-axiom",
  "num-bigint 0.4.6",
@@ -2838,7 +2836,7 @@ dependencies = [
 [[package]]
 name = "openvm-algebra-moduli-macros"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "openvm-macros-common",
  "quote",
@@ -2848,7 +2846,7 @@ dependencies = [
 [[package]]
 name = "openvm-custom-insn"
 version = "0.1.0"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2858,7 +2856,7 @@ dependencies = [
 [[package]]
 name = "openvm-ecc-guest"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -2887,7 +2885,7 @@ dependencies = [
 [[package]]
 name = "openvm-ecc-sw-macros"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "openvm-macros-common",
  "quote",
@@ -2897,17 +2895,16 @@ dependencies = [
 [[package]]
 name = "openvm-keccak256-guest"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "openvm-platform",
- "serde",
  "tiny-keccak",
 ]
 
 [[package]]
 name = "openvm-macros-common"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "syn 2.0.90",
 ]
@@ -2915,7 +2912,7 @@ dependencies = [
 [[package]]
 name = "openvm-pairing-guest"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "group",
  "hex-literal",
@@ -2940,7 +2937,7 @@ dependencies = [
 [[package]]
 name = "openvm-platform"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "getrandom",
  "libm",
@@ -2953,7 +2950,7 @@ dependencies = [
 [[package]]
 name = "openvm-rv32im-guest"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
  "openvm-custom-insn",
  "strum_macros",
@@ -2962,9 +2959,8 @@ dependencies = [
 [[package]]
 name = "openvm-sha256-guest"
 version = "1.0.0-rc.2"
-source = "git+https://github.com/openvm-org/openvm.git?rev=485caec#485caecf5d27bf02ea7668f74bab1ab12900dfaf"
+source = "git+https://github.com/openvm-org/openvm.git?rev=2bdf9ed#2bdf9edd280fa4dd43bbfb11d9f935cec1dc9aeb"
 dependencies = [
- "openvm",
  "openvm-platform",
  "sha2",
 ]
@@ -4497,7 +4493,7 @@ dependencies = [
 [[package]]
 name = "syn-solidity"
 version = "0.8.18"
-source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#bf68bcf261fa819ff880ed89c7d17fbf31466f75"
+source = "git+https://github.com/scroll-tech/alloy-core?branch=v0.8.18-euclid-upgrade#f81c6bd637b841097941b82594b0cf1277c8be82"
 dependencies = [
  "paste",
  "proc-macro2",
