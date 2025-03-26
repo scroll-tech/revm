@@ -205,7 +205,7 @@ pub fn sstore<H: Host + ?Sized, SPEC: Spec>(interpreter: &mut Interpreter, host:
         interpreter,
         gas::sload_cost(
             SPEC::SPEC_ID,
-            host.is_storage_cold(interpreter.contract.target_address, *index)
+            host.is_storage_cold(interpreter.contract.target_address, index)
         )
     );
     let Some(state_load) = host.sstore(interpreter.contract.target_address, index, value) else {

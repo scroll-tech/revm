@@ -8,7 +8,7 @@
 //! with the address that it is currently deployed at.
 use crate::{u64_to_address, Precompile, PrecompileWithAddress};
 use p256::ecdsa::{signature::hazmat::PrehashVerifier, Signature, VerifyingKey};
-use revm_primitives::{Bytes, PrecompileError, PrecompileOutput, PrecompileResult, B256, U256};
+use revm_primitives::{Bytes, PrecompileError, PrecompileOutput, PrecompileResult, B256};
 
 /// Base gas fee for secp256r1 p256verify operation.
 const P256VERIFY_BASE: u64 = 3450;
@@ -70,6 +70,7 @@ pub fn verify_impl(input: &[u8]) -> Option<()> {
         use openvm_ecc_guest::{
             algebra::IntMod, ecdsa::VerifyingKey, weierstrass::WeierstrassPoint,
         };
+        use revm_primitives::U256;
 
         let (r_be, s_be) = sig.split_at(32);
         let r_be: [u8; 32] = r_be.try_into().unwrap();
@@ -84,7 +85,8 @@ pub fn verify_impl(input: &[u8]) -> Option<()> {
         }
 
         // Can fail if the input is not valid, so we have to propagate the error.
-        let verifying_key = VerifyingKey::<p256::NistP256>::from_sec1_bytes(&uncompressed_pk).ok()?;
+        let verifying_key =
+            VerifyingKey::<p256::NistP256>::from_sec1_bytes(&uncompressed_pk).ok()?;
         verifying_key.verify_prehashed(&msg, &sig).ok()
     }
     #[cfg(not(feature = "openvm"))]
