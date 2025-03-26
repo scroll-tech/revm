@@ -338,10 +338,12 @@ pub fn run_pair(
 
             #[cfg(feature = "openvm")]
             {
-                let g1 = AffinePoint::new(g1_x, g1_y);
+                let g1 =
+                    AffinePoint::from_xy(g1_x, g1_y).ok_or(Error::Bn128AffineGFailedToCreate)?;
                 let g2_x = Fp2::new(g2_x_c0, g2_x_c1);
                 let g2_y = Fp2::new(g2_y_c0, g2_y_c1);
-                let g2 = AffinePoint::new(g2_x, g2_y);
+                let g2 =
+                    AffinePoint::from_xy(g2_x, g2_y).ok_or(Error::Bn128AffineGFailedToCreate)?;
 
                 P.push(g1);
                 Q.push(g2);
