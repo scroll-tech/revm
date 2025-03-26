@@ -167,6 +167,15 @@ impl<EXT, DB: Database> Host for Context<EXT, DB> {
             .ok()
     }
 
+    /// Check a storage slot is code or not without change the access status.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the account is not present in the state.
+    fn is_storage_cold(&self, address: Address, key: U256) -> bool {
+        self.evm.is_storage_cold(address, key)
+    }
+
     fn sload(&mut self, address: Address, index: U256) -> Option<StateLoad<U256>> {
         self.evm
             .sload(address, index)

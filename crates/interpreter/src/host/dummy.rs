@@ -76,6 +76,11 @@ impl Host for DummyHost {
     }
 
     #[inline]
+    fn is_storage_cold(&self, _address: Address, key: U256) -> bool {
+        self.storage.contains_key(&key)
+    }
+
+    #[inline]
     fn sload(&mut self, _address: Address, index: U256) -> Option<StateLoad<U256>> {
         match self.storage.entry(index) {
             Entry::Occupied(entry) => Some(StateLoad::new(*entry.get(), false)),

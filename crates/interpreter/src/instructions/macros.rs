@@ -61,6 +61,20 @@ macro_rules! gas {
     };
 }
 
+/// Check if a `gas` cost would exceed the available gas.
+#[macro_export]
+macro_rules! min_gas {
+    ($interp:expr, $gas:expr) => {
+        $crate::min_gas!($interp, $gas, ())
+    };
+    ($interp:expr, $gas:expr, $ret:expr) => {
+        if $interp.gas.remaining() < $gas {
+            $interp.instruction_result = $crate::InstructionResult::OutOfGas;
+            return $ret;
+        }
+    };
+}
+
 /// Records a `gas` refund.
 #[macro_export]
 macro_rules! refund {

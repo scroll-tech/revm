@@ -253,6 +253,16 @@ impl<DB: Database> InnerEvmContext<DB> {
         Ok(StateLoad::new(hash, acc.is_cold))
     }
 
+    /// Check a storage slot is code or not without change the access status.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the account is not present in the state.
+    #[inline]
+    pub fn is_storage_cold(&self, address: Address, key: U256) -> bool {
+        self.journaled_state.is_storage_cold(address, key)
+    }
+
     /// Load storage slot, if storage is not present inside the account then it will be loaded from database.
     #[inline]
     pub fn sload(
