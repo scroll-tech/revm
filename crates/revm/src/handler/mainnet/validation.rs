@@ -20,11 +20,23 @@ pub fn validate_tx_against_state<SPEC: Spec, EXT, DB: Database>(
 ) -> Result<(), EVMError<DB::Error>> {
     // load acc
     let tx_caller = context.evm.env.tx.caller;
-    let caller_account = context
-        .evm
-        .inner
-        .journaled_state
-        .load_code(tx_caller, &mut context.evm.inner.db)?;
+    #[cfg(not(feature = "optional_eip3607"))]
+    let eip3607_disabled = false;
+    #[cfg(feature = "optional_eip3607")]
+    let eip3607_disabled = context.evm.env.cfg.disable_eip3607;
+    let caller_account = if eip3607_disabled {
+        context
+            .evm
+            .inner
+            .journaled_state
+            .load_account(tx_caller, &mut context.evm.inner.db)?
+    } else {
+        context
+            .evm
+            .inner
+            .journaled_state
+            .load_code(tx_caller, &mut context.evm.inner.db)?
+    };
 
     context
         .evm
