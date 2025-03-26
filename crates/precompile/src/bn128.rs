@@ -150,7 +150,12 @@ pub fn read_fq(input: &[u8]) -> Result<Fp, Error> {
     if input.len() < 32 {
         Err(Error::Bn128FieldPointNotAMember)
     } else {
-        Ok(Fp::from_be_bytes(&input[..32]))
+        let fp = Fp::from_be_bytes(&input[..32]);
+        if fp.is_reduced() {
+            Ok(fp)
+        } else {
+            Err(Error::Bn128FieldPointNotAMember)
+        }
     }
 }
 
