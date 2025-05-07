@@ -166,9 +166,11 @@ impl JournalTr for Backend {
 
     fn load_account_delegated(
         &mut self,
+        is_eip_7702_enabled: bool,
         address: Address,
     ) -> Result<StateLoad<AccountLoad>, Infallible> {
-        self.journaled_state.load_account_delegated(address)
+        self.journaled_state
+            .load_account_delegated(is_eip_7702_enabled, address)
     }
 
     fn set_code_with_hash(&mut self, address: Address, code: Bytecode, hash: B256) {
