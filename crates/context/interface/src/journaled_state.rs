@@ -125,6 +125,7 @@ pub trait JournalTr {
     /// Loads the account delegated.
     fn load_account_delegated(
         &mut self,
+        is_eip7702_enabled: bool,
         address: Address,
     ) -> Result<StateLoad<AccountLoad>, <Self::Database as Database>::Error>;
 

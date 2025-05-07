@@ -163,9 +163,10 @@ impl EthFrame<EthInterpreter> {
         }
 
         // Make account warm and loaded.
+        let is_eip7702_enabled = ctx.cfg().is_eip7702_enabled();
         let _ = ctx
             .journal_mut()
-            .load_account_delegated(inputs.bytecode_address)?;
+            .load_account_delegated(is_eip7702_enabled, inputs.bytecode_address)?;
 
         // Create subroutine checkpoint
         let checkpoint = ctx.journal_mut().checkpoint();

@@ -374,6 +374,7 @@ pub fn calculate_initial_tx_gas(
     spec_id: SpecId,
     input: &[u8],
     is_create: bool,
+    is_eip7702_enabled: bool,
     access_list_accounts: u64,
     access_list_storages: u64,
     authorization_list_num: u64,
@@ -414,10 +415,12 @@ pub fn calculate_initial_tx_gas(
     }
 
     // EIP-7702
-    if spec_id.is_enabled_in(SpecId::PRAGUE) {
+    if spec_id.is_enabled_in(SpecId::PRAGUE) | is_eip7702_enabled {
         gas.initial_gas += authorization_list_num * eip7702::PER_EMPTY_ACCOUNT_COST;
+    }
 
-        // Calculate gas floor for EIP-7623
+    // EIP-7623
+    if spec_id.is_enabled_in(SpecId::PRAGUE) {
         gas.floor_gas = calc_tx_floor_cost(tokens_in_calldata);
     }
 
@@ -431,7 +434,11 @@ pub fn calculate_initial_tx_gas(
 ///
 /// - Intrinsic gas
 /// - Number of tokens in calldata
-pub fn calculate_initial_tx_gas_for_tx(tx: impl Transaction, spec: SpecId) -> InitialAndFloorGas {
+pub fn calculate_initial_tx_gas_for_tx(
+    tx: impl Transaction,
+    spec: SpecId,
+    is_eip7702_enabled: bool,
+) -> InitialAndFloorGas {
     let mut accounts = 0;
     let mut storages = 0;
     // legacy is only tx type that does not have access list.
@@ -461,6 +468,7 @@ pub fn calculate_initial_tx_gas_for_tx(tx: impl Transaction, spec: SpecId) -> In
         spec,
         tx.input(),
         tx.kind().is_create(),
+        is_eip7702_enabled,
         accounts as u64,
         storages as u64,
         tx.authorization_list_len() as u64,

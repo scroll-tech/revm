@@ -241,10 +241,11 @@ impl<DB: Database, ENTRY: JournalEntryTr> JournalTr for Journal<DB, ENTRY> {
     #[inline]
     fn load_account_delegated(
         &mut self,
+        is_eip7702_enabled: bool,
         address: Address,
     ) -> Result<StateLoad<AccountLoad>, DB::Error> {
         self.inner
-            .load_account_delegated(&mut self.database, address)
+            .load_account_delegated(is_eip7702_enabled, &mut self.database, address)
     }
 
     #[inline]
