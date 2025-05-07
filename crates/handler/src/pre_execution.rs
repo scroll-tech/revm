@@ -122,7 +122,7 @@ pub fn apply_eip7702_auth_list<
 ) -> Result<u64, ERROR> {
     let spec = context.cfg().spec().into();
     let tx = context.tx();
-    if !spec.is_enabled_in(SpecId::PRAGUE) {
+    if !context.cfg().is_eip7702_enabled() && !spec.is_enabled_in(SpecId::PRAGUE) {
         return Ok(0);
     }
     // Return if there is no auth list.

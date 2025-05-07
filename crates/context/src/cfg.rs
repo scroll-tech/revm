@@ -65,6 +65,9 @@ pub struct CfgEnv<SPEC = SpecId> {
     /// By default, it is set to `false`.
     #[cfg(feature = "optional_no_base_fee")]
     pub disable_base_fee: bool,
+    /// Skips the checks related to eip 7702 and enables it.
+    #[cfg(feature = "enable_eip7702")]
+    pub enable_eip7702: bool,
 }
 
 impl CfgEnv {
@@ -92,6 +95,8 @@ impl<SPEC> CfgEnv<SPEC> {
             disable_eip3607: false,
             #[cfg(feature = "optional_no_base_fee")]
             disable_base_fee: false,
+            #[cfg(feature = "enable_eip7702")]
+            enable_eip7702: false,
         }
     }
 
@@ -117,6 +122,8 @@ impl<SPEC> CfgEnv<SPEC> {
             disable_eip3607: self.disable_eip3607,
             #[cfg(feature = "optional_no_base_fee")]
             disable_base_fee: self.disable_base_fee,
+            #[cfg(feature = "enable_eip7702")]
+            enable_eip7702: false,
         }
     }
 
@@ -130,6 +137,13 @@ impl<SPEC> CfgEnv<SPEC> {
     pub fn set_blob_max_and_target_count(&mut self, mut blob_params: Vec<(SpecId, u64, u64)>) {
         blob_params.sort_by_key(|(id, _, _)| *id);
         self.blob_target_and_max_count = blob_params;
+    }
+
+    /// Enables EIP-7702.
+    #[cfg(feature = "enable_eip7702")]
+    pub fn enable_eip_7702(mut self) -> CfgEnv<SPEC> {
+        self.enable_eip7702 = true;
+        self
     }
 }
 
@@ -201,6 +215,16 @@ impl<SPEC: Into<SpecId> + Copy> Cfg for CfgEnv<SPEC> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "optional_no_base_fee")] {
                 self.disable_base_fee
+            } else {
+                false
+            }
+        }
+    }
+
+    fn is_eip7702_enabled(&self) -> bool {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "enable_eip7702")] {
+                self.enable_eip7702
             } else {
                 false
             }

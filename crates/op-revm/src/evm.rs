@@ -193,7 +193,7 @@ mod tests {
         const SPEC_ID: OpSpecId = OpSpecId::FJORD;
 
         let InitialAndFloorGas { initial_gas, .. } =
-            calculate_initial_tx_gas(SPEC_ID.into(), &[], false, 0, 0, 0);
+            calculate_initial_tx_gas(SPEC_ID.into(), &[], false, false, 0, 0, 0);
 
         Context::op()
             .modify_tx_chained(|tx| {
@@ -241,9 +241,10 @@ mod tests {
         Journal<EmptyDB>,
         L1BlockInfo,
     > {
+        let is_eip7702_enabled = spec > OpSpecId::HOLOCENE;
         let input = Bytes::from([1; GRANITE_MAX_INPUT_SIZE + 2]);
         let InitialAndFloorGas { initial_gas, .. } =
-            calculate_initial_tx_gas(spec.into(), &input[..], false, 0, 0, 0);
+            calculate_initial_tx_gas(spec.into(), &input[..], false, is_eip7702_enabled, 0, 0, 0);
 
         Context::op()
             .modify_tx_chained(|tx| {
@@ -353,7 +354,7 @@ mod tests {
 
         let input = Bytes::from([1; bls12_381_const::G1_MSM_INPUT_LENGTH]);
         let InitialAndFloorGas { initial_gas, .. } =
-            calculate_initial_tx_gas(SPEC_ID.into(), &input[..], false, 0, 0, 0);
+            calculate_initial_tx_gas(SPEC_ID.into(), &input[..], false, true, 0, 0, 0);
         let gs1_msm_gas = bls12_381_utils::msm_required_gas(
             1,
             &bls12_381_const::DISCOUNT_TABLE_G1_MSM,
@@ -490,7 +491,7 @@ mod tests {
 
         let input = Bytes::from([1; bls12_381_const::G2_MSM_INPUT_LENGTH]);
         let InitialAndFloorGas { initial_gas, .. } =
-            calculate_initial_tx_gas(SPEC_ID.into(), &input[..], false, 0, 0, 0);
+            calculate_initial_tx_gas(SPEC_ID.into(), &input[..], false, true, 0, 0, 0);
         let gs2_msm_gas = bls12_381_utils::msm_required_gas(
             1,
             &bls12_381_const::DISCOUNT_TABLE_G2_MSM,
@@ -573,7 +574,7 @@ mod tests {
 
         let input = Bytes::from([1; bls12_381_const::PAIRING_INPUT_LENGTH]);
         let InitialAndFloorGas { initial_gas, .. } =
-            calculate_initial_tx_gas(SPEC_ID.into(), &input[..], false, 0, 0, 0);
+            calculate_initial_tx_gas(SPEC_ID.into(), &input[..], false, true, 0, 0, 0);
 
         let pairing_gas: u64 =
             bls12_381_const::PAIRING_MULTIPLIER_BASE + bls12_381_const::PAIRING_OFFSET_BASE;
@@ -655,7 +656,7 @@ mod tests {
 
         let input = Bytes::from([1; bls12_381_const::PADDED_FP_LENGTH]);
         let InitialAndFloorGas { initial_gas, .. } =
-            calculate_initial_tx_gas(SPEC_ID.into(), &input[..], false, 0, 0, 0);
+            calculate_initial_tx_gas(SPEC_ID.into(), &input[..], false, true, 0, 0, 0);
 
         Context::op()
             .modify_tx_chained(|tx| {
@@ -716,7 +717,7 @@ mod tests {
 
         let input = Bytes::from([1; bls12_381_const::PADDED_FP2_LENGTH]);
         let InitialAndFloorGas { initial_gas, .. } =
-            calculate_initial_tx_gas(SPEC_ID.into(), &input[..], false, 0, 0, 0);
+            calculate_initial_tx_gas(SPEC_ID.into(), &input[..], false, true, 0, 0, 0);
 
         Context::op()
             .modify_tx_chained(|tx| {

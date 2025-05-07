@@ -185,7 +185,7 @@ pub fn validate_tx_env<CTX: ContextTr, Error>(
         }
         TransactionType::Eip7702 => {
             // Check if EIP-7702 transaction is enabled.
-            if !spec_id.is_enabled_in(SpecId::PRAGUE) {
+            if !context.cfg().is_eip7702_enabled() && !spec_id.is_enabled_in(SpecId::PRAGUE) {
                 return Err(InvalidTransaction::Eip7702NotSupported);
             }
 
@@ -293,8 +293,9 @@ pub fn validate_tx_against_account<CTX: ContextTr>(
 pub fn validate_initial_tx_gas(
     tx: impl Transaction,
     spec: SpecId,
+    is_eip7702_enabled: bool,
 ) -> Result<InitialAndFloorGas, InvalidTransaction> {
-    let gas = gas::calculate_initial_tx_gas_for_tx(&tx, spec);
+    let gas = gas::calculate_initial_tx_gas_for_tx(&tx, spec, is_eip7702_enabled);
 
     // Additional check to see if limit is big enough to cover initial gas.
     if gas.initial_gas > tx.gas_limit() {
