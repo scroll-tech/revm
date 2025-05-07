@@ -52,6 +52,9 @@ pub trait Cfg {
 
     /// Returns whether the priority fee check is disabled.
     fn is_priority_fee_check_disabled(&self) -> bool;
+
+    /// Returns whether eip 7702 should be enabled.
+    fn is_eip7702_enabled(&self) -> bool;
 }
 
 /// What bytecode analysis to perform

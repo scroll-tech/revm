@@ -89,6 +89,9 @@ pub struct CfgEnv<SPEC = SpecId> {
     /// By default, it is set to `false`.
     #[cfg(feature = "optional_priority_fee_check")]
     pub disable_priority_fee_check: bool,
+    /// Skips the checks related to eip 7702 and enables it.
+    #[cfg(feature = "enable_eip7702")]
+    pub enable_eip7702: bool,
 }
 
 impl CfgEnv {
@@ -141,6 +144,8 @@ impl<SPEC> CfgEnv<SPEC> {
             disable_base_fee: false,
             #[cfg(feature = "optional_priority_fee_check")]
             disable_priority_fee_check: false,
+            #[cfg(feature = "enable_eip7702")]
+            enable_eip7702: false,
         }
     }
 
@@ -185,6 +190,8 @@ impl<SPEC> CfgEnv<SPEC> {
             disable_base_fee: self.disable_base_fee,
             #[cfg(feature = "optional_priority_fee_check")]
             disable_priority_fee_check: self.disable_priority_fee_check,
+            #[cfg(feature = "enable_eip7702")]
+            enable_eip7702: self.enable_eip7702,
         }
     }
 
@@ -208,6 +215,13 @@ impl<SPEC> CfgEnv<SPEC> {
     #[cfg(feature = "optional_priority_fee_check")]
     pub fn with_disable_priority_fee_check(mut self, disable: bool) -> Self {
         self.disable_priority_fee_check = disable;
+        self
+    }
+
+    /// Enables EIP-7702.
+    #[cfg(feature = "enable_eip7702")]
+    pub fn enable_eip_7702(mut self) -> CfgEnv<SPEC> {
+        self.enable_eip7702 = true;
         self
     }
 }
@@ -298,6 +312,16 @@ impl<SPEC: Into<SpecId> + Copy> Cfg for CfgEnv<SPEC> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "optional_priority_fee_check")] {
                 self.disable_priority_fee_check
+            } else {
+                false
+            }
+        }
+    }
+
+    fn is_eip7702_enabled(&self) -> bool {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "enable_eip7702")] {
+                self.enable_eip7702
             } else {
                 false
             }

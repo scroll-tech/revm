@@ -589,11 +589,12 @@ impl<ENTRY: JournalEntryTr> JournalInner<ENTRY> {
     #[inline]
     pub fn load_account_delegated<DB: Database>(
         &mut self,
+        is_eip7702_enabled: bool,
         db: &mut DB,
         address: Address,
     ) -> Result<StateLoad<AccountLoad>, DB::Error> {
         let spec = self.spec;
-        let is_eip7702_enabled = spec.is_enabled_in(SpecId::PRAGUE);
+        let is_eip7702_enabled = spec.is_enabled_in(SpecId::PRAGUE) | is_eip7702_enabled;
         let account = self.load_account_optional(db, address, is_eip7702_enabled, [])?;
         let is_empty = account.state_clear_aware_is_empty(spec);
 

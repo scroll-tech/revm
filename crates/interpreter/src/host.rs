@@ -174,8 +174,9 @@ impl<CTX: ContextTr> Host for CTX {
     /* Journal */
 
     fn load_account_delegated(&mut self, address: Address) -> Option<StateLoad<AccountLoad>> {
+        let is_eip7702_enabled = self.cfg().is_eip7702_enabled();
         self.journal_mut()
-            .load_account_delegated(address)
+            .load_account_delegated(is_eip7702_enabled, address)
             .map_err(|e| {
                 *self.error() = Err(e.into());
             })

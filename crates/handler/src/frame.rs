@@ -184,9 +184,10 @@ where
         }
 
         // Make account warm and loaded.
+        let is_eip7702_enabled = context.cfg().is_eip7702_enabled();
         let _ = context
             .journal_mut()
-            .load_account_delegated(inputs.bytecode_address)?;
+            .load_account_delegated(is_eip7702_enabled, inputs.bytecode_address)?;
 
         // Create subroutine checkpoint
         let checkpoint = context.journal_mut().checkpoint();

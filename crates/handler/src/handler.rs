@@ -255,7 +255,12 @@ pub trait Handler {
     #[inline]
     fn validate_initial_tx_gas(&self, evm: &Self::Evm) -> Result<InitialAndFloorGas, Self::Error> {
         let ctx = evm.ctx_ref();
-        validation::validate_initial_tx_gas(ctx.tx(), ctx.cfg().spec().into()).map_err(From::from)
+        validation::validate_initial_tx_gas(
+            ctx.tx(),
+            ctx.cfg().spec().into(),
+            ctx.cfg().is_eip7702_enabled(),
+        )
+        .map_err(From::from)
     }
 
     /* PRE EXECUTION */
