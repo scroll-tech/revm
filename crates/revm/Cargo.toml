@@ -69,7 +69,7 @@ rstest = "0.22.0"
 alloy-provider = "0.7"
 
 [features]
-default = ["std", "c-kzg", "portable", "blst"]
+default = ["std", "kzg-rs", "portable", "blst"]
 std = [
     "serde?/std",
     "serde_json?/std",

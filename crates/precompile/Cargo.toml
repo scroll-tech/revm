@@ -87,7 +87,7 @@ secp256k1 = { version = ">=0.28, <=0.29", default-features = false, features = [
 ] }
 
 [features]
-default = ["std", "c-kzg", "portable", "blst"]
+default = ["std", "kzg-rs", "portable", "blst"]
 std = [
     "revm-primitives/std",
     "k256/std",
@@ -155,7 +155,7 @@ all = [
     "hashbrown",
     "asm-keccak",
     "secp256r1",
-    "c-kzg",
+    "kzg-rs",
     "portable",
     "secp256k1",
 ]

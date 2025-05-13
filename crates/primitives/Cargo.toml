@@ -66,7 +66,7 @@ openvm-keccak256-guest = { workspace = true, optional = true }
 hex = { version = "0.4", default-features = false }
 
 [features]
-default = ["std", "c-kzg", "portable"]
+default = ["std", "kzg-rs", "portable"]
 std = [
     "serde?/std",
     "alloy-primitives/std",
