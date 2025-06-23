@@ -92,6 +92,9 @@ pub struct CfgEnv<SPEC = SpecId> {
     /// Skips the checks related to eip 7702 and enables it.
     #[cfg(feature = "enable_eip7702")]
     pub enable_eip7702: bool,
+    /// Skips the checks related to eip 7623 and enables it.
+    #[cfg(feature = "enable_eip7623")]
+    pub enable_eip7623: bool,
 }
 
 impl CfgEnv {
@@ -146,6 +149,8 @@ impl<SPEC> CfgEnv<SPEC> {
             disable_priority_fee_check: false,
             #[cfg(feature = "enable_eip7702")]
             enable_eip7702: false,
+            #[cfg(feature = "enable_eip7623")]
+            enable_eip7623: false,
         }
     }
 
@@ -192,6 +197,8 @@ impl<SPEC> CfgEnv<SPEC> {
             disable_priority_fee_check: self.disable_priority_fee_check,
             #[cfg(feature = "enable_eip7702")]
             enable_eip7702: self.enable_eip7702,
+            #[cfg(feature = "enable_eip7623")]
+            enable_eip7623: self.enable_eip7623,
         }
     }
 
@@ -222,6 +229,13 @@ impl<SPEC> CfgEnv<SPEC> {
     #[cfg(feature = "enable_eip7702")]
     pub fn enable_eip_7702(mut self) -> CfgEnv<SPEC> {
         self.enable_eip7702 = true;
+        self
+    }
+
+    /// Enables EIP-7623.
+    #[cfg(feature = "enable_eip7623")]
+    pub fn enable_eip_7623(mut self) -> CfgEnv<SPEC> {
+        self.enable_eip7623 = true;
         self
     }
 }
@@ -323,7 +337,17 @@ impl<SPEC: Into<SpecId> + Copy> Cfg for CfgEnv<SPEC> {
             if #[cfg(feature = "enable_eip7702")] {
                 self.enable_eip7702
             } else {
-                false
+                self.spec.into() >= SpecId::PRAGUE
+            }
+        }
+    }
+
+    fn is_eip7623_enabled(&self) -> bool {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "enable_eip7623")] {
+                self.enable_eip7623
+            } else {
+                self.spec.into() >= SpecId::PRAGUE
             }
         }
     }

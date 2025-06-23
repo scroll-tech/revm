@@ -285,8 +285,10 @@ pub fn validate_initial_tx_gas(
     tx: impl Transaction,
     spec: SpecId,
     is_eip7702_enabled: bool,
+    is_eip7623_enabled: bool,
 ) -> Result<InitialAndFloorGas, InvalidTransaction> {
-    let gas = gas::calculate_initial_tx_gas_for_tx(&tx, spec, is_eip7702_enabled);
+    let gas =
+        gas::calculate_initial_tx_gas_for_tx(&tx, spec, is_eip7702_enabled, is_eip7623_enabled);
 
     // Additional check to see if limit is big enough to cover initial gas.
     if gas.initial_gas > tx.gas_limit() {
@@ -298,7 +300,7 @@ pub fn validate_initial_tx_gas(
 
     // EIP-7623: Increase calldata cost
     // floor gas should be less than gas limit.
-    if spec.is_enabled_in(SpecId::PRAGUE) && gas.floor_gas > tx.gas_limit() {
+    if (spec.is_enabled_in(SpecId::PRAGUE) | is_eip7623_enabled) && gas.floor_gas > tx.gas_limit() {
         return Err(InvalidTransaction::GasFloorMoreThanGasLimit {
             gas_floor: gas.floor_gas,
             gas_limit: tx.gas_limit(),
