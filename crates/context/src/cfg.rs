@@ -65,10 +65,14 @@ pub struct CfgEnv<SPEC = SpecId> {
     /// By default, it is set to `false`.
     #[cfg(feature = "optional_no_base_fee")]
     pub disable_base_fee: bool,
-    /// Skips the checks related to eip 7702 and enables it.
+    /// Enables EIP-7702, regardless of the current spec.
+    ///
+    /// By default, it is set to `false`.
     #[cfg(feature = "enable_eip7702")]
     pub enable_eip7702: bool,
-    /// Skips the checks related to eip 7623 and enables it.
+    /// Enables EIP-7623, regardless of the current spec.
+    ///
+    /// By default, it is set to `false`.
     #[cfg(feature = "enable_eip7623")]
     pub enable_eip7623: bool,
 }
@@ -236,7 +240,7 @@ impl<SPEC: Into<SpecId> + Copy> Cfg for CfgEnv<SPEC> {
     fn is_eip7702_enabled(&self) -> bool {
         cfg_if::cfg_if! {
             if #[cfg(feature = "enable_eip7702")] {
-                self.enable_eip7702 | (self.spec.into() >= SpecId::PRAGUE)
+                self.enable_eip7702 || (self.spec.into() >= SpecId::PRAGUE)
             } else {
                 self.spec.into() >= SpecId::PRAGUE
             }
@@ -246,7 +250,7 @@ impl<SPEC: Into<SpecId> + Copy> Cfg for CfgEnv<SPEC> {
     fn is_eip7623_enabled(&self) -> bool {
         cfg_if::cfg_if! {
             if #[cfg(feature = "enable_eip7623")] {
-                self.enable_eip7623 | (self.spec.into() >= SpecId::PRAGUE)
+                self.enable_eip7623 || (self.spec.into() >= SpecId::PRAGUE)
             } else {
                 self.spec.into() >= SpecId::PRAGUE
             }

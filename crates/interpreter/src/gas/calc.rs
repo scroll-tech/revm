@@ -427,7 +427,7 @@ pub fn calculate_initial_tx_gas(
     }
 
     // EIP-7623
-    if spec_id.is_enabled_in(SpecId::PRAGUE) | is_eip7623_enabled {
+    if spec_id.is_enabled_in(SpecId::PRAGUE) || is_eip7623_enabled {
         gas.floor_gas = calc_tx_floor_cost(tokens_in_calldata);
     }
 
