@@ -97,9 +97,16 @@ pub struct CfgEnv<SPEC = SpecId> {
     /// By default, it is set to `false`.
     #[cfg(feature = "optional_priority_fee_check")]
     pub disable_priority_fee_check: bool,
-    /// Skips the checks related to eip 7702 and enables it.
+    /// Enables EIP-7702, regardless of the current spec.
+    ///
+    /// By default, it is set to `false`.
     #[cfg(feature = "enable_eip7702")]
     pub enable_eip7702: bool,
+    /// Enables EIP-7623, regardless of the current spec.
+    ///
+    /// By default, it is set to `false`.
+    #[cfg(feature = "enable_eip7623")]
+    pub enable_eip7623: bool,
 }
 
 impl CfgEnv {
@@ -155,6 +162,8 @@ impl<SPEC> CfgEnv<SPEC> {
             disable_priority_fee_check: false,
             #[cfg(feature = "enable_eip7702")]
             enable_eip7702: false,
+            #[cfg(feature = "enable_eip7623")]
+            enable_eip7623: false,
         }
     }
 
@@ -201,7 +210,9 @@ impl<SPEC> CfgEnv<SPEC> {
             #[cfg(feature = "optional_priority_fee_check")]
             disable_priority_fee_check: self.disable_priority_fee_check,
             #[cfg(feature = "enable_eip7702")]
-            enable_eip7702: false,
+            enable_eip7702: self.enable_eip7702,
+            #[cfg(feature = "enable_eip7623")]
+            enable_eip7623: self.enable_eip7623,
         }
     }
 
@@ -232,6 +243,13 @@ impl<SPEC> CfgEnv<SPEC> {
     #[cfg(feature = "enable_eip7702")]
     pub fn enable_eip_7702(mut self) -> CfgEnv<SPEC> {
         self.enable_eip7702 = true;
+        self
+    }
+
+    /// Enables EIP-7623.
+    #[cfg(feature = "enable_eip7623")]
+    pub fn enable_eip_7623(mut self) -> CfgEnv<SPEC> {
+        self.enable_eip7623 = true;
         self
     }
 }
@@ -341,9 +359,19 @@ impl<SPEC: Into<SpecId> + Copy> Cfg for CfgEnv<SPEC> {
     fn is_eip7702_enabled(&self) -> bool {
         cfg_if::cfg_if! {
             if #[cfg(feature = "enable_eip7702")] {
-                self.enable_eip7702
+                self.enable_eip7702 || (self.spec.into() >= SpecId::PRAGUE)
             } else {
-                false
+                self.spec.into() >= SpecId::PRAGUE
+            }
+        }
+    }
+
+    fn is_eip7623_enabled(&self) -> bool {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "enable_eip7623")] {
+                self.enable_eip7623 || (self.spec.into() >= SpecId::PRAGUE)
+            } else {
+                self.spec.into() >= SpecId::PRAGUE
             }
         }
     }
