@@ -230,6 +230,7 @@ pub trait Handler {
             ctx.tx(),
             ctx.cfg().spec().into(),
             ctx.cfg().is_eip7702_enabled(),
+            ctx.cfg().is_eip7623_enabled(),
         )
         .map_err(From::from)
     }

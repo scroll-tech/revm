@@ -375,11 +375,13 @@ impl InitialAndFloorGas {
 ///
 /// - Intrinsic gas
 /// - Number of tokens in calldata
+#[allow(clippy::too_many_arguments)]
 pub fn calculate_initial_tx_gas(
     spec_id: SpecId,
     input: &[u8],
     is_create: bool,
     is_eip7702_enabled: bool,
+    is_eip7623_enabled: bool,
     access_list_accounts: u64,
     access_list_storages: u64,
     authorization_list_num: u64,
@@ -425,7 +427,7 @@ pub fn calculate_initial_tx_gas(
     }
 
     // EIP-7623
-    if spec_id.is_enabled_in(SpecId::PRAGUE) {
+    if spec_id.is_enabled_in(SpecId::PRAGUE) || is_eip7623_enabled {
         gas.floor_gas = calc_tx_floor_cost(tokens_in_calldata);
     }
 
@@ -443,6 +445,7 @@ pub fn calculate_initial_tx_gas_for_tx(
     tx: impl Transaction,
     spec: SpecId,
     is_eip7702_enabled: bool,
+    is_eip7623_enabled: bool,
 ) -> InitialAndFloorGas {
     let mut accounts = 0;
     let mut storages = 0;
@@ -474,6 +477,7 @@ pub fn calculate_initial_tx_gas_for_tx(
         tx.input(),
         tx.kind().is_create(),
         is_eip7702_enabled,
+        is_eip7623_enabled,
         accounts as u64,
         storages as u64,
         tx.authorization_list_len() as u64,

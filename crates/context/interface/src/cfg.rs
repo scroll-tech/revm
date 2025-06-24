@@ -31,6 +31,8 @@ pub trait Cfg {
     fn is_base_fee_check_disabled(&self) -> bool;
 
     fn is_eip7702_enabled(&self) -> bool;
+
+    fn is_eip7623_enabled(&self) -> bool;
 }
 
 /// What bytecode analysis to perform
