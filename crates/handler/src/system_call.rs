@@ -1,10 +1,29 @@
+//! System call logic for external state transitions required by certain EIPs (notably [EIP-2935](https://eips.ethereum.org/EIPS/eip-2935) and [EIP-4788](https://eips.ethereum.org/EIPS/eip-4788)).
+//!
+//! These EIPs require the client to perform special system calls to update state (such as block hashes or beacon roots) at block boundaries, outside of normal EVM transaction execution. REVM provides the system call mechanism, but the actual state transitions must be performed by the client or test harness, not by the EVM itself.
+//!
+//! # Example: Using `transact_system_call` for pre/post block hooks
+//!
+//! The client should use [`SystemCallEvm::transact_system_call`] method to perform required state updates before or after block execution, as specified by the EIP:
+//!
+//! ```rust,ignore
+//! // Example: update beacon root (EIP-4788) at the start of a block
+//! let beacon_root: Bytes = ...; // obtained from consensus layer
+//! let beacon_contract: Address = "0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02".parse().unwrap();
+//! evm.transact_system_call(beacon_contract, beacon_root)?;
+//!
+//! // Example: update block hash (EIP-2935) at the end of a block
+//! let block_hash: Bytes = ...; // new block hash
+//! let history_contract: Address = "0x0000F90827F1C53a10cb7A02335B175320002935".parse().unwrap();
+//! evm.transact_system_call(history_contract, block_hash)?;
+//! ```
+//!
+//! See the book section on [External State Transitions](../../book/src/external_state_transitions.md) for more details.
 use crate::{
     frame::EthFrame, instructions::InstructionProvider, ExecuteCommitEvm, ExecuteEvm, Handler,
     MainnetHandler, PrecompileProvider,
 };
-use context::{
-    result::ExecResultAndState, ContextSetters, ContextTr, Evm, JournalTr, TransactionType, TxEnv,
-};
+use context::{result::ExecResultAndState, ContextSetters, ContextTr, Evm, JournalTr, TxEnv};
 use database_interface::DatabaseCommit;
 use interpreter::{interpreter::EthInterpreter, InterpreterResult};
 use primitives::{address, eip7825, Address, Bytes, TxKind};
@@ -39,14 +58,13 @@ impl SystemCallTx for TxEnv {
         system_contract_address: Address,
         data: Bytes,
     ) -> Self {
-        TxEnv {
-            tx_type: TransactionType::Legacy as u8,
-            caller,
-            data,
-            kind: TxKind::Call(system_contract_address),
-            gas_limit: eip7825::TX_GAS_LIMIT_CAP,
-            ..Default::default()
-        }
+        TxEnv::builder()
+            .caller(caller)
+            .data(data)
+            .kind(TxKind::Call(system_contract_address))
+            .gas_limit(eip7825::TX_GAS_LIMIT_CAP)
+            .build()
+            .unwrap()
     }
 }
 
