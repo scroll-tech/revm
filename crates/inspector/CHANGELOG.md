@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [8.1.0](https://github.com/bluealloy/revm/compare/revm-inspector-v8.0.3...revm-inspector-v8.1.0) - 2025-07-23
+
+### Added
+
+- count inspector and bench test ([#2730](https://github.com/bluealloy/revm/pull/2730))
+
+### Fixed
+
+- fully deprecate serde-json ([#2767](https://github.com/bluealloy/revm/pull/2767))
+- features and check in ci ([#2766](https://github.com/bluealloy/revm/pull/2766))
+
+### Other
+
+- *(inspector)* simplify create_end docs and intrp.bytecode.set_action ([#2723](https://github.com/bluealloy/revm/pull/2723))
+- *(inspector)* update obsolete current_opcode() comment ([#2722](https://github.com/bluealloy/revm/pull/2722))
+
+## [8.0.3](https://github.com/bluealloy/revm/compare/revm-inspector-v8.0.2...revm-inspector-v8.0.3) - 2025-07-14
+
+### Fixed
+
+- *(Inspector)* call_end not calle on first call fast return ([#2697](https://github.com/bluealloy/revm/pull/2697))
+
+## [8.0.2](https://github.com/bluealloy/revm/compare/revm-inspector-v8.0.1...revm-inspector-v8.0.2) - 2025-07-03
+
+### Fixed
+
+- *(inspector)* revert pointer before calling step_end ([#2687](https://github.com/bluealloy/revm/pull/2687))
+
+### Other
+
+- minor fixes ([#2686](https://github.com/bluealloy/revm/pull/2686))
+
+## [8.0.1](https://github.com/bluealloy/revm/compare/revm-inspector-v7.0.1...revm-inspector-v8.0.1) - 2025-06-30
+
+### Other
+
+- cargo clippy --fix --all ([#2671](https://github.com/bluealloy/revm/pull/2671))
+- use TxEnv::builder ([#2652](https://github.com/bluealloy/revm/pull/2652))
+
 ## [7.0.1](https://github.com/bluealloy/revm/compare/revm-inspector-v7.0.0...revm-inspector-v7.0.1) - 2025-06-20
 
 ### Other
