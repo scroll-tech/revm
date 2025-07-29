@@ -35,8 +35,6 @@ cfg_if::cfg_if! {
     }
 }
 
-use arrayref as _;
-
 #[cfg(all(feature = "c-kzg", feature = "kzg-rs"))]
 // silence kzg-rs lint as c-kzg will be used as default if both are enabled.
 use kzg_rs as _;
@@ -199,7 +197,7 @@ impl Precompiles {
         static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Self::prague().clone();
-            precompiles.extend([modexp::OSAKA, secp256r1::P256VERIFY_OSAKA]);
+            precompiles.extend([modexp::OSAKA, secp256r1::P256VERIFY]);
             Box::new(precompiles)
         })
     }

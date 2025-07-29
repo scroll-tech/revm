@@ -52,12 +52,10 @@ pub fn main() {
         .with_inspector(TracerEip3155::new_stdout().without_summary());
 
     // inspect the transaction.
-    let _ = evm.inspect_one_tx(
-        TxEnv::builder()
-            .kind(TxKind::Call(BENCH_TARGET))
-            .build()
-            .unwrap(),
-    );
+    let _ = evm.inspect_one_tx(TxEnv {
+        kind: TxKind::Call(BENCH_TARGET),
+        ..Default::default()
+    });
 
     // Expected output where we can see that JUMPDEST is called.
     /*

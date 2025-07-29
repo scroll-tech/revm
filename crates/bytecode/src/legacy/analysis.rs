@@ -2,13 +2,21 @@ use super::JumpTable;
 use crate::opcode;
 use bitvec::{bitvec, order::Lsb0, vec::BitVec};
 use primitives::Bytes;
-use std::vec::Vec;
+use std::{vec, vec::Vec};
 
-/// Analyzes the bytecode for use in [`LegacyAnalyzedBytecode`](crate::LegacyAnalyzedBytecode).
+/// Analyze the bytecode to find the jumpdests. Used to create a jump table
+/// that is needed for [`crate::LegacyAnalyzedBytecode`].
+/// This function contains a hot loop and should be optimized as much as possible.
 ///
-/// See [`LegacyAnalyzedBytecode`](crate::LegacyAnalyzedBytecode) for more details.
+/// # Safety
 ///
-/// Prefer using [`LegacyAnalyzedBytecode::analyze`](crate::LegacyAnalyzedBytecode::analyze) instead.
+/// The function uses unsafe pointer arithmetic, but maintains the following invariants:
+/// - The iterator never advances beyond the end of the bytecode
+/// - All pointer offsets are within bounds of the bytecode
+/// - The jump table is never accessed beyond its allocated size
+///
+/// Undefined behavior if the bytecode does not end with a valid STOP opcode. Please check
+/// [`crate::LegacyAnalyzedBytecode::new`] for details on how the bytecode is validated.
 pub fn analyze_legacy(bytecode: Bytes) -> (JumpTable, Bytes) {
     if bytecode.is_empty() {
         return (JumpTable::default(), Bytes::from_static(&[opcode::STOP]));
@@ -23,38 +31,38 @@ pub fn analyze_legacy(bytecode: Bytes) -> (JumpTable, Bytes) {
 
     while iterator < end {
         opcode = unsafe { *iterator };
-        if opcode == opcode::JUMPDEST {
+        if opcode::JUMPDEST == opcode {
             // SAFETY: Jumps are max length of the code
             unsafe { jumps.set_unchecked(iterator.offset_from(start) as usize, true) }
-            iterator = unsafe { iterator.add(1) };
+            iterator = unsafe { iterator.offset(1) };
         } else {
             let push_offset = opcode.wrapping_sub(opcode::PUSH1);
             if push_offset < 32 {
                 // SAFETY: Iterator access range is checked in the while loop
-                iterator = unsafe { iterator.add(push_offset as usize + 2) };
+                iterator = unsafe { iterator.offset((push_offset + 2) as isize) };
             } else {
                 // SAFETY: Iterator access range is checked in the while loop
-                iterator = unsafe { iterator.add(1) };
+                iterator = unsafe { iterator.offset(1) };
             }
         }
     }
 
-    let padding = (iterator as usize) - (end as usize) + (opcode != opcode::STOP) as usize;
-    let bytecode = if padding > 0 {
-        let mut padded = Vec::with_capacity(bytecode.len() + padding);
-        padded.extend_from_slice(&bytecode);
-        padded.resize(padded.len() + padding, 0);
-        Bytes::from(padded)
+    // Calculate padding needed to ensure bytecode ends with STOP
+    // If we're at the end and last opcode is not STOP, we need 1 more byte
+    let padding_size = (iterator as usize) - (end as usize) + (opcode != opcode::STOP) as usize;
+    if padding_size > 0 {
+        let mut padded_bytecode = Vec::with_capacity(bytecode.len() + padding_size);
+        padded_bytecode.extend_from_slice(&bytecode);
+        padded_bytecode.extend(vec![0; padding_size]);
+        (JumpTable::new(jumps), Bytes::from(padded_bytecode))
     } else {
-        bytecode
-    };
-
-    (JumpTable::new(jumps), bytecode)
+        (JumpTable::new(jumps), bytecode)
+    }
 }
 
-#[cfg(test)]
 mod tests {
-    use super::*;
+    #[allow(unused_imports)]
+    use crate::{legacy::analyze_legacy, opcode};
 
     #[test]
     fn test_bytecode_ends_with_stop_no_padding_needed() {
@@ -102,14 +110,14 @@ mod tests {
     fn test_bytecode_with_jumpdest_at_start() {
         let bytecode = vec![opcode::JUMPDEST, opcode::PUSH1, 0x01, opcode::STOP];
         let (jump_table, _) = analyze_legacy(bytecode.clone().into());
-        assert!(jump_table.is_valid(0)); // First byte should be a valid jumpdest
+        assert!(jump_table.table[0]); // First byte should be a valid jumpdest
     }
 
     #[test]
     fn test_bytecode_with_jumpdest_after_push() {
         let bytecode = vec![opcode::PUSH1, 0x01, opcode::JUMPDEST, opcode::STOP];
         let (jump_table, _) = analyze_legacy(bytecode.clone().into());
-        assert!(jump_table.is_valid(2)); // JUMPDEST should be at position 2
+        assert!(jump_table.table[2]); // JUMPDEST should be at position 2
     }
 
     #[test]
@@ -122,8 +130,8 @@ mod tests {
             opcode::STOP,
         ];
         let (jump_table, _) = analyze_legacy(bytecode.clone().into());
-        assert!(jump_table.is_valid(0)); // First JUMPDEST
-        assert!(jump_table.is_valid(3)); // Second JUMPDEST
+        assert!(jump_table.table[0]); // First JUMPDEST
+        assert!(jump_table.table[3]); // Second JUMPDEST
     }
 
     #[test]
@@ -137,7 +145,7 @@ mod tests {
     fn test_bytecode_with_invalid_opcode() {
         let bytecode = vec![0xFF, opcode::STOP]; // 0xFF is an invalid opcode
         let (jump_table, _) = analyze_legacy(bytecode.clone().into());
-        assert!(!jump_table.is_valid(0)); // Invalid opcode should not be a jumpdest
+        assert!(!jump_table.table[0]); // Invalid opcode should not be a jumpdest
     }
 
     #[test]
@@ -157,9 +165,9 @@ mod tests {
         ];
         let (jump_table, padded_bytecode) = analyze_legacy(bytecode.clone().into());
         assert_eq!(padded_bytecode.len(), bytecode.len());
-        assert!(!jump_table.is_valid(0)); // PUSH1
-        assert!(!jump_table.is_valid(2)); // PUSH2
-        assert!(!jump_table.is_valid(5)); // PUSH4
+        assert!(!jump_table.table[0]); // PUSH1
+        assert!(!jump_table.table[2]); // PUSH2
+        assert!(!jump_table.table[5]); // PUSH4
     }
 
     #[test]
@@ -171,6 +179,6 @@ mod tests {
             opcode::STOP,
         ];
         let (jump_table, _) = analyze_legacy(bytecode.clone().into());
-        assert!(!jump_table.is_valid(1)); // JUMPDEST in push data should not be valid
+        assert!(!jump_table.table[1]); // JUMPDEST in push data should not be valid
     }
 }

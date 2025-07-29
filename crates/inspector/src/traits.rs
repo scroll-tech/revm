@@ -62,12 +62,8 @@ pub trait InspectorEvmTr:
             frame_end(ctx, inspector, &frame_init.frame_input, &mut output);
             return Ok(ItemOrResult::Result(output));
         }
-
-        let frame_input = frame_init.frame_input.clone();
-        if let ItemOrResult::Result(mut output) = self.frame_init(frame_init)? {
-            let (ctx, inspector) = self.ctx_inspector();
-            frame_end(ctx, inspector, &frame_input, &mut output);
-            return Ok(ItemOrResult::Result(output));
+        if let ItemOrResult::Result(frame) = self.frame_init(frame_init)? {
+            return Ok(ItemOrResult::Result(frame));
         }
 
         // if it is new frame, initialize the interpreter.

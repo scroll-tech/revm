@@ -2,7 +2,6 @@
 mod alloy_types;
 pub mod eip2930;
 pub mod eip7702;
-mod either;
 pub mod transaction_type;
 
 pub use alloy_types::{
@@ -24,7 +23,7 @@ pub trait TransactionError: Debug + core::error::Error {}
 
 /// Main Transaction trait that abstracts and specifies all transaction currently supported by Ethereum
 ///
-/// Access to any associated type is gated behind [`tx_type`][Transaction::tx_type] function.
+/// Access to any associated type is gaited behind [`tx_type`][Transaction::tx_type] function.
 ///
 /// It can be extended to support new transaction types and only transaction types can be
 /// deprecated by not returning tx_type.

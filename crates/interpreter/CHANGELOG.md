@@ -6,47 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [24.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v23.0.2...revm-interpreter-v24.0.0) - 2025-07-23
-
-### Added
-
-- *(interpreter)* update CLZ cost ([#2739](https://github.com/bluealloy/revm/pull/2739))
-
-### Fixed
-
-- features and check in ci ([#2766](https://github.com/bluealloy/revm/pull/2766))
-
-### Other
-
-- un-Box frames ([#2761](https://github.com/bluealloy/revm/pull/2761))
-- interpreter improvements ([#2760](https://github.com/bluealloy/revm/pull/2760))
-- evaluate instruction table initializer at compile time ([#2762](https://github.com/bluealloy/revm/pull/2762))
-- discard generic host implementation ([#2738](https://github.com/bluealloy/revm/pull/2738))
-- add release safety section for SharedMemory fn ([#2718](https://github.com/bluealloy/revm/pull/2718))
-- *(interpreter)* update docs for slice_mut and slice_range ([#2714](https://github.com/bluealloy/revm/pull/2714))
-
-## [23.0.2](https://github.com/bluealloy/revm/compare/revm-interpreter-v23.0.1...revm-interpreter-v23.0.2) - 2025-07-14
-
-### Other
-
-- simplify gas calculations by introducing a used() method ([#2703](https://github.com/bluealloy/revm/pull/2703))
-
-## [23.0.1](https://github.com/bluealloy/revm/compare/revm-interpreter-v23.0.0...revm-interpreter-v23.0.1) - 2025-07-03
-
-### Other
-
-- updated the following local packages: revm-bytecode, revm-context-interface
-
-## [22.1.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v22.0.1...revm-interpreter-v22.1.0) - 2025-06-30
-
-### Added
-
-- blake2 avx2 ([#2670](https://github.com/bluealloy/revm/pull/2670))
-
-### Other
-
-- cargo clippy --fix --all ([#2671](https://github.com/bluealloy/revm/pull/2671))
-
 ## [22.0.1](https://github.com/bluealloy/revm/compare/revm-interpreter-v22.0.0...revm-interpreter-v22.0.1) - 2025-06-20
 
 ### Other
@@ -207,7 +166,7 @@ Stable version
 - fix wrong comment & remove useless struct ([#2105](https://github.com/bluealloy/revm/pull/2105))
 - move all dependencies to workspace ([#2092](https://github.com/bluealloy/revm/pull/2092))
 
-## [16.0.0-alpha.1](https://github.com/bluealloy/revm/compare/revm-interpreter-v15.2.0...revm-interpreter-v16.0.0-alpha.1) - 2025-02-16
+## [16.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v15.2.0...revm-interpreter-v16.0.0-alpha.1) - 2025-02-16
 
 ### Added
 

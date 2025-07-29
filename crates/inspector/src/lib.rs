@@ -5,8 +5,7 @@
 #![cfg_attr(not(test), warn(unused_crate_dependencies))]
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod count_inspector;
-#[cfg(feature = "tracer")]
+#[cfg(all(feature = "std", feature = "serde-json"))]
 mod eip3155;
 mod either;
 mod gas;
@@ -18,17 +17,13 @@ mod mainnet_inspect;
 mod noop;
 mod traits;
 
-#[cfg(test)]
-mod inspector_tests;
-
 /// Inspector implementations.
 pub mod inspectors {
-    #[cfg(feature = "tracer")]
+    #[cfg(all(feature = "std", feature = "serde-json"))]
     pub use super::eip3155::TracerEip3155;
     pub use super::gas::GasInspector;
 }
 
-pub use count_inspector::CountInspector;
 pub use handler::{inspect_instructions, InspectorHandler};
 pub use inspect::{InspectCommitEvm, InspectEvm};
 pub use inspector::*;

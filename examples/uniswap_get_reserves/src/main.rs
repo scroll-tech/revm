@@ -70,20 +70,18 @@ async fn main() -> anyhow::Result<()> {
 
     // Execute transaction without writing to the DB
     let result = evm
-        .transact_one(
-            TxEnv::builder()
-                // fill in missing bits of env struct
-                // change that to whatever caller you want to be
-                .caller(address!("0000000000000000000000000000000000000000"))
-                // account you want to transact with
-                .kind(TxKind::Call(pool_address))
-                // calldata formed via abigen
-                .data(encoded.into())
-                // transaction value in wei
-                .value(U256::from(0))
-                .build()
-                .unwrap(),
-        )
+        .transact_one(TxEnv {
+            // fill in missing bits of env struct
+            // change that to whatever caller you want to be
+            caller: address!("0000000000000000000000000000000000000000"),
+            // account you want to transact with
+            kind: TxKind::Call(pool_address),
+            // calldata formed via abigen
+            data: encoded.into(),
+            // transaction value in wei
+            value: U256::from(0),
+            ..Default::default()
+        })
         .unwrap();
 
     // Unpack output call enum into raw bytes

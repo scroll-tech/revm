@@ -92,7 +92,6 @@ mod tests {
     #[derive(Default, Debug)]
     struct StackInspector {
         pc: usize,
-        opcode: u8,
         gas_inspector: GasInspector,
         gas_remaining_steps: Vec<(usize, u64)>,
     }
@@ -104,13 +103,10 @@ mod tests {
 
         fn step(&mut self, interp: &mut Interpreter<INTR>, _context: &mut CTX) {
             self.pc = interp.bytecode.pc();
-            self.opcode = interp.bytecode.opcode();
             self.gas_inspector.step(&interp.gas);
         }
 
         fn step_end(&mut self, interp: &mut Interpreter<INTR>, _context: &mut CTX) {
-            interp.bytecode.pc();
-            interp.bytecode.opcode();
             self.gas_inspector.step_end(&mut interp.gas);
             self.gas_remaining_steps
                 .push((self.pc, self.gas_inspector.gas_remaining()));
@@ -149,14 +145,12 @@ mod tests {
         let mut evm = ctx.build_mainnet_with_inspector(StackInspector::default());
 
         // Run evm.
-        evm.inspect_one_tx(
-            TxEnv::builder()
-                .caller(BENCH_CALLER)
-                .kind(TxKind::Call(BENCH_TARGET))
-                .gas_limit(21100)
-                .build()
-                .unwrap(),
-        )
+        evm.inspect_one_tx(TxEnv {
+            caller: BENCH_CALLER,
+            kind: TxKind::Call(BENCH_TARGET),
+            gas_limit: 21100,
+            ..Default::default()
+        })
         .unwrap();
 
         let inspector = &evm.inspector;
@@ -252,12 +246,21 @@ mod tests {
 
         let bytecode = Bytecode::new_raw(contract_data);
 
-        let mut evm = Context::mainnet()
+        let ctx = Context::mainnet()
             .with_db(BenchmarkDB::new_bytecode(bytecode.clone()))
-            .build_mainnet_with_inspector(inspector);
+            .modify_tx_chained(|tx| {
+                tx.caller = BENCH_CALLER;
+                tx.kind = TxKind::Call(BENCH_TARGET);
+            });
+
+        let mut evm = ctx.build_mainnet_with_inspector(inspector);
 
         let _ = evm
-            .inspect_one_tx(TxEnv::builder_for_bench().build().unwrap())
+            .inspect_one_tx(TxEnv {
+                caller: BENCH_CALLER,
+                kind: TxKind::Call(BENCH_TARGET),
+                ..Default::default()
+            })
             .unwrap();
         assert_eq!(evm.inspector.return_buffer.len(), 3);
         assert_eq!(

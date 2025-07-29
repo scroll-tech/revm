@@ -31,7 +31,6 @@ impl Deref for ExtBytecode {
 }
 
 impl Default for ExtBytecode {
-    #[inline]
     fn default() -> Self {
         Self::new(Bytecode::default())
     }
@@ -39,7 +38,6 @@ impl Default for ExtBytecode {
 
 impl ExtBytecode {
     /// Create new extended bytecode and set the instruction pointer to the start of the bytecode.
-    #[inline]
     pub fn new(base: Bytecode) -> Self {
         let instruction_pointer = base.bytecode_ptr();
         Self {

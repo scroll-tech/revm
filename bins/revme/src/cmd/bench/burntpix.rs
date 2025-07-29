@@ -41,13 +41,13 @@ pub fn run(criterion: &mut Criterion) {
         .modify_cfg_chained(|c| c.disable_nonce_check = true)
         .build_mainnet();
 
-    let tx = TxEnv::builder()
-        .caller(BENCH_CALLER)
-        .kind(TxKind::Call(BURNTPIX_MAIN_ADDRESS))
-        .data(run_call_data.clone().into())
-        .gas_limit(u64::MAX)
-        .build()
-        .unwrap();
+    let tx = TxEnv {
+        caller: BENCH_CALLER,
+        kind: TxKind::Call(BURNTPIX_MAIN_ADDRESS),
+        data: run_call_data.clone().into(),
+        gas_limit: u64::MAX,
+        ..Default::default()
+    };
 
     criterion.bench_function("burntpix", |b| {
         b.iter_batched(
@@ -163,8 +163,8 @@ fn init_db() -> CacheDB<EmptyDB> {
     cache_db
         .insert_account_storage(
             BURNTPIX_MAIN_ADDRESS,
-            StorageKey::from(2),
-            StorageValue::from_be_bytes(*STORAGE_TWO),
+            StorageValue::from(2),
+            StorageKey::from_be_bytes(*STORAGE_TWO),
         )
         .unwrap();
 

@@ -197,12 +197,6 @@ impl OpCode {
     }
 }
 
-impl PartialEq<u8> for OpCode {
-    fn eq(&self, other: &u8) -> bool {
-        self.get().eq(other)
-    }
-}
-
 /// Information about opcode, such as name, and stack inputs and outputs
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct OpCodeInfo {
