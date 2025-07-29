@@ -6,6 +6,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.1.0](https://github.com/bluealloy/revm/compare/revme-v7.0.4...revme-v7.1.0) - 2025-07-23
+
+### Added
+
+- count inspector and bench test ([#2730](https://github.com/bluealloy/revm/pull/2730))
+
+### Fixed
+
+- fully deprecate serde-json ([#2767](https://github.com/bluealloy/revm/pull/2767))
+
+### Other
+
+- back to hashbrown map in revme ([#2770](https://github.com/bluealloy/revm/pull/2770))
+- back to better map ([#2768](https://github.com/bluealloy/revm/pull/2768))
+- bump develop statetests to devnet-3 ([#2754](https://github.com/bluealloy/revm/pull/2754))
+- add clz_50 codspeed ([#2743](https://github.com/bluealloy/revm/pull/2743))
+
+## [7.0.4](https://github.com/bluealloy/revm/compare/revme-v7.0.3...revme-v7.0.4) - 2025-07-14
+
+### Other
+
+- incorrect StorageKey and StorageValue parameter order in burntpix benchmark ([#2704](https://github.com/bluealloy/revm/pull/2704))
+
+## [7.0.3](https://github.com/bluealloy/revm/compare/revme-v7.0.2...revme-v7.0.3) - 2025-07-03
+
+### Other
+
+- update Cargo.lock dependencies
+
+## [7.0.2](https://github.com/bluealloy/revm/compare/revme-v7.0.1...revme-v7.0.2) - 2025-06-30
+
+### Other
+
+- cargo clippy --fix --all ([#2671](https://github.com/bluealloy/revm/pull/2671))
+- statetest runner cleanup ([#2665](https://github.com/bluealloy/revm/pull/2665))
+- use TxEnv::builder ([#2652](https://github.com/bluealloy/revm/pull/2652))
+
 ## [7.0.1](https://github.com/bluealloy/revm/compare/revme-v7.0.0...revme-v7.0.1) - 2025-06-20
 
 ### Other

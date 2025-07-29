@@ -35,8 +35,14 @@ pub type Instruction<W, H> = fn(InstructionContext<'_, H, W>);
 /// Instruction table is list of instruction function pointers mapped to 256 EVM opcodes.
 pub type InstructionTable<W, H> = [Instruction<W, H>; 256];
 
-/// Returns the instruction table for the given spec.
+/// Returns the default instruction table for the given interpreter types and host.
+#[inline]
 pub const fn instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
+) -> [Instruction<WIRE, H>; 256] {
+    const { instruction_table_impl::<WIRE, H>() }
+}
+
+const fn instruction_table_impl<WIRE: InterpreterTypes, H: Host + ?Sized>(
 ) -> [Instruction<WIRE, H>; 256] {
     use bytecode::opcode::*;
     let mut table = [control::unknown as Instruction<WIRE, H>; 256];
@@ -224,7 +230,7 @@ mod tests {
             let is_instr_unknown = std::ptr::fn_addr_eq(*instr, unknown_istr);
             assert_eq!(
                 is_instr_unknown, is_opcode_unknown,
-                "Opcode 0x{i:X?} is not handled"
+                "Opcode 0x{i:X?} is not handled",
             );
         }
     }

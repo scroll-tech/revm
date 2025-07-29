@@ -6,6 +6,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [27.1.0](https://github.com/bluealloy/revm/compare/revm-v27.0.3...revm-v27.1.0) - 2025-07-23
+
+### Added
+
+- expose sha3-keccak in revm and revm-primitives ([#2713](https://github.com/bluealloy/revm/pull/2713))
+
+### Fixed
+
+- features and check in ci ([#2766](https://github.com/bluealloy/revm/pull/2766))
+- gas deduction with `disable_balance_check` ([#2699](https://github.com/bluealloy/revm/pull/2699))
+
+### Other
+
+- add asm-sha2 feature for sha2 precompile ([#2712](https://github.com/bluealloy/revm/pull/2712))
+
+## [27.0.3](https://github.com/bluealloy/revm/compare/revm-v27.0.2...revm-v27.0.3) - 2025-07-14
+
+### Other
+
+- updated the following local packages: revm-context, revm-interpreter, revm-precompile, revm-handler, revm-inspector
+
+## [27.0.2](https://github.com/bluealloy/revm/compare/revm-v27.0.1...revm-v27.0.2) - 2025-07-03
+
+### Other
+
+- updated the following local packages: revm-bytecode, revm-handler, revm-inspector, revm-state, revm-database-interface, revm-context-interface, revm-context, revm-database, revm-interpreter
+
+## [27.0.1](https://github.com/bluealloy/revm/compare/revm-v26.0.1...revm-v27.0.1) - 2025-06-30
+
+### Added
+
+- optional_eip3541 ([#2661](https://github.com/bluealloy/revm/pull/2661))
+
+### Other
+
+- cargo clippy --fix --all ([#2671](https://github.com/bluealloy/revm/pull/2671))
+- inline documentation of revm top modules ([#2666](https://github.com/bluealloy/revm/pull/2666))
+- use TxEnv::builder ([#2652](https://github.com/bluealloy/revm/pull/2652))
+
 ## [26.0.1](https://github.com/bluealloy/revm/compare/revm-v26.0.0...revm-v26.0.1) - 2025-06-20
 
 ### Fixed
