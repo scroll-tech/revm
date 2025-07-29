@@ -13,6 +13,7 @@ use context_interface::{
 use interpreter::interpreter_action::FrameInit;
 use interpreter::{Gas, InitialAndFloorGas, SharedMemory};
 use primitives::U256;
+use state::EvmState;
 
 /// Trait for errors that can occur during EVM execution.
 ///
@@ -67,7 +68,7 @@ impl<
 pub trait Handler {
     /// The EVM type containing Context, Instruction, and Precompiles implementations.
     type Evm: EvmTr<
-        Context: ContextTr<Journal: JournalTr, Local: LocalContextTr>,
+        Context: ContextTr<Journal: JournalTr<State = EvmState>, Local: LocalContextTr>,
         Frame: FrameTr<FrameInit = FrameInit, FrameResult = FrameResult>,
     >;
     /// The error type returned by this handler.
@@ -408,7 +409,7 @@ pub trait Handler {
         evm: &mut Self::Evm,
         exec_result: &mut <<Self::Evm as EvmTr>::Frame as FrameTr>::FrameResult,
     ) -> Result<(), Self::Error> {
-        post_execution::reimburse_caller(evm.ctx(), exec_result.gas(), U256::ZERO)
+        post_execution::reimburse_caller(evm.ctx(), exec_result.gas_mut(), U256::ZERO)
             .map_err(From::from)
     }
 
@@ -419,7 +420,7 @@ pub trait Handler {
         evm: &mut Self::Evm,
         exec_result: &mut <<Self::Evm as EvmTr>::Frame as FrameTr>::FrameResult,
     ) -> Result<(), Self::Error> {
-        post_execution::reward_beneficiary(evm.ctx(), exec_result.gas()).map_err(From::from)
+        post_execution::reward_beneficiary(evm.ctx(), exec_result.gas_mut()).map_err(From::from)
     }
 
     /// Processes the final execution output.

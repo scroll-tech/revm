@@ -3,12 +3,12 @@ use core::{
     cell::{Ref, RefCell},
     ops::Range,
 };
-use std::{rc::Rc, vec::Vec};
+use std::{boxed::Box, rc::Rc, vec::Vec};
 
 /// Non-empty, item-pooling Vec.
 #[derive(Debug, Clone)]
 pub struct FrameStack<T> {
-    stack: Vec<T>,
+    stack: Vec<Box<T>>,
     index: Option<usize>,
 }
 
@@ -20,9 +20,10 @@ impl<T> Default for FrameStack<T> {
 
 impl<T> FrameStack<T> {
     /// Creates a new, empty stack. It must be initialized with init before use.
+    #[inline]
     pub fn new() -> Self {
         Self {
-            stack: Vec::with_capacity(4),
+            stack: Vec::with_capacity(1025),
             index: None,
         }
     }
@@ -101,19 +102,19 @@ impl<T> FrameStack<T> {
 /// A potentially initialized frame. Used when initializing a new frame in the main loop.
 #[allow(missing_debug_implementations)]
 pub struct OutFrame<'a, T> {
-    ptr: *mut T,
+    ptr: *mut Box<T>,
     init: bool,
     lt: core::marker::PhantomData<&'a mut T>,
 }
 
 impl<'a, T> OutFrame<'a, T> {
     /// Creates a new initialized `OutFrame` from a mutable reference to a type `T`.
-    pub fn new_init(slot: &'a mut T) -> Self {
+    pub fn new_init(slot: &'a mut Box<T>) -> Self {
         unsafe { Self::new_maybe_uninit(slot, true) }
     }
 
     /// Creates a new uninitialized `OutFrame` from a mutable reference to a `MaybeUninit<T>`.
-    pub fn new_uninit(slot: &'a mut core::mem::MaybeUninit<T>) -> Self {
+    pub fn new_uninit(slot: &'a mut core::mem::MaybeUninit<Box<T>>) -> Self {
         unsafe { Self::new_maybe_uninit(slot.as_mut_ptr(), false) }
     }
 
@@ -124,7 +125,7 @@ impl<'a, T> OutFrame<'a, T> {
     /// This method is unsafe because it assumes that the pointer is valid and points to a location
     /// where a type `T` can be stored. It also assumes that the `init` flag correctly reflects whether
     /// the type `T` has been initialized or not.
-    pub unsafe fn new_maybe_uninit(ptr: *mut T, init: bool) -> Self {
+    pub unsafe fn new_maybe_uninit(ptr: *mut Box<T>, init: bool) -> Self {
         Self {
             ptr,
             init,
@@ -140,12 +141,11 @@ impl<'a, T> OutFrame<'a, T> {
         unsafe { &mut *self.ptr }
     }
 
-    #[inline(never)]
     #[cold]
     fn do_init(&mut self, f: impl FnOnce() -> T) {
         unsafe {
             self.init = true;
-            self.ptr.write(f());
+            self.ptr.write(Box::new(f()));
         }
     }
 

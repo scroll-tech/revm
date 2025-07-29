@@ -174,7 +174,11 @@ where
 
         // Check if account has enough balance for `gas_limit * max_fee`` and value transfer.
         // Transfer will be done inside `*_inner` functions.
-        if !is_deposit && max_balance_spending > new_balance && !is_balance_check_disabled {
+        if is_balance_check_disabled {
+            // Make sure the caller's balance is at least the value of the transaction.
+            // this is not consensus critical, and it is used in testing.
+            new_balance = caller_account.info.balance.max(tx.value());
+        } else if !is_deposit && max_balance_spending > new_balance {
             // skip max balance check for deposit transactions.
             // this check for deposit was skipped previously in `validate_tx_against_state` function
             return Err(InvalidTransaction::LackOfFundForMaxFee {
@@ -182,28 +186,23 @@ where
                 balance: Box::new(new_balance),
             }
             .into());
-        }
+        } else {
+            let effective_balance_spending =
+                tx.effective_balance_spending(basefee, blob_price).expect(
+                    "effective balance is always smaller than max balance so it can't overflow",
+                );
 
-        let effective_balance_spending = tx
-            .effective_balance_spending(basefee, blob_price)
-            .expect("effective balance is always smaller than max balance so it can't overflow");
+            // subtracting max balance spending with value that is going to be deducted later in the call.
+            let gas_balance_spending = effective_balance_spending - tx.value();
 
-        // subtracting max balance spending with value that is going to be deducted later in the call.
-        let gas_balance_spending = effective_balance_spending - tx.value();
+            // If the transaction is not a deposit transaction, subtract the L1 data fee from the
+            // caller's balance directly after minting the requested amount of ETH.
+            // Additionally deduct the operator fee from the caller's account.
+            //
+            // In case of deposit additional cost will be zero.
+            let op_gas_balance_spending = gas_balance_spending.saturating_add(additional_cost);
 
-        // If the transaction is not a deposit transaction, subtract the L1 data fee from the
-        // caller's balance directly after minting the requested amount of ETH.
-        // Additionally deduct the operator fee from the caller's account.
-        //
-        // In case of deposit additional cost will be zero.
-        let op_gas_balance_spending = gas_balance_spending.saturating_add(additional_cost);
-
-        new_balance = new_balance.saturating_sub(op_gas_balance_spending);
-
-        if is_balance_check_disabled {
-            // Make sure the caller's balance is at least the value of the transaction.
-            // this is not consensus critical, and it is used in testing.
-            new_balance = new_balance.max(tx.value());
+            new_balance = new_balance.saturating_sub(op_gas_balance_spending);
         }
 
         // Touch account so we know it is changed.
@@ -298,7 +297,7 @@ where
                 .operator_fee_refund(frame_result.gas(), spec);
         }
 
-        reimburse_caller(evm.ctx(), frame_result.gas(), additional_refund).map_err(From::from)
+        reimburse_caller(evm.ctx(), frame_result.gas_mut(), additional_refund).map_err(From::from)
     }
 
     fn refund(
@@ -354,21 +353,27 @@ where
         };
 
         let l1_cost = l1_block_info.calculate_tx_l1_cost(enveloped_tx, spec);
-        let operator_fee_cost = if spec.is_enabled_in(OpSpecId::ISTHMUS) {
-            l1_block_info.operator_fee_charge(enveloped_tx, U256::from(frame_result.gas().used()))
-        } else {
-            U256::ZERO
-        };
-        let base_fee_amount = U256::from(basefee.saturating_mul(frame_result.gas().used() as u128));
-
-        // Send fees to their respective recipients
-        for (recipient, amount) in [
-            (L1_FEE_RECIPIENT, l1_cost),
-            (BASE_FEE_RECIPIENT, base_fee_amount),
-            (OPERATOR_FEE_RECIPIENT, operator_fee_cost),
-        ] {
-            ctx.journal_mut().balance_incr(recipient, amount)?;
+        let mut operator_fee_cost = U256::ZERO;
+        if spec.is_enabled_in(OpSpecId::ISTHMUS) {
+            operator_fee_cost = l1_block_info.operator_fee_charge(
+                enveloped_tx,
+                U256::from(frame_result.gas().spent() - frame_result.gas().refunded() as u64),
+            );
         }
+        // Send the L1 cost of the transaction to the L1 Fee Vault.
+        ctx.journal_mut().balance_incr(L1_FEE_RECIPIENT, l1_cost)?;
+
+        // Send the base fee of the transaction to the Base Fee Vault.
+        ctx.journal_mut().balance_incr(
+            BASE_FEE_RECIPIENT,
+            U256::from(basefee.saturating_mul(
+                (frame_result.gas().spent() - frame_result.gas().refunded() as u64) as u128,
+            )),
+        )?;
+
+        // Send the operator fee of the transaction to the coinbase.
+        ctx.journal_mut()
+            .balance_incr(OPERATOR_FEE_RECIPIENT, operator_fee_cost)?;
 
         Ok(())
     }
@@ -496,11 +501,11 @@ mod tests {
             BASE_FEE_SCALAR_OFFSET, ECOTONE_L1_BLOB_BASE_FEE_SLOT, ECOTONE_L1_FEE_SCALARS_SLOT,
             L1_BASE_FEE_SLOT, L1_BLOCK_CONTRACT, OPERATOR_FEE_SCALARS_SLOT,
         },
-        DefaultOp, OpBuilder, OpTransaction,
+        DefaultOp, OpBuilder,
     };
     use alloy_primitives::uint;
     use revm::{
-        context::{BlockEnv, Context, TxEnv},
+        context::{BlockEnv, Context, TransactionType},
         context_interface::result::InvalidTransaction,
         database::InMemoryDB,
         database_interface::EmptyDB,
@@ -542,11 +547,10 @@ mod tests {
     #[test]
     fn test_revert_gas() {
         let ctx = Context::op()
-            .with_tx(
-                OpTransaction::builder()
-                    .base(TxEnv::builder().gas_limit(100))
-                    .build_fill(),
-            )
+            .modify_tx_chained(|tx| {
+                tx.base.gas_limit = 100;
+                tx.enveloped_tx = None;
+            })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::BEDROCK);
 
         let gas = call_last_frame_return(ctx, InstructionResult::Revert, Gas::new(90));
@@ -558,11 +562,11 @@ mod tests {
     #[test]
     fn test_consume_gas() {
         let ctx = Context::op()
-            .with_tx(
-                OpTransaction::builder()
-                    .base(TxEnv::builder().gas_limit(100))
-                    .build_fill(),
-            )
+            .modify_tx_chained(|tx| {
+                tx.base.gas_limit = 100;
+                tx.deposit.source_hash = B256::ZERO;
+                tx.base.tx_type = DEPOSIT_TRANSACTION_TYPE;
+            })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
 
         let gas = call_last_frame_return(ctx, InstructionResult::Stop, Gas::new(90));
@@ -574,12 +578,11 @@ mod tests {
     #[test]
     fn test_consume_gas_with_refund() {
         let ctx = Context::op()
-            .with_tx(
-                OpTransaction::builder()
-                    .base(TxEnv::builder().gas_limit(100))
-                    .source_hash(B256::from([1u8; 32]))
-                    .build_fill(),
-            )
+            .modify_tx_chained(|tx| {
+                tx.base.gas_limit = 100;
+                tx.base.tx_type = DEPOSIT_TRANSACTION_TYPE;
+                tx.deposit.source_hash = B256::ZERO;
+            })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
 
         let mut ret_gas = Gas::new(90);
@@ -599,12 +602,11 @@ mod tests {
     #[test]
     fn test_consume_gas_deposit_tx() {
         let ctx = Context::op()
-            .with_tx(
-                OpTransaction::builder()
-                    .base(TxEnv::builder().gas_limit(100))
-                    .source_hash(B256::from([1u8; 32]))
-                    .build_fill(),
-            )
+            .modify_tx_chained(|tx| {
+                tx.base.tx_type = DEPOSIT_TRANSACTION_TYPE;
+                tx.base.gas_limit = 100;
+                tx.deposit.source_hash = B256::ZERO;
+            })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::BEDROCK);
         let gas = call_last_frame_return(ctx, InstructionResult::Stop, Gas::new(90));
         assert_eq!(gas.remaining(), 0);
@@ -615,13 +617,12 @@ mod tests {
     #[test]
     fn test_consume_gas_sys_deposit_tx() {
         let ctx = Context::op()
-            .with_tx(
-                OpTransaction::builder()
-                    .base(TxEnv::builder().gas_limit(100))
-                    .source_hash(B256::from([1u8; 32]))
-                    .is_system_transaction()
-                    .build_fill(),
-            )
+            .modify_tx_chained(|tx| {
+                tx.base.tx_type = DEPOSIT_TRANSACTION_TYPE;
+                tx.base.gas_limit = 100;
+                tx.deposit.source_hash = B256::ZERO;
+                tx.deposit.is_system_transaction = true;
+            })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::BEDROCK);
         let gas = call_last_frame_return(ctx, InstructionResult::Stop, Gas::new(90));
         assert_eq!(gas.remaining(), 100);
@@ -651,7 +652,8 @@ mod tests {
             })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
         ctx.modify_tx(|tx| {
-            tx.deposit.source_hash = B256::from([1u8; 32]);
+            tx.base.tx_type = DEPOSIT_TRANSACTION_TYPE;
+            tx.deposit.source_hash = B256::ZERO;
             tx.deposit.mint = Some(10);
         });
 
@@ -675,7 +677,7 @@ mod tests {
         db.insert_account_info(
             caller,
             AccountInfo {
-                balance: U256::from(1058), // Increased to cover L1 fees (1048) + base fees
+                balance: U256::from(1000),
                 ..Default::default()
             },
         );
@@ -688,14 +690,13 @@ mod tests {
                 ..Default::default()
             })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH)
-            .with_tx(
-                OpTransaction::builder()
-                    .base(TxEnv::builder().gas_limit(100))
-                    .enveloped_tx(Some(bytes!("FACADE")))
-                    .source_hash(B256::ZERO)
-                    .build()
-                    .unwrap(),
-            );
+            .modify_tx_chained(|tx| {
+                tx.base.gas_limit = 100;
+                tx.base.tx_type = DEPOSIT_TRANSACTION_TYPE;
+                tx.deposit.mint = Some(10);
+                tx.enveloped_tx = Some(bytes!("FACADE"));
+                tx.deposit.source_hash = B256::ZERO;
+            });
 
         let mut evm = ctx.build_op();
 
@@ -707,7 +708,7 @@ mod tests {
 
         // Check the account balance is updated.
         let account = evm.ctx().journal_mut().load_account(caller).unwrap();
-        assert_eq!(account.info.balance, U256::from(10)); // 1058 - 1048 = 10
+        assert_eq!(account.info.balance, U256::from(1010));
     }
 
     #[test]
@@ -809,14 +810,11 @@ mod tests {
                 ..Default::default()
             })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH)
-            .with_tx(
-                OpTransaction::builder()
-                    .base(TxEnv::builder().gas_limit(100))
-                    .source_hash(B256::ZERO)
-                    .enveloped_tx(Some(bytes!("FACADE")))
-                    .build()
-                    .unwrap(),
-            );
+            .modify_tx_chained(|tx| {
+                tx.base.gas_limit = 100;
+                tx.deposit.source_hash = B256::ZERO;
+                tx.enveloped_tx = Some(bytes!("FACADE"));
+            });
 
         let mut evm = ctx.build_op();
         let handler =
@@ -851,12 +849,10 @@ mod tests {
                 ..Default::default()
             })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS)
-            .with_tx(
-                OpTransaction::builder()
-                    .base(TxEnv::builder().gas_limit(10))
-                    .enveloped_tx(Some(bytes!("FACADE")))
-                    .build_fill(),
-            );
+            .modify_tx_chained(|tx| {
+                tx.base.gas_limit = 10;
+                tx.enveloped_tx = Some(bytes!("FACADE"));
+            });
 
         let mut evm = ctx.build_op();
         let handler =
@@ -920,7 +916,7 @@ mod tests {
         // mark the tx as a system transaction.
         let ctx = Context::op()
             .modify_tx_chained(|tx| {
-                tx.deposit.source_hash = B256::from([1u8; 32]);
+                tx.base.tx_type = DEPOSIT_TRANSACTION_TYPE;
                 tx.deposit.is_system_transaction = true;
             })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
@@ -947,7 +943,8 @@ mod tests {
         // Set source hash.
         let ctx = Context::op()
             .modify_tx_chained(|tx| {
-                tx.deposit.source_hash = B256::from([1u8; 32]);
+                tx.base.tx_type = DEPOSIT_TRANSACTION_TYPE;
+                tx.deposit.source_hash = B256::ZERO;
             })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
 
@@ -963,7 +960,8 @@ mod tests {
         // Set source hash.
         let ctx = Context::op()
             .modify_tx_chained(|tx| {
-                tx.deposit.source_hash = B256::from([1u8; 32]);
+                tx.base.tx_type = DEPOSIT_TRANSACTION_TYPE;
+                tx.deposit.source_hash = B256::ZERO;
             })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
 
@@ -979,8 +977,7 @@ mod tests {
     fn test_halted_deposit_tx_post_regolith() {
         let ctx = Context::op()
             .modify_tx_chained(|tx| {
-                // Set up as deposit transaction by having a deposit with source_hash
-                tx.deposit.source_hash = B256::from([1u8; 32]);
+                tx.base.tx_type = DEPOSIT_TRANSACTION_TYPE;
             })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
 
@@ -1006,36 +1003,6 @@ mod tests {
         )
     }
 
-    #[test]
-    fn test_tx_zero_value_touch_caller() {
-        let ctx = Context::op();
-
-        let mut evm = ctx.build_op();
-
-        assert!(!evm
-            .0
-            .ctx
-            .journal_mut()
-            .load_account(Address::ZERO)
-            .unwrap()
-            .is_touched());
-
-        let handler =
-            OpHandler::<_, EVMError<_, OpTransactionError>, EthFrame<EthInterpreter>>::new();
-
-        handler
-            .validate_against_state_and_deduct_caller(&mut evm)
-            .unwrap();
-
-        assert!(evm
-            .0
-            .ctx
-            .journal_mut()
-            .load_account(Address::ZERO)
-            .unwrap()
-            .is_touched());
-    }
-
     #[rstest]
     #[case::deposit(true)]
     #[case::dyn_fee(false)]
@@ -1045,26 +1012,16 @@ mod tests {
         const OP_FEE_MOCK_PARAM: u128 = 0xFFFF;
 
         let ctx = Context::op()
-            .with_tx(
-                OpTransaction::builder()
-                    .base(
-                        TxEnv::builder()
-                            .gas_price(GAS_PRICE)
-                            .gas_priority_fee(None)
-                            .caller(SENDER),
-                    )
-                    .enveloped_tx(if is_deposit {
-                        None
-                    } else {
-                        Some(bytes!("FACADE"))
-                    })
-                    .source_hash(if is_deposit {
-                        B256::from([1u8; 32])
-                    } else {
-                        B256::ZERO
-                    })
-                    .build_fill(),
-            )
+            .modify_tx_chained(|tx| {
+                tx.base.tx_type = if is_deposit {
+                    DEPOSIT_TRANSACTION_TYPE
+                } else {
+                    TransactionType::Eip1559 as u8
+                };
+                tx.base.gas_price = GAS_PRICE;
+                tx.base.gas_priority_fee = None;
+                tx.base.caller = SENDER;
+            })
             .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS);
 
         let mut evm = ctx.build_op();

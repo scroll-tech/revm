@@ -7,34 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [9.0.0](https://github.com/bluealloy/revm/compare/revm-context-interface-v8.0.1...revm-context-interface-v9.0.0) - 2025-07-23
-
-### Fixed
-
-- fully deprecate serde-json ([#2767](https://github.com/bluealloy/revm/pull/2767))
-
-### Other
-
-- un-Box frames ([#2761](https://github.com/bluealloy/revm/pull/2761))
-- discard generic host implementation ([#2738](https://github.com/bluealloy/revm/pull/2738))
-
-## [8.0.1](https://github.com/bluealloy/revm/compare/revm-context-interface-v8.0.0...revm-context-interface-v8.0.1) - 2025-07-03
-
-### Other
-
-- updated the following local packages: revm-state, revm-database-interface
-
-## [8.0.0](https://github.com/bluealloy/revm/compare/revm-context-interface-v7.0.1...revm-context-interface-v8.0.0) - 2025-06-30
-
-### Added
-
-- implement `Transaction` for `Either` ([#2662](https://github.com/bluealloy/revm/pull/2662))
-- optional_eip3541 ([#2661](https://github.com/bluealloy/revm/pull/2661))
-
-### Other
-
-- fix copy-pasted inner doc comments ([#2663](https://github.com/bluealloy/revm/pull/2663))
-
 ## [7.0.1](https://github.com/bluealloy/revm/compare/revm-context-interface-v7.0.0...revm-context-interface-v7.0.1) - 2025-06-20
 
 ### Fixed
