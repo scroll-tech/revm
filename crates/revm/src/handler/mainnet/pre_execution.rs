@@ -171,6 +171,7 @@ pub fn apply_eip7702_auth_list<SPEC: Spec, EXT, DB: Database>(
             let hash = bytecode.hash_slow();
             (bytecode, hash)
         };
+        authority_acc.info.code_size = bytecode.len();
         authority_acc.info.code_hash = hash;
         authority_acc.info.code = Some(bytecode);
 
