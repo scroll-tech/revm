@@ -1,13 +1,14 @@
 [package]
 name = "revm"
 description = "Revm - Rust Ethereum Virtual Machine"
-version = "27.1.0"
+version = "29.0.0"
 authors.workspace = true
 edition.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
+rust-version.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
@@ -35,7 +36,7 @@ serde_json = { workspace = true, features = ["alloc", "preserve_order"] }
 serde = { workspace = true, features = ["derive"] }
 
 [features]
-default = ["std", "c-kzg", "secp256k1", "portable", "blst", "tracer"]
+default = ["std", "secp256k1", "portable", "tracer", "c-kzg", "blst"]
 std = [
 	"interpreter/std",
 	"precompile/std",
@@ -94,13 +95,15 @@ optional_no_base_fee = ["context/optional_no_base_fee"]
 enable_eip7702 = ["context/enable_eip7702"]
 enable_eip7623 = ["context/enable_eip7623"]
 
-# Precompiles features
+# Precompiles features: Please look at the comments in `precompile` crate for more information.
 
 secp256k1 = ["precompile/secp256k1"] # See comments in `precompile`
 c-kzg = [
 	"precompile/c-kzg",
 ] # `kzg-rs` is not audited but useful for `no_std` environment, use it with causing and default to `c-kzg` if possible.
 kzg-rs = ["precompile/kzg-rs"]
+
+# blst will enabled both for bls precompiles and for kzg precompile.
 blst = ["precompile/blst"]
 bn = ["precompile/bn"]
 asm-sha2 = ["precompile/asm-sha2"]

@@ -1,10 +1,42 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [29.0.0](https://github.com/bluealloy/revm/compare/revm-v28.0.1...revm-v29.0.0) - 2025-08-23
+
+### Other
+
+- updated the following local packages: revm-bytecode, revm-database-interface, revm-context-interface, revm-context, revm-database, revm-interpreter, revm-precompile, revm-handler, revm-state, revm-inspector
+
+## [28.0.1](https://github.com/bluealloy/revm/compare/revm-v28.0.0...revm-v28.0.1) - 2025-08-12
+
+### Other
+
+- updated the following local packages: revm-primitives, revm-bytecode, revm-state, revm-context-interface, revm-database, revm-precompile, revm-inspector, revm-database-interface, revm-context, revm-interpreter, revm-handler
+
+## [28.0.0](https://github.com/bluealloy/revm/compare/revm-v27.1.0...revm-v28.0.0) - 2025-08-06
+
+### Added
+
+- Reuse bls12-381 codepaths to implement kzg point evaluation precompile ([#2809](https://github.com/bluealloy/revm/pull/2809))
+- refactor test utils ([#2813](https://github.com/bluealloy/revm/pull/2813))
+- add system transaction inspection support ([#2808](https://github.com/bluealloy/revm/pull/2808))
+
+### Other
+
+- update README.md ([#2842](https://github.com/bluealloy/revm/pull/2842))
+- reuse global crypto provide idea ([#2786](https://github.com/bluealloy/revm/pull/2786))
+- add rust-version and note about MSRV ([#2789](https://github.com/bluealloy/revm/pull/2789))
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [27.1.0](https://github.com/bluealloy/revm/compare/revm-v27.0.3...revm-v27.1.0) - 2025-07-23
 

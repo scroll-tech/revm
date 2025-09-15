@@ -1,16 +1,15 @@
 //! Contains Optimism specific precompiles.
 use crate::OpSpecId;
-use once_cell::race::OnceBox;
 use revm::{
     context::Cfg,
     context_interface::ContextTr,
     handler::{EthPrecompiles, PrecompileProvider},
     interpreter::{InputsImpl, InterpreterResult},
     precompile::{
-        self, bn128, secp256r1, PrecompileError, PrecompileResult, PrecompileWithAddress,
+        self, bn254, secp256r1, Precompile, PrecompileError, PrecompileId, PrecompileResult,
         Precompiles,
     },
-    primitives::{hardfork::SpecId, Address},
+    primitives::{hardfork::SpecId, Address, OnceLock},
 };
 use std::boxed::Box;
 use std::string::String;
@@ -56,29 +55,29 @@ impl OpPrecompiles {
 
 /// Returns precompiles for Fjord spec.
 pub fn fjord() -> &'static Precompiles {
-    static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+    static INSTANCE: OnceLock<Precompiles> = OnceLock::new();
     INSTANCE.get_or_init(|| {
         let mut precompiles = Precompiles::cancun().clone();
         // RIP-7212: secp256r1 P256verify
         precompiles.extend([secp256r1::P256VERIFY]);
-        Box::new(precompiles)
+        precompiles
     })
 }
 
 /// Returns precompiles for Granite spec.
 pub fn granite() -> &'static Precompiles {
-    static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+    static INSTANCE: OnceLock<Precompiles> = OnceLock::new();
     INSTANCE.get_or_init(|| {
         let mut precompiles = fjord().clone();
-        // Restrict bn256Pairing input size
-        precompiles.extend([bn128_pair::GRANITE]);
-        Box::new(precompiles)
+        // Restrict bn254Pairing input size
+        precompiles.extend([bn254_pair::GRANITE]);
+        precompiles
     })
 }
 
 /// Returns precompiles for isthumus spec.
 pub fn isthmus() -> &'static Precompiles {
-    static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+    static INSTANCE: OnceLock<Precompiles> = OnceLock::new();
     INSTANCE.get_or_init(|| {
         let mut precompiles = granite().clone();
         // Prague bls12 precompiles
@@ -89,7 +88,7 @@ pub fn isthmus() -> &'static Precompiles {
             bls12_381::ISTHMUS_G2_MSM,
             bls12_381::ISTHMUS_PAIRING,
         ]);
-        Box::new(precompiles)
+        precompiles
     })
 }
 
@@ -138,27 +137,25 @@ impl Default for OpPrecompiles {
     }
 }
 
-/// Bn128 pair precompile.
-pub mod bn128_pair {
+/// Bn254 pair precompile.
+pub mod bn254_pair {
     use super::*;
 
-    /// Max input size for the bn128 pair precompile.
+    /// Max input size for the bn254 pair precompile.
     pub const GRANITE_MAX_INPUT_SIZE: usize = 112687;
-    /// Bn128 pair precompile.
-    pub const GRANITE: PrecompileWithAddress =
-        PrecompileWithAddress(bn128::pair::ADDRESS, |input, gas_limit| {
-            run_pair(input, gas_limit)
-        });
+    /// Bn254 pair precompile.
+    pub const GRANITE: Precompile =
+        Precompile::new(PrecompileId::Bn254Pairing, bn254::pair::ADDRESS, run_pair);
 
-    /// Run the bn128 pair precompile with Optimism input limit.
+    /// Run the bn254 pair precompile with Optimism input limit.
     pub fn run_pair(input: &[u8], gas_limit: u64) -> PrecompileResult {
         if input.len() > GRANITE_MAX_INPUT_SIZE {
-            return Err(PrecompileError::Bn128PairLength);
+            return Err(PrecompileError::Bn254PairLength);
         }
-        bn128::run_pair(
+        bn254::run_pair(
             input,
-            bn128::pair::ISTANBUL_PAIR_PER_POINT,
-            bn128::pair::ISTANBUL_PAIR_BASE,
+            bn254::pair::ISTANBUL_PAIR_PER_POINT,
+            bn254::pair::ISTANBUL_PAIR_BASE,
             gas_limit,
         )
     }
@@ -180,14 +177,14 @@ pub mod bls12_381 {
     pub const ISTHMUS_PAIRING_MAX_INPUT_SIZE: usize = 235008;
 
     /// G1 msm precompile.
-    pub const ISTHMUS_G1_MSM: PrecompileWithAddress =
-        PrecompileWithAddress(G1_MSM_ADDRESS, run_g1_msm);
+    pub const ISTHMUS_G1_MSM: Precompile =
+        Precompile::new(PrecompileId::Bls12G1Msm, G1_MSM_ADDRESS, run_g1_msm);
     /// G2 msm precompile.
-    pub const ISTHMUS_G2_MSM: PrecompileWithAddress =
-        PrecompileWithAddress(G2_MSM_ADDRESS, run_g2_msm);
+    pub const ISTHMUS_G2_MSM: Precompile =
+        Precompile::new(PrecompileId::Bls12G2Msm, G2_MSM_ADDRESS, run_g2_msm);
     /// Pairing precompile.
-    pub const ISTHMUS_PAIRING: PrecompileWithAddress =
-        PrecompileWithAddress(PAIRING_ADDRESS, run_pair);
+    pub const ISTHMUS_PAIRING: Precompile =
+        Precompile::new(PrecompileId::Bls12Pairing, PAIRING_ADDRESS, run_pair);
 
     /// Run the g1 msm precompile with Optimism input limit.
     pub fn run_g1_msm(input: &[u8], gas_limit: u64) -> PrecompileResult {
@@ -235,7 +232,7 @@ mod tests {
     use std::vec;
 
     #[test]
-    fn test_bn128_pair() {
+    fn test_bn254_pair() {
         let input = hex::decode(
             "\
       1c76476f4def4bb94541d57ebba1193381ffa7aa76ada664dd31c16024c43f59\
@@ -255,7 +252,7 @@ mod tests {
         let expected =
             hex::decode("0000000000000000000000000000000000000000000000000000000000000001")
                 .unwrap();
-        let outcome = bn128_pair::run_pair(&input, 260_000).unwrap();
+        let outcome = bn254_pair::run_pair(&input, 260_000).unwrap();
         assert_eq!(outcome.bytes, expected);
 
         // Invalid input length
@@ -268,18 +265,18 @@ mod tests {
         )
         .unwrap();
 
-        let res = bn128_pair::run_pair(&input, 260_000);
-        assert!(matches!(res, Err(PrecompileError::Bn128PairLength)));
+        let res = bn254_pair::run_pair(&input, 260_000);
+        assert!(matches!(res, Err(PrecompileError::Bn254PairLength)));
 
         // Valid input length shorter than 112687
-        let input = vec![1u8; 586 * bn128::PAIR_ELEMENT_LEN];
-        let res = bn128_pair::run_pair(&input, 260_000);
+        let input = vec![1u8; 586 * bn254::PAIR_ELEMENT_LEN];
+        let res = bn254_pair::run_pair(&input, 260_000);
         assert!(matches!(res, Err(PrecompileError::OutOfGas)));
 
         // Input length longer than 112687
-        let input = vec![1u8; 587 * bn128::PAIR_ELEMENT_LEN];
-        let res = bn128_pair::run_pair(&input, 260_000);
-        assert!(matches!(res, Err(PrecompileError::Bn128PairLength)));
+        let input = vec![1u8; 587 * bn254::PAIR_ELEMENT_LEN];
+        let res = bn254_pair::run_pair(&input, 260_000);
+        assert!(matches!(res, Err(PrecompileError::Bn254PairLength)));
     }
 
     #[test]
@@ -291,7 +288,7 @@ mod tests {
     #[test]
     fn test_cancun_precompiles_in_granite() {
         // granite has p256verify (fjord)
-        // granite has modification of cancun's bn128 pair (doesn't count as new precompile)
+        // granite has modification of cancun's bn254 pair (doesn't count as new precompile)
         assert_eq!(granite().difference(Precompiles::cancun()).len(), 1)
     }
 

@@ -1,27 +1,32 @@
 //! Modexp precompile added in [`EIP-198`](https://eips.ethereum.org/EIPS/eip-198)
 //! and reprices in berlin hardfork with [`EIP-2565`](https://eips.ethereum.org/EIPS/eip-2565).
 use crate::{
+    crypto,
     utilities::{left_pad, left_pad_vec, right_pad_vec, right_pad_with_offset},
-    PrecompileError, PrecompileOutput, PrecompileResult, PrecompileWithAddress,
+    Precompile, PrecompileError, PrecompileId, PrecompileOutput, PrecompileResult,
 };
 use core::cmp::{max, min};
 use primitives::{eip7823, Bytes, U256};
 use std::vec::Vec;
 
 /// `modexp` precompile with BYZANTIUM gas rules.
-pub const BYZANTIUM: PrecompileWithAddress =
-    PrecompileWithAddress(crate::u64_to_address(5), byzantium_run);
+pub const BYZANTIUM: Precompile = Precompile::new(
+    PrecompileId::ModExp,
+    crate::u64_to_address(5),
+    byzantium_run,
+);
 
 /// `modexp` precompile with BERLIN gas rules.
-pub const BERLIN: PrecompileWithAddress =
-    PrecompileWithAddress(crate::u64_to_address(5), berlin_run);
+pub const BERLIN: Precompile =
+    Precompile::new(PrecompileId::ModExp, crate::u64_to_address(5), berlin_run);
 
 /// `modexp` precompile with OSAKA gas rules.
-pub const OSAKA: PrecompileWithAddress = PrecompileWithAddress(crate::u64_to_address(5), osaka_run);
+pub const OSAKA: Precompile =
+    Precompile::new(PrecompileId::ModExp, crate::u64_to_address(5), osaka_run);
 
 #[cfg(feature = "gmp")]
 /// GMP-based modular exponentiation implementation
-fn modexp(base: &[u8], exponent: &[u8], modulus: &[u8]) -> Vec<u8> {
+pub(crate) fn modexp(base: &[u8], exponent: &[u8], modulus: &[u8]) -> Vec<u8> {
     use rug::{integer::Order::Msf, Integer};
     // Convert byte slices to GMP integers
     let base_int = Integer::from_digits(base, Msf);
@@ -39,7 +44,7 @@ fn modexp(base: &[u8], exponent: &[u8], modulus: &[u8]) -> Vec<u8> {
 }
 
 #[cfg(not(feature = "gmp"))]
-fn modexp(base: &[u8], exponent: &[u8], modulus: &[u8]) -> Vec<u8> {
+pub(crate) fn modexp(base: &[u8], exponent: &[u8], modulus: &[u8]) -> Vec<u8> {
     aurora_engine_modexp::modexp(base, exponent, modulus)
 }
 
@@ -125,11 +130,6 @@ where
         return Err(PrecompileError::ModexpEip7823LimitSize);
     }
 
-    // special case for both base and mod length being 0.
-    if base_len == 0 && mod_len == 0 {
-        return Ok(PrecompileOutput::new(min_gas, Bytes::new()));
-    }
-
     // Used to extract ADJUSTED_EXPONENT_LENGTH.
     let exp_highp_len = min(exp_len, 32);
 
@@ -150,6 +150,10 @@ where
         return Err(PrecompileError::OutOfGas);
     }
 
+    if base_len == 0 && mod_len == 0 {
+        return Ok(PrecompileOutput::new(gas_cost, Bytes::new()));
+    }
+
     // Padding is needed if the input does not contain all 3 values.
     let input_len = base_len.saturating_add(exp_len).saturating_add(mod_len);
     let input = right_pad_vec(input, input_len);
@@ -158,7 +162,7 @@ where
     debug_assert_eq!(modulus.len(), mod_len);
 
     // Call the modexp.
-    let output = modexp(base, exponent, modulus);
+    let output = crypto().modexp(base, exponent, modulus)?;
 
     // Left pad the result to modulus length. bytes will always by less or equal to modulus length.
     Ok(PrecompileOutput::new(
