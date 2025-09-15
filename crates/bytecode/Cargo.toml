@@ -1,13 +1,14 @@
 [package]
 name = "revm-bytecode"
 description = "EVM Bytecodes"
-version = "6.1.0"
+version = "6.2.2"
 authors.workspace = true
 edition.workspace = true
 keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 readme.workspace = true
+rust-version.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
@@ -22,7 +23,6 @@ primitives.workspace = true
 
 # Jumpmap
 bitvec = { workspace = true, features = ["alloc"] }
-once_cell = { workspace = true, features = ["alloc"] }
 
 # Optional
 serde = { workspace = true, features = ["derive", "rc"], optional = true }
@@ -37,7 +37,6 @@ std = [
     "serde?/std",
     "primitives/std",
     "bitvec/std",
-    "once_cell/std",
     "phf?/std",
 ]
 hashbrown = ["primitives/hashbrown"]

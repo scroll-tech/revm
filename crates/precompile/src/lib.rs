@@ -12,17 +12,18 @@ pub mod blake2;
 pub mod bls12_381;
 pub mod bls12_381_const;
 pub mod bls12_381_utils;
-pub mod bn128;
+pub mod bn254;
 pub mod hash;
+mod id;
 pub mod identity;
 pub mod interface;
-#[cfg(any(feature = "c-kzg", feature = "kzg-rs"))]
 pub mod kzg_point_evaluation;
 pub mod modexp;
 pub mod secp256k1;
 pub mod secp256r1;
 pub mod utilities;
 
+pub use id::PrecompileId;
 pub use interface::*;
 
 // silence arkworks lint as bn impl will be used as default if both are enabled.
@@ -55,11 +56,11 @@ cfg_if::cfg_if! {
 #[cfg(feature = "gmp")]
 use aurora_engine_modexp as _;
 
-use cfg_if::cfg_if;
 use core::hash::Hash;
-use once_cell::race::OnceBox;
-use primitives::{hardfork::SpecId, Address, HashMap, HashSet};
-use std::{boxed::Box, vec::Vec};
+use primitives::{
+    hardfork::SpecId, short_address, Address, HashMap, HashSet, OnceLock, SHORT_ADDRESS_CAP,
+};
+use std::vec::Vec;
 
 /// Calculate the linear cost of a precompile.
 pub fn calc_linear_cost_u32(len: usize, base: u64, word: u64) -> u64 {
@@ -67,12 +68,27 @@ pub fn calc_linear_cost_u32(len: usize, base: u64, word: u64) -> u64 {
 }
 
 /// Precompiles contain map of precompile addresses to functions and HashSet of precompile addresses.
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Debug)]
 pub struct Precompiles {
     /// Precompiles
-    inner: HashMap<Address, PrecompileFn>,
-    /// Addresses of precompile
+    inner: HashMap<Address, Precompile>,
+    /// Addresses of precompiles.
     addresses: HashSet<Address>,
+    /// Optimized addresses filter.
+    optimized_access: Vec<Option<Precompile>>,
+    /// `true` if all precompiles are short addresses.
+    all_short_addresses: bool,
+}
+
+impl Default for Precompiles {
+    fn default() -> Self {
+        Self {
+            inner: HashMap::default(),
+            addresses: HashSet::default(),
+            optimized_access: vec![None; SHORT_ADDRESS_CAP],
+            all_short_addresses: true,
+        }
+    }
 }
 
 impl Precompiles {
@@ -91,7 +107,7 @@ impl Precompiles {
 
     /// Returns precompiles for Homestead spec.
     pub fn homestead() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        static INSTANCE: OnceLock<Precompiles> = OnceLock::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Precompiles::default();
             precompiles.extend([
@@ -100,18 +116,18 @@ impl Precompiles {
                 hash::RIPEMD160,
                 identity::FUN,
             ]);
-            Box::new(precompiles)
+            precompiles
         })
     }
 
     /// Returns inner HashMap of precompiles.
-    pub fn inner(&self) -> &HashMap<Address, PrecompileFn> {
+    pub fn inner(&self) -> &HashMap<Address, Precompile> {
         &self.inner
     }
 
     /// Returns precompiles for Byzantium spec.
     pub fn byzantium() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        static INSTANCE: OnceLock<Precompiles> = OnceLock::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Self::homestead().clone();
             precompiles.extend([
@@ -119,41 +135,41 @@ impl Precompiles {
                 modexp::BYZANTIUM,
                 // EIP-196: Precompiled contracts for addition and scalar multiplication on the elliptic curve alt_bn128.
                 // EIP-197: Precompiled contracts for optimal ate pairing check on the elliptic curve alt_bn128.
-                bn128::add::BYZANTIUM,
-                bn128::mul::BYZANTIUM,
-                bn128::pair::BYZANTIUM,
+                bn254::add::BYZANTIUM,
+                bn254::mul::BYZANTIUM,
+                bn254::pair::BYZANTIUM,
             ]);
-            Box::new(precompiles)
+            precompiles
         })
     }
 
     /// Returns precompiles for Istanbul spec.
     pub fn istanbul() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        static INSTANCE: OnceLock<Precompiles> = OnceLock::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Self::byzantium().clone();
             precompiles.extend([
                 // EIP-1108: Reduce alt_bn128 precompile gas costs.
-                bn128::add::ISTANBUL,
-                bn128::mul::ISTANBUL,
-                bn128::pair::ISTANBUL,
+                bn254::add::ISTANBUL,
+                bn254::mul::ISTANBUL,
+                bn254::pair::ISTANBUL,
                 // EIP-152: Add BLAKE2 compression function `F` precompile.
                 blake2::FUN,
             ]);
-            Box::new(precompiles)
+            precompiles
         })
     }
 
     /// Returns precompiles for Berlin spec.
     pub fn berlin() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        static INSTANCE: OnceLock<Precompiles> = OnceLock::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Self::istanbul().clone();
             precompiles.extend([
                 // EIP-2565: ModExp Gas Cost.
                 modexp::BERLIN,
             ]);
-            Box::new(precompiles)
+            precompiles
         })
     }
 
@@ -162,45 +178,34 @@ impl Precompiles {
     /// If the `c-kzg` feature is not enabled KZG Point Evaluation precompile will not be included,
     /// effectively making this the same as Berlin.
     pub fn cancun() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        static INSTANCE: OnceLock<Precompiles> = OnceLock::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Self::berlin().clone();
-
-            // EIP-4844: Shard Blob Transactions
-            cfg_if! {
-                if #[cfg(any(feature = "c-kzg", feature = "kzg-rs"))] {
-                    let precompile = kzg_point_evaluation::POINT_EVALUATION.clone();
-                } else {
-                    let precompile = PrecompileWithAddress(u64_to_address(0x0A), |_,_| Err(PrecompileError::Fatal("c-kzg feature is not enabled".into())));
-                }
-            }
-
-
             precompiles.extend([
-                precompile,
+                // EIP-4844: Shard Blob Transactions
+                kzg_point_evaluation::POINT_EVALUATION,
             ]);
-
-            Box::new(precompiles)
+            precompiles
         })
     }
 
     /// Returns precompiles for Prague spec.
     pub fn prague() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        static INSTANCE: OnceLock<Precompiles> = OnceLock::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Self::cancun().clone();
             precompiles.extend(bls12_381::precompiles());
-            Box::new(precompiles)
+            precompiles
         })
     }
 
     /// Returns precompiles for Osaka spec.
     pub fn osaka() -> &'static Self {
-        static INSTANCE: OnceBox<Precompiles> = OnceBox::new();
+        static INSTANCE: OnceLock<Precompiles> = OnceLock::new();
         INSTANCE.get_or_init(|| {
             let mut precompiles = Self::prague().clone();
             precompiles.extend([modexp::OSAKA, secp256r1::P256VERIFY_OSAKA]);
-            Box::new(precompiles)
+            precompiles
         })
     }
 
@@ -229,19 +234,22 @@ impl Precompiles {
 
     /// Returns the precompile for the given address.
     #[inline]
-    pub fn get(&self, address: &Address) -> Option<&PrecompileFn> {
+    pub fn get(&self, address: &Address) -> Option<&Precompile> {
+        if let Some(short_address) = short_address(address) {
+            return self.optimized_access[short_address].as_ref();
+        }
         self.inner.get(address)
     }
 
     /// Returns the precompile for the given address.
     #[inline]
-    pub fn get_mut(&mut self, address: &Address) -> Option<&mut PrecompileFn> {
+    pub fn get_mut(&mut self, address: &Address) -> Option<&mut Precompile> {
         self.inner.get_mut(address)
     }
 
     /// Is the precompiles list empty.
     pub fn is_empty(&self) -> bool {
-        self.inner.len() == 0
+        self.inner.is_empty()
     }
 
     /// Returns the number of precompiles.
@@ -258,10 +266,19 @@ impl Precompiles {
     ///
     /// Other precompiles with overwrite existing precompiles.
     #[inline]
-    pub fn extend(&mut self, other: impl IntoIterator<Item = PrecompileWithAddress>) {
-        let items: Vec<PrecompileWithAddress> = other.into_iter().collect::<Vec<_>>();
+    pub fn extend(&mut self, other: impl IntoIterator<Item = Precompile>) {
+        let items: Vec<Precompile> = other.into_iter().collect::<Vec<_>>();
+        for item in items.iter() {
+            if let Some(short_address) = short_address(item.address()) {
+                self.optimized_access[short_address] = Some(item.clone());
+            } else {
+                self.all_short_addresses = false;
+            }
+        }
+
         self.addresses.extend(items.iter().map(|p| *p.address()));
-        self.inner.extend(items.into_iter().map(|p| (p.0, p.1)));
+        self.inner
+            .extend(items.into_iter().map(|p| (*p.address(), p.clone())));
     }
 
     /// Returns complement of `other` in `self`.
@@ -273,12 +290,12 @@ impl Precompiles {
         let inner = inner
             .iter()
             .filter(|(a, _)| !other.inner.contains_key(*a))
-            .map(|(a, p)| (*a, *p))
+            .map(|(a, p)| (*a, p.clone()))
             .collect::<HashMap<_, _>>();
 
-        let addresses = inner.keys().cloned().collect::<HashSet<_>>();
-
-        Self { inner, addresses }
+        let mut precompiles = Self::default();
+        precompiles.extend(inner.into_iter().map(|p| p.1));
+        precompiles
     }
 
     /// Returns intersection of `self` and `other`.
@@ -290,42 +307,66 @@ impl Precompiles {
         let inner = inner
             .iter()
             .filter(|(a, _)| other.inner.contains_key(*a))
-            .map(|(a, p)| (*a, *p))
+            .map(|(a, p)| (*a, p.clone()))
             .collect::<HashMap<_, _>>();
 
-        let addresses = inner.keys().cloned().collect::<HashSet<_>>();
-
-        Self { inner, addresses }
+        let mut precompiles = Self::default();
+        precompiles.extend(inner.into_iter().map(|p| p.1));
+        precompiles
     }
 }
 
-/// Precompile with address and function.
+/// Precompile.
 #[derive(Clone, Debug)]
-pub struct PrecompileWithAddress(pub Address, pub PrecompileFn);
+pub struct Precompile {
+    /// Unique identifier.
+    id: PrecompileId,
+    /// Precompile address.
+    address: Address,
+    /// Precompile implementation.
+    fn_: PrecompileFn,
+}
 
-impl From<(Address, PrecompileFn)> for PrecompileWithAddress {
-    fn from(value: (Address, PrecompileFn)) -> Self {
-        PrecompileWithAddress(value.0, value.1)
+impl From<(PrecompileId, Address, PrecompileFn)> for Precompile {
+    fn from((id, address, fn_): (PrecompileId, Address, PrecompileFn)) -> Self {
+        Precompile { id, address, fn_ }
     }
 }
 
-impl From<PrecompileWithAddress> for (Address, PrecompileFn) {
-    fn from(value: PrecompileWithAddress) -> Self {
-        (value.0, value.1)
+impl From<Precompile> for (PrecompileId, Address, PrecompileFn) {
+    fn from(value: Precompile) -> Self {
+        (value.id, value.address, value.fn_)
     }
 }
 
-impl PrecompileWithAddress {
-    /// Returns reference of address.
+impl Precompile {
+    /// Create new precompile.
+    pub const fn new(id: PrecompileId, address: Address, fn_: PrecompileFn) -> Self {
+        Self { id, address, fn_ }
+    }
+
+    /// Returns reference to precompile identifier.
+    #[inline]
+    pub fn id(&self) -> &PrecompileId {
+        &self.id
+    }
+
+    /// Returns reference to address.
     #[inline]
     pub fn address(&self) -> &Address {
-        &self.0
+        &self.address
     }
 
-    /// Returns reference of precompile.
+    /// Returns reference to precompile implementation.
     #[inline]
     pub fn precompile(&self) -> &PrecompileFn {
-        &self.1
+        &self.fn_
+    }
+
+    /// Executes the precompile.
+    #[inline]
+    pub fn execute(&self, input: &[u8], gas_limit: u64) -> PrecompileResult {
+        (self.fn_)(input, gas_limit)
     }
 }
 
@@ -404,7 +445,45 @@ pub const fn u64_to_address(x: u64) -> Address {
 
 #[cfg(test)]
 mod test {
-    use crate::Precompiles;
+    use super::*;
+
+    fn temp_precompile(_input: &[u8], _gas_limit: u64) -> PrecompileResult {
+        PrecompileResult::Err(PrecompileError::OutOfGas)
+    }
+
+    #[test]
+    fn test_optimized_access() {
+        let mut precompiles = Precompiles::istanbul().clone();
+        assert!(precompiles.optimized_access[9].is_some());
+        assert!(precompiles.optimized_access[10].is_none());
+
+        precompiles.extend([Precompile::new(
+            PrecompileId::Custom("test".into()),
+            u64_to_address(100),
+            temp_precompile,
+        )]);
+        precompiles.extend([Precompile::new(
+            PrecompileId::Custom("test".into()),
+            u64_to_address(101),
+            temp_precompile,
+        )]);
+
+        assert_eq!(
+            precompiles.optimized_access[100]
+                .as_ref()
+                .unwrap()
+                .execute(&[], u64::MAX),
+            PrecompileResult::Err(PrecompileError::OutOfGas)
+        );
+
+        assert_eq!(
+            precompiles
+                .get(&Address::left_padding_from(&[101]))
+                .unwrap()
+                .execute(&[], u64::MAX),
+            PrecompileResult::Err(PrecompileError::OutOfGas)
+        );
+    }
 
     #[test]
     fn test_difference_precompile_sets() {

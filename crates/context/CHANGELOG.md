@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [9.0.2](https://github.com/bluealloy/revm/compare/revm-context-v9.0.1...revm-context-v9.0.2) - 2025-08-23
+
+### Fixed
+
+- EIP-7702 target check to return correct error ([#2896](https://github.com/bluealloy/revm/pull/2896))
+
+### Other
+
+- skip drain if checkpoing is inconsistent ([#2911](https://github.com/bluealloy/revm/pull/2911))
+
+## [9.0.1](https://github.com/bluealloy/revm/compare/revm-context-v9.0.0...revm-context-v9.0.1) - 2025-08-12
+
+### Other
+
+- updated the following local packages: revm-primitives, revm-bytecode, revm-state, revm-context-interface, revm-database, revm-database-interface
+
+## [9.0.0](https://github.com/bluealloy/revm/compare/revm-context-v8.0.4...revm-context-v9.0.0) - 2025-08-06
+
+### Added
+
+- short address for journal cold/warm check ([#2849](https://github.com/bluealloy/revm/pull/2849))
+
+### Fixed
+
+- correct various typos in documentation and comments ([#2855](https://github.com/bluealloy/revm/pull/2855))
+
+### Other
+
+- rm redundant lifetime constraints ([#2850](https://github.com/bluealloy/revm/pull/2850))
+- update README.md ([#2842](https://github.com/bluealloy/revm/pull/2842))
+- add rust-version and note about MSRV ([#2789](https://github.com/bluealloy/revm/pull/2789))
+
 ## [8.0.4](https://github.com/bluealloy/revm/compare/revm-context-v8.0.3...revm-context-v8.0.4) - 2025-07-23
 
 ### Fixed

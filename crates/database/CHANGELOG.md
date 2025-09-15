@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.0.5](https://github.com/bluealloy/revm/compare/revm-database-v7.0.4...revm-database-v7.0.5) - 2025-08-23
+
+### Other
+
+- *(database)* remove unused dependencies ([#2885](https://github.com/bluealloy/revm/pull/2885))
+- add AccountStatus unit test ([#2869](https://github.com/bluealloy/revm/pull/2869))
+
+## [7.0.4](https://github.com/bluealloy/revm/compare/revm-database-v7.0.3...revm-database-v7.0.4) - 2025-08-12
+
+### Other
+
+- use mem::take ([#2870](https://github.com/bluealloy/revm/pull/2870))
+- small performance and safety improvements ([#2868](https://github.com/bluealloy/revm/pull/2868))
+- use HashMap::or_insert_with lazily compute ([#2864](https://github.com/bluealloy/revm/pull/2864))
+
+## [7.0.3](https://github.com/bluealloy/revm/compare/revm-database-v7.0.2...revm-database-v7.0.3) - 2025-08-06
+
+### Other
+
+- update README.md ([#2842](https://github.com/bluealloy/revm/pull/2842))
+- add rust-version and note about MSRV ([#2789](https://github.com/bluealloy/revm/pull/2789))
+
 ## [7.0.2](https://github.com/bluealloy/revm/compare/revm-database-v7.0.1...revm-database-v7.0.2) - 2025-07-23
 
 ### Other

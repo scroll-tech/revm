@@ -248,21 +248,17 @@ pub trait ReturnData {
 /// Trait controls execution of the loop.
 pub trait LoopControl {
     /// Returns `true` if the loop should continue.
-    #[inline]
-    fn is_not_end(&self) -> bool {
-        !self.is_end()
-    }
+    fn is_not_end(&self) -> bool;
     /// Is end of the loop.
-    fn is_end(&self) -> bool;
-    /// Reverts to previous instruction pointer.
-    ///
-    /// After the loop is finished, the instruction pointer is set to the previous one.
-    fn revert_to_previous_pointer(&mut self);
-    /// Set return action and set instruction pointer to null. Preserve previous pointer
-    ///
-    /// Previous pointer can be restored by calling [`LoopControl::revert_to_previous_pointer`].
+    #[inline]
+    fn is_end(&self) -> bool {
+        !self.is_not_end()
+    }
+    /// Sets the `end` flag internally. Action should be taken after.
+    fn reset_action(&mut self);
+    /// Set return action.
     fn set_action(&mut self, action: InterpreterAction);
-    /// Takes next action.
+    /// Returns the current action.
     fn action(&mut self) -> &mut Option<InterpreterAction>;
     /// Returns instruction result
     #[inline]
