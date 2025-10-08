@@ -104,6 +104,12 @@ pub struct CfgEnv<SPEC = SpecId> {
     /// By default, it is set to `false`.
     #[cfg(feature = "optional_priority_fee_check")]
     pub disable_priority_fee_check: bool,
+    /// Disables fee charging for transactions.
+    /// This is useful when executing `eth_call` for example, on OP-chains where setting the base fee
+    /// to 0 isn't sufficient.
+    /// By default, it is set to `false`.
+    #[cfg(feature = "optional_fee_charge")]
+    pub disable_fee_charge: bool,
     /// Enables EIP-7702, regardless of the current spec.
     ///
     /// By default, it is set to `false`.
@@ -147,7 +153,7 @@ impl<SPEC> CfgEnv<SPEC> {
     pub fn new_with_spec(spec: SPEC) -> Self {
         Self {
             chain_id: 1,
-            tx_chain_id_check: false,
+            tx_chain_id_check: true,
             limit_contract_code_size: None,
             limit_contract_initcode_size: None,
             spec,
@@ -169,6 +175,8 @@ impl<SPEC> CfgEnv<SPEC> {
             disable_base_fee: false,
             #[cfg(feature = "optional_priority_fee_check")]
             disable_priority_fee_check: false,
+            #[cfg(feature = "optional_fee_charge")]
+            disable_fee_charge: false,
             #[cfg(feature = "enable_eip7702")]
             enable_eip7702: false,
             #[cfg(feature = "enable_eip7623")]
@@ -220,6 +228,8 @@ impl<SPEC> CfgEnv<SPEC> {
             disable_base_fee: self.disable_base_fee,
             #[cfg(feature = "optional_priority_fee_check")]
             disable_priority_fee_check: self.disable_priority_fee_check,
+            #[cfg(feature = "optional_fee_charge")]
+            disable_fee_charge: self.disable_fee_charge,
             #[cfg(feature = "enable_eip7702")]
             enable_eip7702: self.enable_eip7702,
             #[cfg(feature = "enable_eip7623")]
@@ -247,6 +257,13 @@ impl<SPEC> CfgEnv<SPEC> {
     #[cfg(feature = "optional_priority_fee_check")]
     pub fn with_disable_priority_fee_check(mut self, disable: bool) -> Self {
         self.disable_priority_fee_check = disable;
+        self
+    }
+
+    /// Sets the disable fee charge flag.
+    #[cfg(feature = "optional_fee_charge")]
+    pub fn with_disable_fee_charge(mut self, disable: bool) -> Self {
+        self.disable_fee_charge = disable;
         self
     }
 
@@ -371,6 +388,16 @@ impl<SPEC: Into<SpecId> + Copy> Cfg for CfgEnv<SPEC> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "optional_priority_fee_check")] {
                 self.disable_priority_fee_check
+            } else {
+                false
+            }
+        }
+    }
+
+    fn is_fee_charge_disabled(&self) -> bool {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "optional_fee_charge")] {
+                self.disable_fee_charge
             } else {
                 false
             }
