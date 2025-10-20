@@ -446,7 +446,7 @@ impl<SPEC: Into<SpecId> + Copy> Cfg for CfgEnv<SPEC> {
             if #[cfg(feature = "enable_eip7939")] {
                 self.enable_eip7623 || (self.spec.into() >= SpecId::OSAKA)
             } else {
-                self.spec.into() >= SpecId::PRAGUE
+                self.spec.into() >= SpecId::OSAKA
             }
         }
     }
