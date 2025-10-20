@@ -94,6 +94,7 @@ optional_eip3607 = ["context/optional_eip3607"]
 optional_no_base_fee = ["context/optional_no_base_fee"]
 enable_eip7702 = ["context/enable_eip7702"]
 enable_eip7623 = ["context/enable_eip7623"]
+enable_eip7939 = ["context/enable_eip7939"]
 
 # Precompiles features: Please look at the comments in `precompile` crate for more information.
 

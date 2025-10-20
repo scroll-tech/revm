@@ -67,6 +67,9 @@ pub trait Cfg {
 
     /// Returns whether the EIP-7623 is enabled.
     fn is_eip7623_enabled(&self) -> bool;
+
+    /// Returns whether the EIP-7939 is enabled.
+    fn is_eip7939_enabled(&self) -> bool;
 }
 
 /// What bytecode analysis to perform

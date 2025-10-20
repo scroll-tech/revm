@@ -120,6 +120,12 @@ pub struct CfgEnv<SPEC = SpecId> {
     /// By default, it is set to `false`.
     #[cfg(feature = "enable_eip7623")]
     pub enable_eip7623: bool,
+
+    /// Enables EIP-7939, regardless of the current spec.
+    ///
+    /// By default, it is set to `false`.
+    #[cfg(feature = "enable_eip7939")]
+    pub enable_eip7939: bool,
 }
 
 impl CfgEnv {
@@ -181,6 +187,8 @@ impl<SPEC> CfgEnv<SPEC> {
             enable_eip7702: false,
             #[cfg(feature = "enable_eip7623")]
             enable_eip7623: false,
+            #[cfg(feature = "enable_eip7939")]
+            enable_eip7939: false,
         }
     }
 
@@ -234,6 +242,8 @@ impl<SPEC> CfgEnv<SPEC> {
             enable_eip7702: self.enable_eip7702,
             #[cfg(feature = "enable_eip7623")]
             enable_eip7623: self.enable_eip7623,
+            #[cfg(feature = "enable_eip7939")]
+            enable_eip7939: self.enable_eip7939,
         }
     }
 
@@ -278,6 +288,13 @@ impl<SPEC> CfgEnv<SPEC> {
     #[cfg(feature = "enable_eip7623")]
     pub fn enable_eip_7623(mut self) -> CfgEnv<SPEC> {
         self.enable_eip7623 = true;
+        self
+    }
+
+    /// Enables EIP-7939.
+    #[cfg(feature = "enable_eip7939")]
+    pub fn enable_eip_7939(mut self) -> CfgEnv<SPEC> {
+        self.enable_eip7939 = true;
         self
     }
 }
@@ -418,6 +435,16 @@ impl<SPEC: Into<SpecId> + Copy> Cfg for CfgEnv<SPEC> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "enable_eip7623")] {
                 self.enable_eip7623 || (self.spec.into() >= SpecId::PRAGUE)
+            } else {
+                self.spec.into() >= SpecId::PRAGUE
+            }
+        }
+    }
+
+    fn is_eip7939_enabled(&self) -> bool {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "enable_eip7939")] {
+                self.enable_eip7623 || (self.spec.into() >= SpecId::OSAKA)
             } else {
                 self.spec.into() >= SpecId::PRAGUE
             }
