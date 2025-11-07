@@ -261,9 +261,9 @@ fn test_halted_tx_call_bn254_pair_granite() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bn254 invalid pair length"
     ));
 
     compare_or_save_op_testdata("test_halted_tx_call_bn254_pair_granite.json", &output);
@@ -331,9 +331,9 @@ fn test_halted_tx_call_bls12_381_g1_add_input_wrong_size() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bls12-381 g1 add input length error"
     ));
 
     compare_or_save_op_testdata(
@@ -431,9 +431,9 @@ fn test_halted_tx_call_bls12_381_g1_msm_input_wrong_size() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bls12-381 g1 msm input length error"
     ));
 
     compare_or_save_op_testdata(
@@ -511,9 +511,9 @@ fn test_halted_tx_call_bls12_381_g1_msm_wrong_input_layout() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bls12-381 fp 64 top bytes of input are not zero"
     ));
 
     compare_or_save_op_testdata(
@@ -585,9 +585,9 @@ fn test_halted_tx_call_bls12_381_g2_add_input_wrong_size() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bls12-381 g2 add input length error"
     ));
 
     compare_or_save_op_testdata(
@@ -685,9 +685,9 @@ fn test_halted_tx_call_bls12_381_g2_msm_input_wrong_size() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bls12-381 g2 msm input length error"
     ));
 
     compare_or_save_op_testdata(
@@ -765,9 +765,9 @@ fn test_halted_tx_call_bls12_381_g2_msm_wrong_input_layout() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bls12-381 fp 64 top bytes of input are not zero"
     ));
 
     compare_or_save_op_testdata(
@@ -860,9 +860,9 @@ fn test_halted_tx_call_bls12_381_pairing_input_wrong_size() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bls12-381 pairing input length error"
     ));
 
     compare_or_save_op_testdata(
@@ -937,9 +937,9 @@ fn test_tx_call_bls12_381_pairing_wrong_input_layout() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bls12-381 fp 64 top bytes of input are not zero"
     ));
 
     compare_or_save_op_testdata(
@@ -1043,9 +1043,9 @@ fn test_halted_tx_call_bls12_381_map_fp_to_g1_input_wrong_size() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bls12-381 map fp to g1 input length error"
     ));
 
     compare_or_save_op_testdata(
@@ -1149,9 +1149,9 @@ fn test_halted_tx_call_bls12_381_map_fp2_to_g2_input_wrong_size() {
     assert!(matches!(
         output.result,
         ExecutionResult::Halt {
-            reason: OpHaltReason::Base(HaltReason::PrecompileError),
+            reason: OpHaltReason::Base(HaltReason::PrecompileErrorWithContext(ref msg)),
             ..
-        }
+        } if msg == "bls12-381 map fp2 to g2 input length error"
     ));
 
     compare_or_save_op_testdata(

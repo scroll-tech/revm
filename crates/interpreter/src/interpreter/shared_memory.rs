@@ -125,6 +125,17 @@ impl MemoryTr for SharedMemory {
         self.resize(new_size);
         true
     }
+
+    /// Returns `true` if the `new_size` for the current context memory will
+    /// make the shared buffer length exceed the `memory_limit`.
+    #[cfg(feature = "memory_limit")]
+    #[inline]
+    fn limit_reached(&self, offset: usize, len: usize) -> bool {
+        self.my_checkpoint
+            .saturating_add(offset)
+            .saturating_add(len) as u64
+            > self.memory_limit
+    }
 }
 
 impl SharedMemory {
@@ -184,6 +195,17 @@ impl SharedMemory {
         }
     }
 
+    /// Sets the memory limit in bytes.
+    #[inline]
+    pub fn set_memory_limit(&mut self, limit: u64) {
+        #[cfg(feature = "memory_limit")]
+        {
+            self.memory_limit = limit;
+        }
+        // for clippy.
+        let _ = limit;
+    }
+
     #[inline]
     fn buffer(&self) -> &Rc<RefCell<Vec<u8>>> {
         debug_assert!(self.buffer.is_some(), "cannot use SharedMemory::empty");
@@ -198,14 +220,6 @@ impl SharedMemory {
     #[inline]
     fn buffer_ref_mut(&self) -> RefMut<'_, Vec<u8>> {
         self.buffer().dbg_borrow_mut()
-    }
-
-    /// Returns `true` if the `new_size` for the current context memory will
-    /// make the shared buffer length exceed the `memory_limit`.
-    #[cfg(feature = "memory_limit")]
-    #[inline]
-    pub fn limit_reached(&self, new_size: usize) -> bool {
-        self.my_checkpoint.saturating_add(new_size) as u64 > self.memory_limit
     }
 
     /// Prepares the shared memory for a new child context.
@@ -513,6 +527,9 @@ impl SharedMemory {
 /// Assumes that dst and src are valid.
 /// Assumes that dst and src do not overlap.
 unsafe fn set_data(dst: &mut [u8], src: &[u8], dst_offset: usize, src_offset: usize, len: usize) {
+    if len == 0 {
+        return;
+    }
     if src_offset >= src.len() {
         // Nullify all memory slots
         dst.get_mut(dst_offset..dst_offset + len).unwrap().fill(0);

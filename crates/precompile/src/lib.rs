@@ -38,10 +38,6 @@ cfg_if::cfg_if! {
 
 use arrayref as _;
 
-#[cfg(all(feature = "c-kzg", feature = "kzg-rs"))]
-// silence kzg-rs lint as c-kzg will be used as default if both are enabled.
-use kzg_rs as _;
-
 // silence arkworks-bls12-381 lint as blst will be used as default if both are enabled.
 cfg_if::cfg_if! {
     if #[cfg(feature = "blst")]{
@@ -363,6 +359,12 @@ impl Precompile {
         &self.fn_
     }
 
+    /// Consumes the type and returns the precompile implementation.
+    #[inline]
+    pub fn into_precompile(self) -> PrecompileFn {
+        self.fn_
+    }
+
     /// Executes the precompile.
     #[inline]
     pub fn execute(&self, input: &[u8], gas_limit: u64) -> PrecompileResult {
@@ -425,7 +427,7 @@ impl PrecompileSpecId {
             BERLIN | LONDON | ARROW_GLACIER | GRAY_GLACIER | MERGE | SHANGHAI => Self::BERLIN,
             CANCUN => Self::CANCUN,
             PRAGUE => Self::PRAGUE,
-            OSAKA => Self::OSAKA,
+            OSAKA | AMSTERDAM => Self::OSAKA,
         }
     }
 }

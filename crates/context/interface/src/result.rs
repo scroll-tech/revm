@@ -12,7 +12,7 @@ use core::fmt::{self, Debug};
 use database_interface::DBErrorMarker;
 use primitives::{Address, Bytes, Log, U256};
 use state::EvmState;
-use std::{boxed::Box, string::String, vec::Vec};
+use std::{borrow::Cow, boxed::Box, string::String, vec::Vec};
 
 /// Trait for the halt reason.
 pub trait HaltReasonTr: Clone + Debug + PartialEq + Eq + From<HaltReason> {}
@@ -400,7 +400,12 @@ pub enum InvalidTransaction {
     /// `blob_hashes`/`blob_versioned_hashes` is not supported for blocks before the Cancun hardfork.
     BlobVersionedHashesNotSupported,
     /// Block `blob_gas_price` is greater than tx-specified `max_fee_per_blob_gas` after Cancun.
-    BlobGasPriceGreaterThanMax,
+    BlobGasPriceGreaterThanMax {
+        /// Block `blob_gas_price`.
+        block_blob_gas_price: u128,
+        /// Tx-specified `max_fee_per_blob_gas`.
+        tx_max_fee_per_blob_gas: u128,
+    },
     /// There should be at least one blob in Blob transaction.
     EmptyBlobs,
     /// Blob transaction can't be a create transaction.
@@ -434,6 +439,8 @@ pub enum InvalidTransaction {
     Eip7873NotSupported,
     /// EIP-7873 initcode transaction should have `to` address.
     Eip7873MissingTarget,
+    /// Custom string error for flexible error handling.
+    Str(Cow<'static, str>),
 }
 
 impl TransactionError for InvalidTransaction {}
@@ -506,8 +513,14 @@ impl fmt::Display for InvalidTransaction {
             Self::BlobVersionedHashesNotSupported => {
                 write!(f, "blob versioned hashes not supported")
             }
-            Self::BlobGasPriceGreaterThanMax => {
-                write!(f, "blob gas price is greater than max fee per blob gas")
+            Self::BlobGasPriceGreaterThanMax {
+                block_blob_gas_price,
+                tx_max_fee_per_blob_gas,
+            } => {
+                write!(
+                    f,
+                    "blob gas price ({block_blob_gas_price}) is greater than max fee per blob gas ({tx_max_fee_per_blob_gas})"
+                )
             }
             Self::EmptyBlobs => write!(f, "empty blobs"),
             Self::BlobCreateTransaction => write!(f, "blob create transaction"),
@@ -528,6 +541,7 @@ impl fmt::Display for InvalidTransaction {
             Self::Eip7873MissingTarget => {
                 write!(f, "Eip7873 initcode transaction should have `to` address")
             }
+            Self::Str(msg) => f.write_str(msg),
         }
     }
 }
@@ -568,7 +582,7 @@ pub enum SuccessReason {
 /// Indicates that the EVM has experienced an exceptional halt.
 ///
 /// This causes execution to immediately end with all gas being consumed.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum HaltReason {
     /// Out of gas error.
@@ -591,6 +605,8 @@ pub enum HaltReason {
     CreateCollision,
     /// Precompile error.
     PrecompileError,
+    /// Precompile error with message from context.
+    PrecompileErrorWithContext(String),
     /// Nonce overflow.
     NonceOverflow,
     /// Create init code size exceeds limit (runtime).
@@ -630,4 +646,64 @@ pub enum OutOfGasError {
     InvalidOperand,
     /// When performing SSTORE the gasleft is less than or equal to 2300
     ReentrancySentry,
+}
+
+/// Error that includes transaction index for batch transaction processing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct TransactionIndexedError<Error> {
+    /// The original error that occurred.
+    pub error: Error,
+    /// The index of the transaction that failed.
+    pub transaction_index: usize,
+}
+
+impl<Error> TransactionIndexedError<Error> {
+    /// Create a new `TransactionIndexedError` with the given error and transaction index.
+    #[must_use]
+    pub fn new(error: Error, transaction_index: usize) -> Self {
+        Self {
+            error,
+            transaction_index,
+        }
+    }
+
+    /// Get a reference to the underlying error.
+    pub fn error(&self) -> &Error {
+        &self.error
+    }
+
+    /// Convert into the underlying error.
+    #[must_use]
+    pub fn into_error(self) -> Error {
+        self.error
+    }
+}
+
+impl<Error: fmt::Display> fmt::Display for TransactionIndexedError<Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "transaction {} failed: {}",
+            self.transaction_index, self.error
+        )
+    }
+}
+
+impl<Error: core::error::Error + 'static> core::error::Error for TransactionIndexedError<Error> {
+    fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+        Some(&self.error)
+    }
+}
+
+impl From<&'static str> for InvalidTransaction {
+    fn from(s: &'static str) -> Self {
+        Self::Str(Cow::Borrowed(s))
+    }
+}
+
+impl From<String> for InvalidTransaction {
+    fn from(s: String) -> Self {
+        Self::Str(Cow::Owned(s))
+    }
 }

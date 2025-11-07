@@ -68,14 +68,6 @@ impl ExtBytecode {
         }
     }
 
-    /// Regenerates the bytecode hash.
-    #[inline]
-    #[deprecated(note = "use `get_or_calculate_hash` or `calculate_hash` instead")]
-    #[doc(hidden)]
-    pub fn regenerate_hash(&mut self) -> B256 {
-        self.calculate_hash()
-    }
-
     /// Re-calculates the bytecode hash.
     ///
     /// Prefer [`get_or_calculate_hash`](Self::get_or_calculate_hash) if you just need to get the hash.
@@ -166,7 +158,7 @@ impl Jumps for ExtBytecode {
         // In practice this is always true unless a caller modifies the `instruction_pointer` field manually.
         unsafe {
             self.instruction_pointer
-                .offset_from(self.base.bytes_ref().as_ptr()) as usize
+                .offset_from_unsigned(self.base.bytes_ref().as_ptr())
         }
     }
 }

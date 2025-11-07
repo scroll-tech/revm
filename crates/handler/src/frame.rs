@@ -68,7 +68,8 @@ impl Default for EthFrame<EthInterpreter> {
 }
 
 impl EthFrame<EthInterpreter> {
-    fn invalid() -> Self {
+    /// Creates an new invalid [`EthFrame`].
+    pub fn invalid() -> Self {
         Self::do_default(Interpreter::invalid())
     }
 
@@ -162,12 +163,6 @@ impl EthFrame<EthInterpreter> {
             return return_result(InstructionResult::CallTooDeep);
         }
 
-        // Make account warm and loaded.
-        let is_eip7702_enabled = ctx.cfg().is_eip7702_enabled();
-        let _ = ctx
-            .journal_mut()
-            .load_account_delegated(is_eip7702_enabled, inputs.bytecode_address)?;
-
         // Create subroutine checkpoint
         let checkpoint = ctx.journal_mut().checkpoint();
 
@@ -177,7 +172,7 @@ impl EthFrame<EthInterpreter> {
             // Target will get touched even if balance transferred is zero.
             if let Some(i) =
                 ctx.journal_mut()
-                    .transfer(inputs.caller, inputs.target_address, value)?
+                    .transfer_loaded(inputs.caller, inputs.target_address, value)
             {
                 ctx.journal_mut().checkpoint_revert(checkpoint);
                 return return_result(i.into());
@@ -194,16 +189,7 @@ impl EthFrame<EthInterpreter> {
         let is_static = inputs.is_static;
         let gas_limit = inputs.gas_limit;
 
-        if let Some(result) = precompiles
-            .run(
-                ctx,
-                &inputs.bytecode_address,
-                &interpreter_input,
-                is_static,
-                gas_limit,
-            )
-            .map_err(ERROR::from_string)?
-        {
+        if let Some(result) = precompiles.run(ctx, &inputs).map_err(ERROR::from_string)? {
             if result.result.is_ok() {
                 ctx.journal_mut().checkpoint_commit();
             } else {
@@ -215,21 +201,20 @@ impl EthFrame<EthInterpreter> {
             })));
         }
 
-        let account = ctx
-            .journal_mut()
-            .load_account_code(inputs.bytecode_address)?;
-
-        let mut code_hash = account.info.code_hash();
-        let mut bytecode = account.info.code.clone().unwrap_or_default();
-
-        if let Bytecode::Eip7702(eip7702_bytecode) = bytecode {
-            let account = &ctx
+        // Get bytecode and hash - either from known_bytecode or load from account
+        let (bytecode, bytecode_hash) = if let Some((hash, code)) = inputs.known_bytecode.clone() {
+            // Use provided bytecode and hash
+            (code, hash)
+        } else {
+            // Load account and get its bytecode
+            let account = ctx
                 .journal_mut()
-                .load_account_code(eip7702_bytecode.delegated_address)?
-                .info;
-            bytecode = account.code.clone().unwrap_or_default();
-            code_hash = account.code_hash();
-        }
+                .load_account_with_code(inputs.bytecode_address)?;
+            (
+                account.info.code.clone().unwrap_or_default(),
+                account.info.code_hash,
+            )
+        };
 
         // Returns success if bytecode is empty.
         if bytecode.is_empty() {
@@ -245,7 +230,7 @@ impl EthFrame<EthInterpreter> {
             FrameInput::Call(inputs),
             depth,
             memory,
-            ExtBytecode::new_with_hash(bytecode, code_hash),
+            ExtBytecode::new_with_hash(bytecode, bytecode_hash),
             interpreter_input,
             is_static,
             ctx.cfg().spec().into(),
@@ -284,29 +269,20 @@ impl EthFrame<EthInterpreter> {
             return return_error(InstructionResult::CallTooDeep);
         }
 
-        // Prague EOF
-        // TODO(EOF)
-        // if spec.is_enabled_in(OSAKA) && inputs.init_code.starts_with(&EOF_MAGIC_BYTES) {
-        //     return return_error(InstructionResult::CreateInitCodeStartingEF00);
-        // }
-
         // Fetch balance of caller.
-        let caller_info = &mut context.journal_mut().load_account(inputs.caller)?.data.info;
+        let mut caller_info = context.journal_mut().load_account_mut(inputs.caller)?;
 
         // Check if caller has enough balance to send to the created contract.
-        if caller_info.balance < inputs.value {
+        // decrement of balance is done in the create_account_checkpoint.
+        if *caller_info.balance() < inputs.value {
             return return_error(InstructionResult::OutOfFunds);
         }
 
         // Increase nonce of caller and check if it overflows
-        let old_nonce = caller_info.nonce;
-        let Some(new_nonce) = old_nonce.checked_add(1) else {
+        let old_nonce = caller_info.nonce();
+        if !caller_info.bump_nonce() {
             return return_error(InstructionResult::Return);
         };
-        caller_info.nonce = new_nonce;
-        context
-            .journal_mut()
-            .nonce_bump_journal_entry(inputs.caller);
 
         // Create address
         let mut init_code_hash = None;

@@ -7,6 +7,88 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [29.0.1](https://github.com/bluealloy/revm/compare/revm-interpreter-v29.0.0...revm-interpreter-v29.0.1) - 2025-11-07
+
+### Other
+
+- updated the following local packages: revm-primitives, revm-bytecode, revm-state, revm-context-interface
+
+## [28.0.1](https://github.com/bluealloy/revm/compare/revm-interpreter-v28.0.0...revm-interpreter-v28.0.1) - 2025-10-30
+
+### Fixed
+
+- hook up Cfg::memory_limit ([#3129](https://github.com/bluealloy/revm/pull/3129))
+
+## [28.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v27.0.2...revm-interpreter-v28.0.0) - 2025-10-17
+
+### Added
+
+- Optional Bytecode in CallInput ([#3110](https://github.com/bluealloy/revm/pull/3110))
+
+### Fixed
+
+- return MemoryLimitOOG when memory_limit is enabled ([#3109](https://github.com/bluealloy/revm/pull/3109))
+
+### Other
+
+- *(instructions)* fix typo in spurious_dragon variable ([#3106](https://github.com/bluealloy/revm/pull/3106))
+
+## [27.0.2](https://github.com/bluealloy/revm/compare/revm-interpreter-v27.0.1...revm-interpreter-v27.0.2) - 2025-10-15
+
+### Other
+
+- updated the following local packages: revm-bytecode, revm-state, revm-context-interface
+
+## [27.0.1](https://github.com/bluealloy/revm/compare/revm-interpreter-v27.0.0...revm-interpreter-v27.0.1) - 2025-10-15
+
+### Fixed
+
+- support legacy JumpTable serde format ([#3098](https://github.com/bluealloy/revm/pull/3098))
+
+### Other
+
+- make CallInput::bytes accept immutable ContextTr ([#3082](https://github.com/bluealloy/revm/pull/3082))
+
+## [27.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v26.0.0...revm-interpreter-v27.0.0) - 2025-10-09
+
+### Other
+
+- remove deprecated methods ([#3050](https://github.com/bluealloy/revm/pull/3050))
+
+## [26.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v25.0.3...revm-interpreter-v26.0.0) - 2025-10-07
+
+### Added
+
+- Support bubbling up first precompile error messages  ([#2905](https://github.com/bluealloy/revm/pull/2905))
+- send bytecode with call input ([#2963](https://github.com/bluealloy/revm/pull/2963))
+
+### Fixed
+
+- remove redundant U256::from on Host getters in instructions ([#3053](https://github.com/bluealloy/revm/pull/3053))
+- *(interpreter)* remove redundant stack underflow check in LOG instruction ([#3028](https://github.com/bluealloy/revm/pull/3028))
+- unsafe stack capacity invariant and serde deserialization assumptions ([#3025](https://github.com/bluealloy/revm/pull/3025))
+- Apply spelling corrections from PRs #2926, #2915, #2908 ([#2978](https://github.com/bluealloy/revm/pull/2978))
+- skip cold load on oog ([#2903](https://github.com/bluealloy/revm/pull/2903))
+
+### Other
+
+- changelog update for v87 ([#3056](https://github.com/bluealloy/revm/pull/3056))
+- add boundless ([#3043](https://github.com/bluealloy/revm/pull/3043))
+- expose stack data ([#3047](https://github.com/bluealloy/revm/pull/3047))
+- use offset_from_unsigned ([#2999](https://github.com/bluealloy/revm/pull/2999))
+- rm eof comments ([#2987](https://github.com/bluealloy/revm/pull/2987))
+- comments on EIP-2929/2930 constants ([#2969](https://github.com/bluealloy/revm/pull/2969))
+- add SECURITY.md ([#2956](https://github.com/bluealloy/revm/pull/2956))
+- remove duplicate comment for TOTAL_COST_FLOOR_PER_TOKEN constant ([#2950](https://github.com/bluealloy/revm/pull/2950))
+- clean static_selfdestruct_cost ([#2944](https://github.com/bluealloy/revm/pull/2944))
+- rename SELFDESTRUCT to SELFDESTRUCT_REFUND ([#2937](https://github.com/bluealloy/revm/pull/2937))
+
+## [25.0.3](https://github.com/bluealloy/revm/compare/revm-interpreter-v25.0.2...revm-interpreter-v25.0.3) - 2025-09-23
+
+### Other
+
+- updated the following local packages: revm-context-interface
+
 ## [25.0.2](https://github.com/bluealloy/revm/compare/revm-interpreter-v25.0.1...revm-interpreter-v25.0.2) - 2025-08-23
 
 ### Fixed
@@ -48,14 +130,6 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
-
-## [25.0.3](https://github.com/bluealloy/revm/compare/revm-interpreter-v25.0.2...revm-interpreter-v25.0.3) - 2025-09-23
-
-### Other
-
-- updated the following local packages: revm-context-interface
 
 ## [24.0.0](https://github.com/bluealloy/revm/compare/revm-interpreter-v23.0.2...revm-interpreter-v24.0.0) - 2025-07-23
 

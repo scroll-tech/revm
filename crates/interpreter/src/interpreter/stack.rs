@@ -38,9 +38,9 @@ impl Default for Stack {
 
 impl Clone for Stack {
     fn clone(&self) -> Self {
-        // Use `Self::new()` to ensure the cloned Stack maintains the STACK_LIMIT capacity,
-        // and then copy the data. This preserves the invariant that Stack always has
-        // STACK_LIMIT capacity, which is crucial for the safety and correctness of other methods.
+        // Use `Self::new()` to ensure the cloned Stack is constructed with at least
+        // STACK_LIMIT capacity, and then copy the data. This preserves the invariant
+        // that Stack has sufficient capacity for operations that rely on it.
         let mut new_stack = Self::new();
         new_stack.data.extend_from_slice(&self.data);
         new_stack
@@ -51,6 +51,11 @@ impl StackTr for Stack {
     #[inline]
     fn len(&self) -> usize {
         self.len()
+    }
+
+    #[inline]
+    fn data(&self) -> &[U256] {
+        &self.data
     }
 
     #[inline]
@@ -208,8 +213,8 @@ impl Stack {
     #[must_use]
     #[cfg_attr(debug_assertions, track_caller)]
     pub fn push(&mut self, value: U256) -> bool {
-        // Allows the compiler to optimize out the `Vec::push` capacity check.
-        assume!(self.data.capacity() == STACK_LIMIT);
+        // In debug builds, verify we have sufficient capacity provisioned.
+        debug_assert!(self.data.capacity() >= STACK_LIMIT);
         if self.data.len() == STACK_LIMIT {
             return false;
         }
@@ -317,6 +322,9 @@ impl Stack {
             return false;
         }
 
+        // In debug builds, ensure underlying capacity is sufficient for the write.
+        debug_assert!(self.data.capacity() >= new_len);
+
         // SAFETY: Length checked above.
         unsafe {
             let dst = self.data.as_mut_ptr().add(self.data.len()).cast::<u64>();
@@ -389,16 +397,21 @@ impl<'de> serde::Deserialize<'de> for Stack {
     where
         D: serde::Deserializer<'de>,
     {
-        let mut data = Vec::<U256>::deserialize(deserializer)?;
-        if data.len() > STACK_LIMIT {
+        #[derive(serde::Deserialize)]
+        struct StackSerde {
+            data: Vec<U256>,
+        }
+
+        let mut stack = StackSerde::deserialize(deserializer)?;
+        if stack.data.len() > STACK_LIMIT {
             return Err(serde::de::Error::custom(std::format!(
                 "stack size exceeds limit: {} > {}",
-                data.len(),
+                stack.data.len(),
                 STACK_LIMIT
             )));
         }
-        data.reserve(STACK_LIMIT - data.len());
-        Ok(Self { data })
+        stack.data.reserve(STACK_LIMIT - stack.data.len());
+        Ok(Self { data: stack.data })
     }
 }
 

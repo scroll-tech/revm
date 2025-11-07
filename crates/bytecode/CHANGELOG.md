@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.1.1](https://github.com/bluealloy/revm/compare/revm-bytecode-v7.1.0...revm-bytecode-v7.1.1) - 2025-11-07
+
+### Other
+
+- updated the following local packages: revm-primitives
+
+## [7.1.0](https://github.com/bluealloy/revm/compare/revm-bytecode-v7.0.2...revm-bytecode-v7.1.0) - 2025-10-30
+
+### Added
+
+- impl `Sealable` for `Bytecode` ([#3118](https://github.com/bluealloy/revm/pull/3118))
+
+## [7.0.2](https://github.com/bluealloy/revm/compare/revm-bytecode-v7.0.1...revm-bytecode-v7.0.2) - 2025-10-15
+
+### Other
+
+- use JumpTable old serde format ([#3101](https://github.com/bluealloy/revm/pull/3101))
+
+## [7.0.1](https://github.com/bluealloy/revm/compare/revm-bytecode-v7.0.0...revm-bytecode-v7.0.1) - 2025-10-15
+
+### Fixed
+
+- support legacy JumpTable serde format ([#3098](https://github.com/bluealloy/revm/pull/3098))
+
+## [7.0.0](https://github.com/bluealloy/revm/compare/revm-bytecode-v6.2.2...revm-bytecode-v7.0.0) - 2025-10-07
+
+### Added
+
+- in JumpTable use Bytes instead of BitVec ([#3014](https://github.com/bluealloy/revm/pull/3014))
+
+### Fixed
+
+- *(bytecode)* exclude MLOAD from modifies_memory and update test ([#3004](https://github.com/bluealloy/revm/pull/3004))
+- Apply spelling corrections from PRs #2926, #2915, #2908 ([#2978](https://github.com/bluealloy/revm/pull/2978))
+
+### Other
+
+- add boundless ([#3043](https://github.com/bluealloy/revm/pull/3043))
+- use offset_from_unsigned ([#2999](https://github.com/bluealloy/revm/pull/2999))
+- add SECURITY.md ([#2956](https://github.com/bluealloy/revm/pull/2956))
+
 ## [6.2.2](https://github.com/bluealloy/revm/compare/revm-bytecode-v6.2.1...revm-bytecode-v6.2.2) - 2025-08-23
 
 ### Other

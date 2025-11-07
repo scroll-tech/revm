@@ -1,7 +1,7 @@
 [package]
 name = "revm-bytecode"
 description = "EVM Bytecodes"
-version = "6.2.2"
+version = "7.1.1"
 authors.workspace = true
 edition.workspace = true
 keywords.workspace = true
@@ -31,10 +31,14 @@ serde = { workspace = true, features = ["derive", "rc"], optional = true }
 paste = { workspace = true, optional = true }
 phf = { workspace = true, features = ["macros"], optional = true }
 
+[dev-dependencies]
+serde_json = { workspace = true }
+
 [features]
 default = ["std", "parse"]
 std = [
     "serde?/std",
+    "serde_json/std",
     "primitives/std",
     "bitvec/std",
     "phf?/std",

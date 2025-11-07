@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [21.0.2](https://github.com/bluealloy/revm/compare/revm-primitives-v21.0.1...revm-primitives-v21.0.2) - 2025-11-07
+
+### Other
+
+- tag v96 revm v31.0.0 ([#3135](https://github.com/bluealloy/revm/pull/3135))
+
+## [21.0.1](https://github.com/bluealloy/revm/compare/revm-primitives-v21.0.0...revm-primitives-v21.0.1) - 2025-10-15
+
+### Other
+
+- resize short addresses bitvec instead of reallocating ([#3083](https://github.com/bluealloy/revm/pull/3083))
+
+## [21.0.0](https://github.com/bluealloy/revm/compare/revm-primitives-v20.2.1...revm-primitives-v21.0.0) - 2025-10-07
+
+### Added
+
+- *(revme)* ef blockchain tests cli ([#2935](https://github.com/bluealloy/revm/pull/2935))
+
+### Fixed
+
+- Align no_std OnceLock semantics with std ([#3026](https://github.com/bluealloy/revm/pull/3026))
+- racecondition return on install_crypto fn ([#2997](https://github.com/bluealloy/revm/pull/2997))
+- Apply spelling corrections from PRs #2926, #2915, #2908 ([#2978](https://github.com/bluealloy/revm/pull/2978))
+
+### Other
+
+- add boundless ([#3043](https://github.com/bluealloy/revm/pull/3043))
+- add SECURITY.md ([#2956](https://github.com/bluealloy/revm/pull/2956))
+- add amsterdam in spec id ([#2934](https://github.com/bluealloy/revm/pull/2934))
+- *(cleanup)* Remove EIP-7918 related functions and EIP file  ([#2925](https://github.com/bluealloy/revm/pull/2925))
+- cargo update ([#2930](https://github.com/bluealloy/revm/pull/2930))
+
 ## [20.2.1](https://github.com/bluealloy/revm/compare/revm-primitives-v20.2.0...revm-primitives-v20.2.1) - 2025-08-12
 
 ### Other
@@ -31,8 +63,6 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
 
 ## [20.1.0](https://github.com/bluealloy/revm/compare/revm-primitives-v20.0.0...revm-primitives-v20.1.0) - 2025-07-23
 
