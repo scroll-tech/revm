@@ -31,15 +31,20 @@ mod no_std_impl {
         pub fn get_or_init<F>(&self, f: F) -> &T
         where
             F: FnOnce() -> T,
-            T: Into<Box<T>>,
         {
-            self.inner.get_or_init(|| f().into())
+            self.inner.get_or_init(|| Box::new(f()))
         }
 
         /// Gets the contents of the OnceLock, returning None if it is not initialized.
         #[inline]
         pub fn get(&self) -> Option<&T> {
             self.inner.get()
+        }
+
+        /// Sets the contents of the OnceLock.
+        #[inline]
+        pub fn set(&self, value: T) -> Result<(), T> {
+            self.inner.set(Box::new(value)).map_err(|e| *e)
         }
     }
 }

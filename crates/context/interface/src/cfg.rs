@@ -44,6 +44,9 @@ pub trait Cfg {
     /// Returns whether the EIP-3541 (disallowing new contracts with 0xEF prefix) is disabled.
     fn is_eip3541_disabled(&self) -> bool;
 
+    /// Returns whether the EIP-7623 (increased calldata cost) is disabled.
+    fn is_eip7623_disabled(&self) -> bool;
+
     /// Returns whether the balance check is disabled.
     fn is_balance_check_disabled(&self) -> bool;
 
@@ -62,11 +65,15 @@ pub trait Cfg {
     /// Returns whether the fee charge is disabled.
     fn is_fee_charge_disabled(&self) -> bool;
 
+    /// Returns the limit in bytes for the memory buffer.
+    fn memory_limit(&self) -> u64;
+
     /// Returns whether the EIP-7702 is enabled.
     fn is_eip7702_enabled(&self) -> bool;
 
     /// Returns whether the EIP-7623 is enabled.
     fn is_eip7623_enabled(&self) -> bool;
+
 }
 
 /// What bytecode analysis to perform

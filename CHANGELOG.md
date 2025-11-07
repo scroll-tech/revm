@@ -1,5 +1,166 @@
 Because this is workspace with multi libraries, tags will be simplified, and with this document you can match version of project with git tag.
 
+# v97
+date 07.11.2025
+
+Patch release for a bug fix.
+
+* `revm-primitives`: 21.0.1 -> 21.0.2 (✓ API compatible changes)
+* `revm-context`: 11.0.0 -> 11.0.1 (✓ API compatible changes)
+* `revm-statetest-types`: 11.0.0 -> 11.0.1 (✓ API compatible changes)
+* `revme`: 9.0.0 -> 9.0.1 (✓ API compatible changes)
+* `revm-ee-tests`: 0.1.0
+* `revm-bytecode`: 7.1.0 -> 7.1.1
+* `revm-state`: 8.1.0 -> 8.1.1
+* `revm-database-interface`: 8.0.4 -> 8.0.5
+* `revm-context-interface`: 12.0.0 -> 12.0.1
+* `revm-database`: 9.0.3 -> 9.0.4
+* `revm-interpreter`: 29.0.0 -> 29.0.1
+* `revm-precompile`: 29.0.0 -> 29.0.1
+* `revm-handler`: 12.0.0 -> 12.0.1
+* `revm-inspector`: 12.0.0 -> 12.0.1
+* `revm`: 31.0.0 -> 31.0.1
+* `op-revm`: 12.0.0 -> 12.0.1
+
+# v96
+date 30.10.2025
+
+Regular release.
+
+* `revm-bytecode`: 7.0.2 -> 7.1.0 (✓ API compatible changes)
+* `revm-state`: 8.0.2 -> 8.1.0 (✓ API compatible changes)
+* `revm-context-interface`: 11.1.2 -> 12.0.0 (⚠ API breaking changes)
+* `revm-context`: 10.1.2 -> 11.0.0 (⚠ API breaking changes)
+* `revm-interpreter`: 28.0.0 -> 28.0.1 (✓ API compatible changes)
+* `revm-precompile`: 28.1.1 -> 29.0.0 (⚠ API breaking changes)
+* `revm-handler`: 11.2.0 -> 11.3.0 (✓ API compatible changes)
+* `revm-inspector`: 11.2.0 -> 11.2.1 (✓ API compatible changes)
+* `revm`: 30.2.0 -> 30.2.1 (✓ API compatible changes)
+* `revme`: 8.3.0 -> 8.3.1 (✓ API compatible changes)
+* `op-revm`: 11.2.0 -> 12.0.0 (⚠ API breaking changes)
+* `revm-ee-tests`: 0.1.0
+* `revm-database-interface`: 8.0.3 -> 8.0.4
+* `revm-database`: 9.0.2 -> 9.0.3
+* `revm-statetest-types`: 10.2.0 -> 10.2.1
+
+# v95
+date: 29.10.2025
+
+op-revm bump
+
+* `op-revm`: 11.2.0 -> 11.3.0
+
+# v94
+date: 22.10.2025
+
+op-revm bump.
+
+* `op-revm`: 11.1.2 -> 11.2.0
+
+# v93
+date: 17.10.2025
+
+Small release with one breaking change. Bytecode in CallInput is now optional
+
+* `revm-interpreter`: 27.0.2 -> 28.0.0 (⚠ API breaking changes)
+* `revm-handler`: 11.1.2 -> 11.2.0 (✓ API compatible changes)
+* `revm-ee-tests`: 0.1.0
+* `revm-inspector`: 11.1.2 -> 11.1.3
+* `revm`: 30.1.2 -> 30.1.3
+* `revm-statetest-types`: 10.1.2 -> 10.1.3
+* `revme`: 8.2.2 -> 8.2.3
+* `op-revm`: 11.1.2 -> 11.1.3
+
+revm-handler revm-inspector revm revm-statetest-types revme op-revm
+
+# v92
+date 15.10.2025
+
+Patch release that would revert JumpTable serde serialization/deserialization to before v90 release
+
+* `revm-bytecode`: 7.0.1 -> 7.0.2 (✓ API compatible changes)
+* `revm-ee-tests`: 0.1.0
+* `revm-state`: 8.0.1 -> 8.0.2
+* `revm-database-interface`: 8.0.2 -> 8.0.3
+* `revm-context-interface`: 11.1.1 -> 11.1.2
+* `revm-context`: 10.1.1 -> 10.1.2
+* `revm-database`: 9.0.1 -> 9.0.2
+* `revm-interpreter`: 27.0.1 -> 27.0.2
+* `revm-handler`: 11.1.1 -> 11.1.2
+* `revm-inspector`: 11.1.1 -> 11.1.2
+* `revm`: 30.1.1 -> 30.1.2
+* `revm-statetest-types`: 10.1.1 -> 10.1.2
+* `revme`: 8.2.1 -> 8.2.2
+* `op-revm`: 11.1.1 -> 11.1.2
+
+# v91
+date: 15.10.2025
+
+Patch release with a JumpTable serde fix
+
+* `revm-primitives`: 21.0.0 -> 21.0.1 (✓ API compatible changes)
+* `revm-bytecode`: 7.0.0 -> 7.0.1 (✓ API compatible changes)
+* `revm-context`: 10.1.0 -> 10.1.1 (✓ API compatible changes)
+* `revm-interpreter`: 27.0.0 -> 27.0.1 (✓ API compatible changes)
+* `revm-precompile`: 28.1.0 -> 28.1.1 (✓ API compatible changes)
+* `revm-handler`: 11.1.0 -> 11.1.1 (✓ API compatible changes)
+* `revm-ee-tests`: 0.1.0
+* `revm-state`: 8.0.0 -> 8.0.1
+* `revm-database-interface`: 8.0.1 -> 8.0.2
+* `revm-context-interface`: 11.1.0 -> 11.1.1
+* `revm-database`: 9.0.0 -> 9.0.1
+* `revm-inspector`: 11.1.0 -> 11.1.1
+* `revm`: 30.1.0 -> 30.1.1
+* `revm-statetest-types`: 10.1.0 -> 10.1.1
+* `revme`: 8.2.0 -> 8.2.1
+* `op-revm`: 11.1.0 -> 11.1.1
+
+# v90
+date: 10.10.2025
+
+Maintanance release. fix for op-revm
+
+* `revm-database-interface`: 8.0.0 -> 8.0.1 (✓ API compatible changes)
+* `revm-database`: 8.0.0 -> 9.0.0 (⚠ API breaking changes)
+* `revm-interpreter`: 26.0.0 -> 27.0.0 (⚠ API breaking changes)
+* `revm-precompile`: 28.0.0 -> 28.1.0 (✓ API compatible changes)
+* `revm-handler`: 11.0.0 -> 11.1.0 (✓ API compatible changes)
+* `revm-inspector`: 11.0.0 -> 11.1.0 (✓ API compatible changes)
+* `revme`: 8.0.0 -> 8.1.0 (✓ API compatible changes)
+* `op-revm`: 11.0.0 -> 11.1.0 (✓ API compatible changes)
+* `revm-context-interface`: 11.0.0 -> 11.1.0
+* `revm-context`: 10.0.0 -> 10.1.0
+* `revm`: 30.0.0 -> 30.1.0
+* `revm-statetest-types`: 10.0.0 -> 10.1.0
+
+# v89
+date: 09.10.2025
+branch: release/v87
+
+Small fix for op-revm
+
+* `op-revm`: 10.1.0 -> 10.1.1:
+
+# v88
+date: 07.10.2025
+
+* `revm-primitives`: 20.2.1 -> 21.0.0 (⚠ API breaking changes)
+* `revm-bytecode`: 6.2.2 -> 6.3.0 (✓ API compatible changes)
+* `revm-state`: 7.0.5 -> 7.0.6 (✓ API compatible changes)
+* `revm-database-interface`: 7.0.5 -> 7.0.6 (✓ API compatible changes)
+* `revm-context-interface`: 10.2.0 -> 11.0.0 (⚠ API breaking changes)
+* `revm-context`: 9.1.0 -> 10.0.0 (⚠ API breaking changes)
+* `revm-database`: 7.0.5 -> 7.0.6 (✓ API compatible changes)
+* `revm-interpreter`: 25.0.3 -> 26.0.0 (⚠ API breaking changes)
+* `revm-precompile`: 27.0.0 -> 28.0.0 (⚠ API breaking changes)
+* `revm-handler`: 10.0.1 -> 11.0.0 (⚠ API breaking changes)
+* `revm-inspector`: 10.0.1 -> 11.0.0 (⚠ API breaking changes)
+* `revm`: 29.0.1 -> 30.0.0 (⚠ API breaking changes)
+* `revm-statetest-types`: 9.0.3 -> 10.0.0 (⚠ API breaking changes)
+* `revme`: 7.2.3 -> 8.0.0 (⚠ API breaking changes)
+* `op-revm`: 10.1.0 -> 11.0.0 (⚠ API breaking changes)
+* `revm-ee-tests`: 0.1.0
+
 # v87
 date: 23.09.2025
 

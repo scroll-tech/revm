@@ -1,3 +1,4 @@
+#![allow(clippy::type_complexity)]
 //! Context trait and related types.
 pub use crate::journaled_state::StateLoad;
 use crate::{
@@ -31,52 +32,126 @@ pub trait ContextTr: Host {
     /// Local context type
     type Local: LocalContextTr;
 
+    /// Get all contexts
+    fn all(
+        &self,
+    ) -> (
+        &Self::Block,
+        &Self::Tx,
+        &Self::Cfg,
+        &Self::Db,
+        &Self::Journal,
+        &Self::Chain,
+        &Self::Local,
+    );
+
+    /// Get all contexts mutably
+    fn all_mut(
+        &mut self,
+    ) -> (
+        &Self::Block,
+        &Self::Tx,
+        &Self::Cfg,
+        &mut Self::Journal,
+        &mut Self::Chain,
+        &mut Self::Local,
+    );
+
     /// Get the transaction
-    fn tx(&self) -> &Self::Tx;
+    fn tx(&self) -> &Self::Tx {
+        let (_, tx, _, _, _, _, _) = self.all();
+        tx
+    }
     /// Get the block
-    fn block(&self) -> &Self::Block;
+    fn block(&self) -> &Self::Block {
+        let (block, _, _, _, _, _, _) = self.all();
+        block
+    }
     /// Get the configuration
-    fn cfg(&self) -> &Self::Cfg;
+    fn cfg(&self) -> &Self::Cfg {
+        let (_, _, cfg, _, _, _, _) = self.all();
+        cfg
+    }
     /// Get the journal
-    fn journal(&self) -> &Self::Journal;
+    fn journal(&self) -> &Self::Journal {
+        let (_, _, _, _, journal, _, _) = self.all();
+        journal
+    }
     /// Get the journal mutably
-    fn journal_mut(&mut self) -> &mut Self::Journal;
+    fn journal_mut(&mut self) -> &mut Self::Journal {
+        let (_, _, _, journal, _, _) = self.all_mut();
+        journal
+    }
     /// Get the journal reference
     fn journal_ref(&self) -> &Self::Journal {
         self.journal()
     }
     /// Get the database
-    fn db(&self) -> &Self::Db;
+    fn db(&self) -> &Self::Db {
+        let (_, _, _, db, _, _, _) = self.all();
+        db
+    }
     /// Get the database mutably
-    fn db_mut(&mut self) -> &mut Self::Db;
+    fn db_mut(&mut self) -> &mut Self::Db {
+        let db = self.journal_mut().db_mut();
+        db
+    }
     /// Get the database reference
     fn db_ref(&self) -> &Self::Db {
         self.db()
     }
     /// Get the chain
-    fn chain(&self) -> &Self::Chain;
+    fn chain(&self) -> &Self::Chain {
+        let (_, _, _, _, _, chain, _) = self.all();
+        chain
+    }
     /// Get the chain mutably
-    fn chain_mut(&mut self) -> &mut Self::Chain;
+    fn chain_mut(&mut self) -> &mut Self::Chain {
+        let (_, _, _, _, chain, _) = self.all_mut();
+        chain
+    }
     /// Get the chain reference
     fn chain_ref(&self) -> &Self::Chain {
         self.chain()
     }
     /// Get the local context
-    fn local(&self) -> &Self::Local;
+    fn local(&self) -> &Self::Local {
+        let (_, _, _, _, _, _, local) = self.all();
+        local
+    }
     /// Get the local context mutably
-    fn local_mut(&mut self) -> &mut Self::Local;
+    fn local_mut(&mut self) -> &mut Self::Local {
+        let (_, _, _, _, _, local) = self.all_mut();
+        local
+    }
     /// Get the local context reference
     fn local_ref(&self) -> &Self::Local {
         self.local()
     }
     /// Get the error
     fn error(&mut self) -> &mut Result<(), ContextError<<Self::Db as Database>::Error>>;
+
     /// Get the transaction and journal. It is used to efficiently load access list
     /// into journal without copying them from transaction.
-    fn tx_journal_mut(&mut self) -> (&Self::Tx, &mut Self::Journal);
+    fn tx_journal_mut(&mut self) -> (&Self::Tx, &mut Self::Journal) {
+        let (_, tx, _, journal, _, _) = self.all_mut();
+        (tx, journal)
+    }
+
+    /// Get the transaction, configuration and mutable journal.
+    fn tx_block_cfg_journal_mut(
+        &mut self,
+    ) -> (&Self::Tx, &Self::Block, &Self::Cfg, &mut Self::Journal) {
+        let (block, tx, cfg, journal, _, _) = self.all_mut();
+        (tx, block, cfg, journal)
+    }
+
     /// Get the transaction and local context. It is used to efficiently load initcode
     /// into local context without copying them from transaction.
-    fn tx_local_mut(&mut self) -> (&Self::Tx, &mut Self::Local);
+    fn tx_local_mut(&mut self) -> (&Self::Tx, &mut Self::Local) {
+        let (_, tx, _, _, _, local) = self.all_mut();
+        (tx, local)
+    }
 }
 
 /// Inner Context error used for Interpreter to set error without returning it from instruction
@@ -116,38 +191,38 @@ pub struct SStoreResult {
 impl SStoreResult {
     /// Returns `true` if the new value is equal to the present value.
     #[inline]
-    pub fn is_new_eq_present(&self) -> bool {
-        self.new_value == self.present_value
+    pub const fn is_new_eq_present(&self) -> bool {
+        self.new_value.const_eq(&self.present_value)
     }
 
     /// Returns `true` if the original value is equal to the present value.
     #[inline]
-    pub fn is_original_eq_present(&self) -> bool {
-        self.original_value == self.present_value
+    pub const fn is_original_eq_present(&self) -> bool {
+        self.original_value.const_eq(&self.present_value)
     }
 
     /// Returns `true` if the original value is equal to the new value.
     #[inline]
-    pub fn is_original_eq_new(&self) -> bool {
-        self.original_value == self.new_value
+    pub const fn is_original_eq_new(&self) -> bool {
+        self.original_value.const_eq(&self.new_value)
     }
 
     /// Returns `true` if the original value is zero.
     #[inline]
-    pub fn is_original_zero(&self) -> bool {
-        self.original_value.is_zero()
+    pub const fn is_original_zero(&self) -> bool {
+        self.original_value.const_is_zero()
     }
 
     /// Returns `true` if the present value is zero.
     #[inline]
-    pub fn is_present_zero(&self) -> bool {
-        self.present_value.is_zero()
+    pub const fn is_present_zero(&self) -> bool {
+        self.present_value.const_is_zero()
     }
 
     /// Returns `true` if the new value is zero.
     #[inline]
-    pub fn is_new_zero(&self) -> bool {
-        self.new_value.is_zero()
+    pub const fn is_new_zero(&self) -> bool {
+        self.new_value.const_is_zero()
     }
 }
 

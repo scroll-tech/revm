@@ -303,12 +303,9 @@ impl BundleBuilder {
                     wipe_storage: false,
                 };
 
-                if reverts_map.contains_key(&block_number) {
+                if let Some(vec) = reverts_map.get_mut(&block_number) {
                     reverts_size += account_revert.size_hint();
-                    reverts_map
-                        .entry(block_number)
-                        .or_insert_with(Vec::new)
-                        .push((address, account_revert));
+                    vec.push((address, account_revert));
                 }
             });
 
@@ -657,12 +654,6 @@ impl BundleState {
             storage,
             contracts,
         }
-    }
-
-    /// Converts the bundle state into a [`StateChangeset`].
-    #[deprecated = "Use `to_plain_state` instead"]
-    pub fn into_plain_state(self, is_value_known: OriginalValuesKnown) -> StateChangeset {
-        self.to_plain_state(is_value_known)
     }
 
     /// Generates a [`StateChangeset`] and [`PlainStateReverts`] from the bundle

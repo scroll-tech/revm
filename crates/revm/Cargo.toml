@@ -1,7 +1,7 @@
 [package]
 name = "revm"
 description = "Revm - Rust Ethereum Virtual Machine"
-version = "29.0.1"
+version = "31.0.1"
 authors.workspace = true
 edition.workspace = true
 keywords.workspace = true
@@ -78,12 +78,16 @@ alloydb = ["database/alloydb"]
 serde-json = ["serde", "inspector/tracer"]
 tracer = ["inspector/tracer"]
 
+# Enables parsing opcodes from strings.
+parse = ["bytecode/parse"]
+
 dev = [
 	"memory_limit",
 	"optional_balance_check",
 	"optional_block_gas_limit",
 	"optional_eip3541",
 	"optional_eip3607",
+	"optional_eip7623",
 	"optional_no_base_fee",
 ]
 memory_limit = ["context/memory_limit", "interpreter/memory_limit"]
@@ -91,19 +95,16 @@ optional_balance_check = ["context/optional_balance_check"]
 optional_block_gas_limit = ["context/optional_block_gas_limit"]
 optional_eip3541 = ["context/optional_eip3541"]
 optional_eip3607 = ["context/optional_eip3607"]
+optional_eip7623 = ["context/optional_eip7623"]
 optional_no_base_fee = ["context/optional_no_base_fee"]
-enable_eip7702 = ["context/enable_eip7702"]
-enable_eip7623 = ["context/enable_eip7623"]
+optional_fee_charge = ["context/optional_fee_charge"]
 
 # Precompiles features: Please look at the comments in `precompile` crate for more information.
 
-secp256k1 = ["precompile/secp256k1"] # See comments in `precompile`
-c-kzg = [
-	"precompile/c-kzg",
-] # `kzg-rs` is not audited but useful for `no_std` environment, use it with causing and default to `c-kzg` if possible.
-kzg-rs = ["precompile/kzg-rs"]
+secp256k1 = ["precompile/secp256k1"] # See comments in `precompile` use it with caution
+c-kzg = ["precompile/c-kzg"]
 
-# blst will enabled both for bls precompiles and for kzg precompile.
+# blst will be enabled both for bls precompiles and for kzg precompile.
 blst = ["precompile/blst"]
 bn = ["precompile/bn"]
 asm-sha2 = ["precompile/asm-sha2"]
@@ -113,5 +114,5 @@ asm-sha2 = ["precompile/asm-sha2"]
 portable = ["precompile/portable"]
 
 # use gmp for modexp precompile.
-# It is faster library but licences as GPL code, if enabled please make sure to follow the license.
+# It is faster library but licenced as GPL code, if enabled please make sure to follow the license.
 gmp = ["precompile/gmp"]

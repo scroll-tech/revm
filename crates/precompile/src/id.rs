@@ -1,6 +1,5 @@
 use std::borrow::Cow;
-
-use primitives::{address, Address};
+use std::fmt;
 
 use crate::{Precompile, PrecompileSpecId};
 
@@ -55,32 +54,6 @@ impl PrecompileId {
         I: Into<Cow<'static, str>>,
     {
         Self::Custom(id.into())
-    }
-
-    /// Returns the mainnet address for the precompile.
-    pub fn mainnet_address(&self) -> Option<Address> {
-        let address = match self {
-            Self::EcRec => address!("0x0000000000000000000000000000000000000001"),
-            Self::Sha256 => address!("0x0000000000000000000000000000000000000002"),
-            Self::Ripemd160 => address!("0x0000000000000000000000000000000000000003"),
-            Self::Identity => address!("0x0000000000000000000000000000000000000004"),
-            Self::ModExp => address!("0x0000000000000000000000000000000000000005"),
-            Self::Bn254Add => address!("0x0000000000000000000000000000000000000006"),
-            Self::Bn254Mul => address!("0x0000000000000000000000000000000000000007"),
-            Self::Bn254Pairing => address!("0x0000000000000000000000000000000000000008"),
-            Self::Blake2F => address!("0x0000000000000000000000000000000000000009"),
-            Self::KzgPointEvaluation => address!("0x000000000000000000000000000000000000000A"),
-            Self::Bls12G1Add => address!("0x000000000000000000000000000000000000000B"),
-            Self::Bls12G1Msm => address!("0x000000000000000000000000000000000000000C"),
-            Self::Bls12G2Add => address!("0x000000000000000000000000000000000000000D"),
-            Self::Bls12G2Msm => address!("0x000000000000000000000000000000000000000E"),
-            Self::Bls12Pairing => address!("0x000000000000000000000000000000000000000F"),
-            Self::Bls12MapFpToGp1 => address!("0x0000000000000000000000000000000000000010"),
-            Self::Bls12MapFp2ToGp2 => address!("0x0000000000000000000000000000000000000011"),
-            Self::P256Verify => address!("0x0000000000000000000000000000000000000012"),
-            Self::Custom(_) => return None,
-        };
-        Some(address)
     }
 
     /// Returns the name of the precompile as defined in EIP-7910.
@@ -177,5 +150,11 @@ impl PrecompileId {
         };
 
         Some(precompile)
+    }
+}
+
+impl fmt::Display for PrecompileId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.name())
     }
 }

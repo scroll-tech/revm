@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [31.0.1](https://github.com/bluealloy/revm/compare/revm-v31.0.0...revm-v31.0.1) - 2025-11-07
+
+### Other
+
+- updated the following local packages: revm-primitives, revm-context, revm-bytecode, revm-state, revm-database-interface, revm-context-interface, revm-database, revm-interpreter, revm-precompile, revm-handler, revm-inspector
+
+## [31.0.0](https://github.com/bluealloy/revm/compare/revm-v30.2.0...revm-v31.0.0) - 2025-10-30
+
+### Other
+
+- consolidate revme imports ([#3088](https://github.com/bluealloy/revm/pull/3088))
+
+## [30.2.0](https://github.com/bluealloy/revm/compare/revm-v30.1.2...revm-v30.2.0) - 2025-10-17
+
+### Other
+
+- updated the following local packages: revm-interpreter, revm-handler, revm-inspector
+
+## [30.1.2](https://github.com/bluealloy/revm/compare/revm-v30.1.1...revm-v30.1.2) - 2025-10-15
+
+### Other
+
+- updated the following local packages: revm-bytecode, revm-state, revm-database-interface, revm-context-interface, revm-context, revm-database, revm-interpreter, revm-handler, revm-inspector
+
+## [30.1.1](https://github.com/bluealloy/revm/compare/revm-v30.1.0...revm-v30.1.1) - 2025-10-15
+
+### Other
+
+- updated the following local packages: revm-primitives, revm-bytecode, revm-context, revm-interpreter, revm-precompile, revm-handler, revm-state, revm-database-interface, revm-context-interface, revm-database, revm-inspector
+
+## [30.1.0](https://github.com/bluealloy/revm/compare/revm-v30.0.0...revm-v30.1.0) - 2025-10-09
+
+### Other
+
+- updated the following local packages: revm-database-interface, revm-database, revm-interpreter, revm-precompile, revm-handler, revm-inspector, revm-context-interface, revm-context
+
+## [30.0.0](https://github.com/bluealloy/revm/compare/revm-v29.0.1...revm-v30.0.0) - 2025-10-07
+
+### Added
+
+- allow EIP-7623 to be disabled ([#2985](https://github.com/bluealloy/revm/pull/2985))
+- [**breaking**] Remove kzg-rs ([#2909](https://github.com/bluealloy/revm/pull/2909))
+
+### Fixed
+
+- Apply spelling corrections from PRs #2926, #2915, #2908 ([#2978](https://github.com/bluealloy/revm/pull/2978))
+
+### Other
+
+- changelog update for v87 ([#3056](https://github.com/bluealloy/revm/pull/3056))
+- add boundless ([#3043](https://github.com/bluealloy/revm/pull/3043))
+- forward optional_fee_charge feature ([#3005](https://github.com/bluealloy/revm/pull/3005))
+- add SECURITY.md ([#2956](https://github.com/bluealloy/revm/pull/2956))
+
 ## [29.0.1](https://github.com/bluealloy/revm/compare/revm-v29.0.0...revm-v29.0.1) - 2025-09-23
 
 ### Other

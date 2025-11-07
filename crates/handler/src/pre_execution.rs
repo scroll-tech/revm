@@ -13,10 +13,9 @@ use context_interface::{
     Block, Cfg, Database,
 };
 use core::cmp::Ordering;
-use primitives::StorageKey;
-use primitives::{eip7702, hardfork::SpecId, KECCAK_EMPTY, U256};
+use primitives::{eip7702, hardfork::SpecId, U256};
+use primitives::{Address, HashMap, HashSet, StorageKey};
 use state::AccountInfo;
-use std::boxed::Box;
 
 /// Loads and warms accounts for execution, including precompiles and access list.
 pub fn load_accounts<
@@ -54,12 +53,13 @@ pub fn load_accounts<
     // legacy is only tx type that does not have access list.
     if tx.tx_type() != TransactionType::Legacy {
         if let Some(access_list) = tx.access_list() {
+            let mut map: HashMap<Address, HashSet<StorageKey>> = HashMap::default();
             for item in access_list {
-                journal.warm_account_and_storage(
-                    *item.address(),
-                    item.storage_slots().map(|i| StorageKey::from_be_bytes(i.0)),
-                )?;
+                map.entry(*item.address())
+                    .or_default()
+                    .extend(item.storage_slots().map(|key| U256::from_be_bytes(key.0)));
             }
+            journal.warm_access_list(map);
         }
     }
 
@@ -68,8 +68,23 @@ pub fn load_accounts<
 
 /// Validates caller account nonce and code according to EIP-3607.
 #[inline]
+pub fn validate_account_nonce_and_code_with_components(
+    caller_info: &AccountInfo,
+    tx: impl Transaction,
+    cfg: impl Cfg,
+) -> Result<(), InvalidTransaction> {
+    validate_account_nonce_and_code(
+        caller_info,
+        tx.nonce(),
+        cfg.is_eip3607_disabled(),
+        cfg.is_nonce_check_disabled(),
+    )
+}
+
+/// Validates caller account nonce and code according to EIP-3607.
+#[inline]
 pub fn validate_account_nonce_and_code(
-    caller_info: &mut AccountInfo,
+    caller_info: &AccountInfo,
     tx_nonce: u64,
     is_eip3607_disabled: bool,
     is_nonce_check_disabled: bool,
@@ -106,6 +121,41 @@ pub fn validate_account_nonce_and_code(
     Ok(())
 }
 
+/// Check maximum possible fee and deduct the effective fee.
+///
+/// Returns new balance.
+#[inline]
+pub fn calculate_caller_fee(
+    balance: U256,
+    tx: impl Transaction,
+    block: impl Block,
+    cfg: impl Cfg,
+) -> Result<U256, InvalidTransaction> {
+    let basefee = block.basefee() as u128;
+    let blob_price = block.blob_gasprice().unwrap_or_default();
+    let is_balance_check_disabled = cfg.is_balance_check_disabled();
+
+    if !is_balance_check_disabled {
+        tx.ensure_enough_balance(balance)?;
+    }
+
+    let effective_balance_spending = tx
+        .effective_balance_spending(basefee, blob_price)
+        .expect("effective balance is always smaller than max balance so it can't overflow");
+
+    let gas_balance_spending = effective_balance_spending - tx.value();
+
+    // new balance
+    let mut new_balance = balance.saturating_sub(gas_balance_spending);
+
+    if is_balance_check_disabled {
+        // Make sure the caller's balance is at least the value of the transaction.
+        new_balance = new_balance.max(tx.value());
+    }
+
+    Ok(new_balance)
+}
+
 /// Validates caller state and deducts transaction costs from the caller's balance.
 #[inline]
 pub fn validate_against_state_and_deduct_caller<
@@ -114,65 +164,19 @@ pub fn validate_against_state_and_deduct_caller<
 >(
     context: &mut CTX,
 ) -> Result<(), ERROR> {
-    let basefee = context.block().basefee() as u128;
-    let blob_price = context.block().blob_gasprice().unwrap_or_default();
-    let is_balance_check_disabled = context.cfg().is_balance_check_disabled();
-    let is_eip3607_disabled = context.cfg().is_eip3607_disabled();
-    let is_nonce_check_disabled = context.cfg().is_nonce_check_disabled();
-
-    let (tx, journal) = context.tx_journal_mut();
+    let (block, tx, cfg, journal, _, _) = context.all_mut();
 
     // Load caller's account.
-    let caller_account = journal.load_account_code(tx.caller())?.data;
+    let mut caller = journal.load_account_with_code_mut(tx.caller())?.data;
 
-    validate_account_nonce_and_code(
-        &mut caller_account.info,
-        tx.nonce(),
-        is_eip3607_disabled,
-        is_nonce_check_disabled,
-    )?;
+    validate_account_nonce_and_code_with_components(&caller.info, tx, cfg)?;
 
-    let max_balance_spending = tx.max_balance_spending()?;
+    let new_balance = calculate_caller_fee(*caller.balance(), tx, block, cfg)?;
 
-    // Check if account has enough balance for `gas_limit * max_fee`` and value transfer.
-    // Transfer will be done inside `*_inner` functions.
-    if max_balance_spending > caller_account.info.balance && !is_balance_check_disabled {
-        return Err(InvalidTransaction::LackOfFundForMaxFee {
-            fee: Box::new(max_balance_spending),
-            balance: Box::new(caller_account.info.balance),
-        }
-        .into());
-    }
-
-    let effective_balance_spending = tx
-        .effective_balance_spending(basefee, blob_price)
-        .expect("effective balance is always smaller than max balance so it can't overflow");
-
-    // subtracting max balance spending with value that is going to be deducted later in the call.
-    let gas_balance_spending = effective_balance_spending - tx.value();
-
-    let mut new_balance = caller_account
-        .info
-        .balance
-        .saturating_sub(gas_balance_spending);
-
-    if is_balance_check_disabled {
-        // Make sure the caller's balance is at least the value of the transaction.
-        new_balance = new_balance.max(tx.value());
-    }
-
-    let old_balance = caller_account.info.balance;
-    // Touch account so we know it is changed.
-    caller_account.mark_touch();
-    caller_account.info.balance = new_balance;
-
-    // Bump the nonce for calls. Nonce for CREATE will be bumped in `make_create_frame`.
+    caller.set_balance(new_balance);
     if tx.kind().is_call() {
-        // Nonce is already checked
-        caller_account.info.nonce = caller_account.info.nonce.saturating_add(1);
+        caller.bump_nonce();
     }
-
-    journal.caller_accounting_journal_entry(tx.caller(), old_balance, tx.kind().is_call());
     Ok(())
 }
 
@@ -214,7 +218,7 @@ pub fn apply_eip7702_auth_list<
 
         // warm authority account and check nonce.
         // 4. Add `authority` to `accessed_addresses` (as defined in [EIP-2929](./eip-2929.md).)
-        let mut authority_acc = journal.load_account_code(authority)?;
+        let mut authority_acc = journal.load_account_with_code_mut(authority)?;
 
         // 5. Verify the code of `authority` is either empty or already delegated.
         if let Some(bytecode) = &authority_acc.info.code {
@@ -237,20 +241,8 @@ pub fn apply_eip7702_auth_list<
         // 8. Set the code of `authority` to be `0xef0100 || address`. This is a delegation designation.
         //  * As a special case, if `address` is `0x0000000000000000000000000000000000000000` do not write the designation.
         //    Clear the accounts code and reset the account's code hash to the empty hash `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470`.
-        let address = authorization.address();
-        let (bytecode, hash) = if address.is_zero() {
-            (Bytecode::default(), KECCAK_EMPTY)
-        } else {
-            let bytecode = Bytecode::new_eip7702(address);
-            let hash = bytecode.hash_slow();
-            (bytecode, hash)
-        };
-        authority_acc.info.code_hash = hash;
-        authority_acc.info.code = Some(bytecode);
-
         // 9. Increase the nonce of `authority` by one.
-        authority_acc.info.nonce = authority_acc.info.nonce.saturating_add(1);
-        authority_acc.mark_touch();
+        authority_acc.delegate(authorization.address());
     }
 
     let refunded_gas =
