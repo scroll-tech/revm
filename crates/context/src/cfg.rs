@@ -191,7 +191,6 @@ impl<SPEC> CfgEnv<SPEC> {
             enable_eip7702: false,
             #[cfg(feature = "enable_eip7623")]
             enable_eip7623: false,
-
         }
     }
 
