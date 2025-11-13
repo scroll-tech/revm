@@ -228,7 +228,8 @@ pub fn validate_initial_tx_gas(
     is_eip7702_enabled: bool,
     is_eip7623_enabled: bool,
 ) -> Result<InitialAndFloorGas, InvalidTransaction> {
-    let mut gas = gas::calculate_initial_tx_gas_for_tx(&tx, spec, is_eip7702_enabled, is_eip7623_enabled);
+    let mut gas =
+        gas::calculate_initial_tx_gas_for_tx(&tx, spec, is_eip7702_enabled, is_eip7623_enabled);
 
     if is_eip7623_disabled {
         gas.floor_gas = 0
