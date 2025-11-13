@@ -429,7 +429,7 @@ pub fn calculate_initial_tx_gas(
     }
 
     // EIP-7702
-    if spec_id.is_enabled_in(SpecId::PRAGUE) | is_eip7702_enabled {
+    if spec_id.is_enabled_in(SpecId::PRAGUE) || is_eip7702_enabled {
         gas.initial_gas += authorization_list_num * eip7702::PER_EMPTY_ACCOUNT_COST;
     }
 
