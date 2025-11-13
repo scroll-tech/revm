@@ -86,7 +86,10 @@ pub fn find_all_json_tests(path: &Path) -> Vec<PathBuf> {
 /// Check if a test should be skipped based on its filename
 /// Some tests are known to be problematic or take too long
 fn skip_test(path: &Path) -> bool {
-    let name = path.file_name().unwrap().to_str().unwrap();
+    let Some(name) = path.file_name().and_then(|s| s.to_str()) else {
+        // Non-UTF file names or missing file name: do not skip by default.
+        return false;
+    };
 
     matches!(
         name,
@@ -464,10 +467,10 @@ fn debug_failed_test(ctx: DebugContext) {
 
     println!("\nExecution result: {exec_result:#?}");
     println!("\nExpected exception: {:?}", ctx.test.expect_exception);
-    println!("\nState before: {:#?}", ctx.cache_state);
+    println!("\nState before:\n{}", ctx.cache_state.pretty_print());
     println!(
-        "\nState after: {:#?}",
-        evm.ctx.journaled_state.database.cache
+        "\nState after:\n{}",
+        evm.ctx.journaled_state.database.cache.pretty_print()
     );
     println!("\nSpecification: {:?}", ctx.cfg.spec);
     println!("\nTx: {:#?}", ctx.tx);

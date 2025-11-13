@@ -1,7 +1,7 @@
 [package]
 name = "revm-precompile"
 description = "Revm Precompiles - Ethereum compatible precompiled contracts"
-version = "27.0.0"
+version = "28.0.0"
 authors.workspace = true
 edition.workspace = true
 keywords.workspace = true
@@ -34,9 +34,6 @@ secp256k1 = { workspace = true, features = [
 	"rand",
 	"global-context",
 ], optional = true }
-libsecp256k1 = { workspace = true, features = [
-	"static-context",
-], optional = true }
 
 # SHA2-256 and RIPEMD-160
 sha2.workspace = true
@@ -56,8 +53,6 @@ c-kzg = { workspace = true, optional = true, features = [
 	"ethereum_kzg_settings",
 ] }
 
-# Optionally use `kzg-rs` for a pure Rust implementation of KZG point evaluation.
-kzg-rs = { workspace = true, optional = true }
 
 # Use the BLS12-381 implementation of blst for EIP2537
 blst = { workspace = true, optional = true }
@@ -87,7 +82,6 @@ std = [
 	"sha2/std",
 	"c-kzg?/std",
 	"secp256k1?/std",
-	"libsecp256k1?/std",
 	"ark-bn254/std",
 	"ark-bls12-381/std",
 	"aurora-engine-modexp/std",
@@ -105,8 +99,6 @@ asm-sha2 = ["sha2/asm"]
 
 # Enables the c-kzg point evaluation precompile. Enabled by default as most stable/used implementation.
 c-kzg = ["dep:c-kzg"]
-# `kzg-rs` is not audited but useful for `no_std` environment, use it with causing and default to `c-kzg` if possible.
-kzg-rs = ["dep:kzg-rs"]
 
 # Compile in portable mode, without ISA extensions.
 # Binary can be executed on all systems.
@@ -116,7 +108,6 @@ portable = ["c-kzg?/portable", "blst?/portable"]
 # The problem that `secp256k1` has is it fails to build for `wasm` target on Windows and Mac as it is c lib.
 # In Linux it passes. If you don't require to build wasm on win/mac, it is safe to use it and it is enabled by default.
 secp256k1 = ["dep:secp256k1"]
-libsecp256k1 = ["dep:libsecp256k1"]
 
 # Enables the blst implementation of the BLS12-381 precompile.
 blst = ["dep:blst"]

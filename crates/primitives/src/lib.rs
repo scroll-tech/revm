@@ -23,7 +23,6 @@ pub mod eip7702;
 pub mod eip7823;
 pub mod eip7825;
 pub mod eip7907;
-pub mod eip7918;
 pub mod hardfork;
 mod once_lock;
 
@@ -63,3 +62,9 @@ pub fn short_address(address: &Address) -> Option<usize> {
     }
     None
 }
+
+/// 1 ether = 10^18 wei
+pub const ONE_ETHER: u128 = 1_000_000_000_000_000_000;
+
+/// 1 gwei = 10^9 wei
+pub const ONE_GWEI: u128 = 1_000_000_000;

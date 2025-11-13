@@ -4,7 +4,7 @@ use revm::{
     context::Cfg,
     context_interface::ContextTr,
     handler::{EthPrecompiles, PrecompileProvider},
-    interpreter::{InputsImpl, InterpreterResult},
+    interpreter::{CallInputs, InterpreterResult},
     precompile::{
         self, bn254, secp256r1, Precompile, PrecompileError, PrecompileId, PrecompileResult,
         Precompiles,
@@ -34,7 +34,7 @@ impl OpPrecompiles {
             | OpSpecId::ECOTONE) => Precompiles::new(spec.into_eth_spec().into()),
             OpSpecId::FJORD => fjord(),
             OpSpecId::GRANITE | OpSpecId::HOLOCENE => granite(),
-            OpSpecId::ISTHMUS | OpSpecId::INTEROP | OpSpecId::OSAKA => isthmus(),
+            OpSpecId::ISTHMUS | OpSpecId::INTEROP | OpSpecId::OSAKA | OpSpecId::JOVIAN => isthmus(),
         };
 
         Self {
@@ -111,13 +111,9 @@ where
     fn run(
         &mut self,
         context: &mut CTX,
-        address: &Address,
-        inputs: &InputsImpl,
-        is_static: bool,
-        gas_limit: u64,
+        inputs: &CallInputs,
     ) -> Result<Option<Self::Output>, String> {
-        self.inner
-            .run(context, address, inputs, is_static, gas_limit)
+        self.inner.run(context, inputs)
     }
 
     #[inline]

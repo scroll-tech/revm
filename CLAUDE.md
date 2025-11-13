@@ -19,7 +19,7 @@ cargo build
 cargo build --release
 
 # Run all tests
-cargo nexttest run --workspace
+cargo nextest run --workspace
 
 # Lint and format
 cargo clippy --workspace --all-targets --all-features
@@ -27,6 +27,7 @@ cargo fmt --all
 
 # Check no_std compatibility
 cargo check --target riscv32imac-unknown-none-elf --no-default-features
+cargo check --target riscv64imac-unknown-none-elf --no-default-features
 
 # Run Ethereum state tests
 cargo run -p revme statetest legacytests/Cancun/GeneralStateTests

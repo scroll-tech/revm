@@ -8,7 +8,9 @@
 
 use revm::{
     context::{
-        result::InvalidTransaction, BlockEnv, Cfg, CfgEnv, ContextTr, Evm, LocalContext, TxEnv,
+        journaled_state::{AccountInfoLoad, JournalLoadError},
+        result::InvalidTransaction,
+        BlockEnv, Cfg, CfgEnv, ContextTr, Evm, LocalContext, TxEnv,
     },
     context_interface::{
         journaled_state::{AccountLoad, JournalCheckpoint, TransferError},
@@ -146,6 +148,15 @@ impl JournalTr for Backend {
         self.journaled_state.transfer(from, to, balance)
     }
 
+    fn transfer_loaded(
+        &mut self,
+        from: Address,
+        to: Address,
+        balance: U256,
+    ) -> Option<TransferError> {
+        self.journaled_state.transfer_loaded(from, to, balance)
+    }
+
     fn load_account(&mut self, address: Address) -> Result<StateLoad<&mut Account>, Infallible> {
         self.journaled_state.load_account(address)
     }
@@ -253,6 +264,39 @@ impl JournalTr for Backend {
 
     fn discard_tx(&mut self) {
         self.journaled_state.discard_tx()
+    }
+
+    fn sload_skip_cold_load(
+        &mut self,
+        address: Address,
+        key: StorageKey,
+        skip_cold_load: bool,
+    ) -> Result<StateLoad<StorageValue>, JournalLoadError<<Self::Database as Database>::Error>>
+    {
+        self.journaled_state
+            .sload_skip_cold_load(address, key, skip_cold_load)
+    }
+
+    fn sstore_skip_cold_load(
+        &mut self,
+        address: Address,
+        key: StorageKey,
+        value: StorageValue,
+        skip_cold_load: bool,
+    ) -> Result<StateLoad<SStoreResult>, JournalLoadError<<Self::Database as Database>::Error>>
+    {
+        self.journaled_state
+            .sstore_skip_cold_load(address, key, value, skip_cold_load)
+    }
+
+    fn load_account_info_skip_cold_load(
+        &mut self,
+        address: Address,
+        load_code: bool,
+        skip_cold_load: bool,
+    ) -> Result<AccountInfoLoad<'_>, JournalLoadError<<Self::Database as Database>::Error>> {
+        self.journaled_state
+            .load_account_info_skip_cold_load(address, load_code, skip_cold_load)
     }
 }
 
