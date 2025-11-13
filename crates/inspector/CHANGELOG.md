@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.1.1](https://github.com/bluealloy/revm/compare/revm-inspector-v11.1.0...revm-inspector-v11.1.1) - 2025-10-15
+
+### Other
+
+- updated the following local packages: revm-primitives, revm-context, revm-interpreter, revm-handler, revm-state, revm-database-interface, revm-database
+
+## [11.1.0](https://github.com/bluealloy/revm/compare/revm-inspector-v11.0.0...revm-inspector-v11.1.0) - 2025-10-09
+
+### Other
+
+- use Self::default in fn new for CountInspector ([#3065](https://github.com/bluealloy/revm/pull/3065))
+
 ## [11.0.0](https://github.com/bluealloy/revm/compare/revm-inspector-v10.0.1...revm-inspector-v11.0.0) - 2025-10-07
 
 ### Added
