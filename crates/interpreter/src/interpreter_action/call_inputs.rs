@@ -1,6 +1,7 @@
 use context_interface::{ContextTr, LocalContextTr};
 use core::ops::Range;
-use primitives::{Address, Bytes, U256};
+use primitives::{Address, Bytes, B256, U256};
+use state::Bytecode;
 /// Input enum for a call.
 ///
 /// As CallInput uses shared memory buffer it can get overridden if not used directly when call happens.
@@ -42,7 +43,7 @@ impl CallInput {
     ///
     /// If this `CallInput` is a `SharedBuffer`, the slice will be copied
     /// into a fresh `Bytes` buffer, which can pose a performance penalty.
-    pub fn bytes<CTX>(&self, ctx: &mut CTX) -> Bytes
+    pub fn bytes<CTX>(&self, ctx: &CTX) -> Bytes
     where
         CTX: ContextTr,
     {
@@ -78,6 +79,10 @@ pub struct CallInputs {
     ///
     /// Previously `context.code_address`.
     pub bytecode_address: Address,
+    /// Bytecode that is going to be executed.
+    pub bytecode: Bytecode,
+    /// Bytecode hash,
+    pub bytecode_hash: B256,
     /// Target address, this account storage is going to be modified.
     ///
     /// Previously `context.address`.

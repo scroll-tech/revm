@@ -1,7 +1,7 @@
 [package]
 name = "revm-primitives"
 description = "Revm primitives types"
-version = "20.2.1"
+version = "21.0.1"
 authors.workspace = true
 edition.workspace = true
 keywords.workspace = true
@@ -22,7 +22,7 @@ workspace = true
 alloy-primitives = { workspace = true, features = ["rlp", "map"] }
 
 # mics
-num_enum = { version = "0.7.3", default-features = false }
+num_enum = { version = "0.7", default-features = false }
 once_cell = { version = "1.21", default-features = false, features = [
     "alloc",
     "race",

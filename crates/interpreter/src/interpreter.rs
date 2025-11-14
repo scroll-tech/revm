@@ -27,7 +27,7 @@ use primitives::{hardfork::SpecId, Bytes};
 
 /// Main interpreter structure that contains all components defined in [`InterpreterTypes`].
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Interpreter<WIRE: InterpreterTypes = EthInterpreter> {
     /// Bytecode being executed.
     pub bytecode: WIRE::Bytecode,
@@ -207,6 +207,18 @@ impl<IW: InterpreterTypes> Interpreter<IW> {
     pub fn halt(&mut self, result: InstructionResult) {
         self.bytecode
             .set_action(InterpreterAction::new_halt(result, self.gas));
+    }
+
+    /// Halt the interpreter with the given result.
+    ///
+    /// This will set the action to [`InterpreterAction::Return`] and set the gas to the current gas.
+    #[cold]
+    #[inline(never)]
+    pub fn halt_fatal(&mut self) {
+        self.bytecode.set_action(InterpreterAction::new_halt(
+            InstructionResult::FatalExternalError,
+            self.gas,
+        ));
     }
 
     /// Halt the interpreter with an out-of-gas error.
@@ -409,13 +421,8 @@ mod tests {
             u64::MAX,
         );
 
-        let serialized =
-            bincode::serde::encode_to_vec(&interpreter, bincode::config::legacy()).unwrap();
-
-        let deserialized: Interpreter<EthInterpreter> =
-            bincode::serde::decode_from_slice(&serialized, bincode::config::legacy())
-                .unwrap()
-                .0;
+        let serialized = serde_json::to_string_pretty(&interpreter).unwrap();
+        let deserialized: Interpreter<EthInterpreter> = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(
             interpreter.bytecode.pc(),

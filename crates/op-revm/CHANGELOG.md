@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [11.1.1](https://github.com/bluealloy/revm/compare/op-revm-v11.1.0...op-revm-v11.1.1) - 2025-10-15
+
+### Other
+
+- updated the following local packages: revm
+
+## [11.1.0](https://github.com/bluealloy/revm/compare/op-revm-v11.0.0...op-revm-v11.1.0) - 2025-10-09
+
+### Fixed
+
+- *(op-revm)* return error instead of panic when enveloped_tx is missing ([#3055](https://github.com/bluealloy/revm/pull/3055))
+
+### Other
+
+- *(op)* backport of #3073 fix for l1block info ([#3076](https://github.com/bluealloy/revm/pull/3076))
+- backport v89 changelog ([#3075](https://github.com/bluealloy/revm/pull/3075))
+- *(op)* split paths for deposit tx in caller deduction ([#3041](https://github.com/bluealloy/revm/pull/3041))
+
+## [10.1.1](https://github.com/bluealloy/revm/compare/op-revm-v10.0.0...op-revm-v10.1.1) - 2025-09-23
+
+## [11.0.0](https://github.com/bluealloy/revm/compare/op-revm-v10.1.0...op-revm-v11.0.0) - 2025-10-07
+
+### Added
+
+- *(jovian)* add da footprint block limit. ([#3003](https://github.com/bluealloy/revm/pull/3003))
+- *(op-revm)* implement jovian operator fee fix ([#2996](https://github.com/bluealloy/revm/pull/2996))
+- *(op-revm)* Add an option to disable "fee-charge" on `op-revm` ([#2980](https://github.com/bluealloy/revm/pull/2980))
+- [**breaking**] Remove kzg-rs ([#2909](https://github.com/bluealloy/revm/pull/2909))
+
+### Fixed
+
+- add missing is_fee_charge_disabled check ([#3007](https://github.com/bluealloy/revm/pull/3007))
+- Apply spelling corrections from PRs #2926, #2915, #2908 ([#2978](https://github.com/bluealloy/revm/pull/2978))
+- *(op-revm)* clear enveloped_tx for deposit txs in build_fill and align docs ([#2957](https://github.com/bluealloy/revm/pull/2957))
+
+### Other
+
+- changelog update for v87 ([#3056](https://github.com/bluealloy/revm/pull/3056))
+- add boundless ([#3043](https://github.com/bluealloy/revm/pull/3043))
+- helper function gas_balance_spending ([#3030](https://github.com/bluealloy/revm/pull/3030))
+- helper caller_initial_modification added ([#3032](https://github.com/bluealloy/revm/pull/3032))
+- EvmTr and InspectorEvmTr receive all/all_mut fn ([#3037](https://github.com/bluealloy/revm/pull/3037))
+- add ensure_enough_balance helper ([#3033](https://github.com/bluealloy/revm/pull/3033))
+- *(op-revm)* propagate optional_fee_charge feature ([#3020](https://github.com/bluealloy/revm/pull/3020))
+- Set l2_block in try_fetch for pre-Isthmus forks; add reload tests ([#2994](https://github.com/bluealloy/revm/pull/2994))
+- prealloc few frames ([#2965](https://github.com/bluealloy/revm/pull/2965))
+- treat empty input as zero operator fee in operator_fee_charge ([#2973](https://github.com/bluealloy/revm/pull/2973))
+- add SECURITY.md ([#2956](https://github.com/bluealloy/revm/pull/2956))
+- *(op-revm)* rm redundant phantom ([#2943](https://github.com/bluealloy/revm/pull/2943))
+- *(op-revm)* add serialize DepositTransactionParts test ([#2942](https://github.com/bluealloy/revm/pull/2942))
+- *(handler)* provide `&CallInputs`to`PrecompileProvider::run` ([#2921](https://github.com/bluealloy/revm/pull/2921))
+
 ## [10.1.0](https://github.com/bluealloy/revm/compare/op-revm-v10.0.0...op-revm-v10.1.0) - 2025-09-23
 
 ### Added
