@@ -97,6 +97,7 @@ optional_no_base_fee = ["context/optional_no_base_fee"]
 optional_fee_charge = ["context/optional_fee_charge"]
 enable_eip7702 = ["context/enable_eip7702"]
 enable_eip7623 = ["context/enable_eip7623"]
+require_l1_data_fee_buffer = ["context/require_l1_data_fee_buffer"]
 
 # Precompiles features: Please look at the comments in `precompile` crate for more information.
 

@@ -128,6 +128,11 @@ pub struct CfgEnv<SPEC = SpecId> {
     /// By default, it is set to `false`.
     #[cfg(feature = "enable_eip7623")]
     pub enable_eip7623: bool,
+    /// Requires L1 data fee buffer in balance check.
+    /// When enabled, validates balance >= L2_fee + 2 * L1_fee but only charges L2_fee + L1_fee.
+    /// By default, it is set to `false`.
+    #[cfg(feature = "require_l1_data_fee_buffer")]
+    pub require_l1_data_fee_buffer: bool,
 }
 
 impl CfgEnv {
@@ -191,6 +196,8 @@ impl<SPEC> CfgEnv<SPEC> {
             enable_eip7702: false,
             #[cfg(feature = "enable_eip7623")]
             enable_eip7623: false,
+            #[cfg(feature = "require_l1_data_fee_buffer")]
+            require_l1_data_fee_buffer: false,
         }
     }
 
@@ -246,6 +253,8 @@ impl<SPEC> CfgEnv<SPEC> {
             enable_eip7702: self.enable_eip7702,
             #[cfg(feature = "enable_eip7623")]
             enable_eip7623: self.enable_eip7623,
+            #[cfg(feature = "require_l1_data_fee_buffer")]
+            require_l1_data_fee_buffer: self.require_l1_data_fee_buffer,
         }
     }
 
@@ -297,6 +306,13 @@ impl<SPEC> CfgEnv<SPEC> {
     #[cfg(feature = "enable_eip7623")]
     pub fn enable_eip_7623(mut self) -> CfgEnv<SPEC> {
         self.enable_eip7623 = true;
+        self
+    }
+
+    /// Sets the require L1 data fee buffer flag.
+    #[cfg(feature = "require_l1_data_fee_buffer")]
+    pub fn with_require_l1_data_fee_buffer(mut self, require: bool) -> Self {
+        self.require_l1_data_fee_buffer = require;
         self
     }
 }
@@ -449,6 +465,16 @@ impl<SPEC: Into<SpecId> + Copy> Cfg for CfgEnv<SPEC> {
                 self.enable_eip7623 || (self.spec.into() >= SpecId::PRAGUE)
             } else {
                 self.spec.into() >= SpecId::PRAGUE
+            }
+        }
+    }
+
+    fn is_l1_data_fee_buffer_required(&self) -> bool {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "require_l1_data_fee_buffer")] {
+                self.require_l1_data_fee_buffer
+            } else {
+                false
             }
         }
     }
