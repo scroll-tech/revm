@@ -70,6 +70,10 @@ pub trait Cfg {
 
     /// Returns whether the EIP-7623 is enabled.
     fn is_eip7623_enabled(&self) -> bool;
+
+    /// Returns whether the L1 data fee buffer check is required.
+    /// When enabled, validates balance >= L2_fee + 2 * L1_fee but only charges L2_fee + L1_fee.
+    fn is_l1_data_fee_buffer_required(&self) -> bool;
 }
 
 /// What bytecode analysis to perform
