@@ -36,11 +36,12 @@ where
     type Context = Self;
 
     fn build_mainnet(self) -> MainnetEvm<Self::Context> {
+        let spec = self.cfg.spec().into();
         Evm {
             ctx: self,
             inspector: (),
-            instruction: EthInstructions::default(),
-            precompiles: EthPrecompiles::default(),
+            instruction: EthInstructions::new_mainnet_with_spec(spec),
+            precompiles: EthPrecompiles::new(spec),
             frame_stack: FrameStack::new_prealloc(8),
         }
     }
@@ -49,11 +50,12 @@ where
         self,
         inspector: INSP,
     ) -> MainnetEvm<Self::Context, INSP> {
+        let spec = self.cfg.spec().into();
         Evm {
             ctx: self,
             inspector,
-            instruction: EthInstructions::default(),
-            precompiles: EthPrecompiles::default(),
+            instruction: EthInstructions::new_mainnet_with_spec(spec),
+            precompiles: EthPrecompiles::new(spec),
             frame_stack: FrameStack::new_prealloc(8),
         }
     }
@@ -73,8 +75,7 @@ impl MainContext for Context<BlockEnv, TxEnv, CfgEnv, EmptyDB, Journal<EmptyDB>,
 
 #[cfg(test)]
 mod test {
-    use crate::ExecuteEvm;
-    use crate::{MainBuilder, MainContext};
+    use crate::{ExecuteEvm, MainBuilder, MainContext};
     use alloy_signer::{Either, SignerSync};
     use alloy_signer_local::PrivateKeySigner;
     use bytecode::{
@@ -84,8 +85,7 @@ mod test {
     use context::{Context, TxEnv};
     use context_interface::transaction::Authorization;
     use database::{BenchmarkDB, EEADDRESS, FFADDRESS};
-    use primitives::{hardfork::SpecId, TxKind, U256};
-    use primitives::{StorageKey, StorageValue};
+    use primitives::{hardfork::SpecId, StorageKey, StorageValue, TxKind, U256};
 
     #[test]
     fn sanity_eip7702_tx() {
@@ -101,7 +101,7 @@ mod test {
         let bytecode = Bytecode::new_legacy([PUSH1, 0x01, PUSH1, 0x01, SSTORE].into());
 
         let ctx = Context::mainnet()
-            .modify_cfg_chained(|cfg| cfg.spec = SpecId::PRAGUE)
+            .modify_cfg_chained(|cfg| cfg.set_spec_and_mainnet_gas_params(SpecId::PRAGUE))
             .with_db(BenchmarkDB::new_bytecode(bytecode));
 
         let mut evm = ctx.build_mainnet();

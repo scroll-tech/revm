@@ -1,3 +1,8 @@
+//! Gas constants and functions for gas calculation.
+
+use crate::{cfg::GasParams, transaction::AccessListItemTr as _, Transaction, TransactionType};
+use primitives::hardfork::SpecId;
+
 /// Gas cost for operations that consume zero gas.
 pub const ZERO: u64 = 0;
 /// Base gas cost for basic operations.
@@ -83,6 +88,7 @@ pub const EOF_CREATE_GAS: u64 = 32000;
 pub const ACCESS_LIST_ADDRESS: u64 = 2400;
 /// Gas cost for accessing a storage key in the access list (EIP-2930).
 pub const ACCESS_LIST_STORAGE_KEY: u64 = 1900;
+
 /// Gas cost for SLOAD when accessing a cold storage slot (EIP-2929).
 pub const COLD_SLOAD_COST: u64 = 2100;
 /// Gas cost for accessing a cold account (EIP-2929).
@@ -90,8 +96,6 @@ pub const COLD_ACCOUNT_ACCESS_COST: u64 = 2600;
 /// Additional gas cost for accessing a cold account.
 pub const COLD_ACCOUNT_ACCESS_COST_ADDITIONAL: u64 =
     COLD_ACCOUNT_ACCESS_COST - WARM_STORAGE_READ_COST;
-/// Additional gas cost for accessing a cold storage
-pub const COLD_SLOAD_COST_ADDITIONAL: u64 = COLD_SLOAD_COST - WARM_STORAGE_READ_COST;
 /// Gas cost for reading from a warm storage slot (EIP-2929).
 pub const WARM_STORAGE_READ_COST: u64 = 100;
 /// Gas cost for SSTORE reset operation on a warm storage slot.
@@ -102,5 +106,98 @@ pub const INITCODE_WORD_COST: u64 = 2;
 
 /// Gas stipend provided to the recipient of a CALL with value transfer.
 pub const CALL_STIPEND: u64 = 2300;
-/// Minimum gas that must be provided to a callee.
-pub const MIN_CALLEE_GAS: u64 = CALL_STIPEND;
+
+/// Init and floor gas from transaction
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct InitialAndFloorGas {
+    /// Initial gas for transaction.
+    pub initial_gas: u64,
+    /// If transaction is a Call and Prague is enabled
+    /// floor_gas is at least amount of gas that is going to be spent.
+    pub floor_gas: u64,
+}
+
+impl InitialAndFloorGas {
+    /// Create a new InitialAndFloorGas instance.
+    #[inline]
+    pub const fn new(initial_gas: u64, floor_gas: u64) -> Self {
+        Self {
+            initial_gas,
+            floor_gas,
+        }
+    }
+}
+
+/// Initial gas that is deducted for transaction to be included.
+/// Initial gas contains initial stipend gas, gas for access list and input data.
+///
+/// # Returns
+///
+/// - Intrinsic gas
+/// - Number of tokens in calldata
+pub fn calculate_initial_tx_gas(
+    spec_id: SpecId,
+    input: &[u8],
+    is_create: bool,
+    access_list_accounts: u64,
+    access_list_storages: u64,
+    authorization_list_num: u64,
+) -> InitialAndFloorGas {
+    GasParams::new_spec(spec_id).initial_tx_gas(
+        input,
+        is_create,
+        access_list_accounts,
+        access_list_storages,
+        authorization_list_num,
+    )
+}
+
+/// Initial gas that is deducted for transaction to be included.
+/// Initial gas contains initial stipend gas, gas for access list and input data.
+///
+/// # Returns
+///
+/// - Intrinsic gas
+/// - Number of tokens in calldata
+pub fn calculate_initial_tx_gas_for_tx(tx: impl Transaction, spec: SpecId) -> InitialAndFloorGas {
+    let mut accounts = 0;
+    let mut storages = 0;
+    // legacy is only tx type that does not have access list.
+    if tx.tx_type() != TransactionType::Legacy {
+        (accounts, storages) = tx
+            .access_list()
+            .map(|al| {
+                al.fold((0, 0), |(mut num_accounts, mut num_storage_slots), item| {
+                    num_accounts += 1;
+                    num_storage_slots += item.storage_slots().count();
+
+                    (num_accounts, num_storage_slots)
+                })
+            })
+            .unwrap_or_default();
+    }
+
+    calculate_initial_tx_gas(
+        spec,
+        tx.input(),
+        tx.kind().is_create(),
+        accounts as u64,
+        storages as u64,
+        tx.authorization_list_len() as u64,
+    )
+}
+
+/// Retrieve the total number of tokens in calldata.
+#[inline]
+pub fn get_tokens_in_calldata_istanbul(input: &[u8]) -> u64 {
+    get_tokens_in_calldata(input, NON_ZERO_BYTE_MULTIPLIER_ISTANBUL)
+}
+
+/// Retrieve the total number of tokens in calldata.
+#[inline]
+pub fn get_tokens_in_calldata(input: &[u8], non_zero_data_multiplier: u64) -> u64 {
+    let zero_data_len = input.iter().filter(|v| **v == 0).count() as u64;
+    let non_zero_data_len = input.len() as u64 - zero_data_len;
+    zero_data_len + non_zero_data_len * non_zero_data_multiplier
+}

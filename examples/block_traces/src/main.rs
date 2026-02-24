@@ -15,13 +15,12 @@ use revm::{
     primitives::{TxKind, U256},
     Context, MainBuilder, MainContext,
 };
-use std::fs::create_dir_all;
-use std::fs::OpenOptions;
-use std::io::BufWriter;
-use std::io::Write;
-use std::sync::Arc;
-use std::sync::Mutex;
-use std::time::Instant;
+use std::{
+    fs::{create_dir_all, OpenOptions},
+    io::{BufWriter, Write},
+    sync::{Arc, Mutex},
+    time::Instant,
+};
 
 struct FlushWriter {
     writer: Arc<Mutex<BufWriter<std::fs::File>>>,
@@ -92,25 +91,13 @@ async fn main() -> anyhow::Result<()> {
             c.chain_id = chain_id;
         });
 
-    let write = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open("traces/0.json");
-    let inner = Arc::new(Mutex::new(BufWriter::new(
-        write.expect("Failed to open file"),
-    )));
-    let writer = FlushWriter::new(Arc::clone(&inner));
-    let mut evm = ctx.build_mainnet_with_inspector(TracerEip3155::new(Box::new(writer)));
+    let mut evm = ctx.build_mainnet_with_inspector(TracerEip3155::new(Box::new(std::io::sink())));
 
     let txs = block.transactions.len();
     println!("Found {txs} transactions.");
 
     let console_bar = Arc::new(ProgressBar::new(txs as u64));
     let start = Instant::now();
-
-    // Create the traces directory if it doesn't exist
-    std::fs::create_dir_all("traces").expect("Failed to create traces directory");
 
     // Fill in CfgEnv
     let BlockTransactions::Full(transactions) = block.transactions else {

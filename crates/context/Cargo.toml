@@ -1,7 +1,7 @@
 [package]
 name = "revm-context"
 description = "Revm context crates"
-version = "10.1.1"
+version = "13.0.0"
 authors.workspace = true
 edition.workspace = true
 keywords.workspace = true
@@ -82,3 +82,4 @@ optional_fee_charge = []
 enable_eip7702 = []
 enable_eip7623 = []
 require_l1_data_fee_buffer = []
+map-foldhash = ["primitives/map-foldhash", "state/map-foldhash"]

@@ -35,10 +35,18 @@ where
     }
 
     #[inline]
-    fn log(&mut self, interp: &mut Interpreter<INTR>, context: &mut CTX, log: Log) {
+    fn log(&mut self, context: &mut CTX, log: Log) {
         match self {
-            Either::Left(inspector) => inspector.log(interp, context, log),
-            Either::Right(inspector) => inspector.log(interp, context, log),
+            Either::Left(inspector) => inspector.log(context, log),
+            Either::Right(inspector) => inspector.log(context, log),
+        }
+    }
+
+    #[inline]
+    fn log_full(&mut self, interp: &mut Interpreter<INTR>, context: &mut CTX, log: Log) {
+        match self {
+            Either::Left(inspector) => inspector.log_full(interp, context, log),
+            Either::Right(inspector) => inspector.log_full(interp, context, log),
         }
     }
 
@@ -101,8 +109,6 @@ mod tests {
 
     #[test]
     fn test_either_inspector_type_check() {
-        use interpreter::interpreter::EthInterpreter;
-
         // This test verifies that Either<NoOpInspector, NoOpInspector>
         // implements the Inspector trait as required by the issue
         fn _requires_inspector<T: Inspector<(), EthInterpreter>>(inspector: T) -> T {

@@ -1,29 +1,37 @@
 pub mod post_block;
 pub mod pre_block;
 
+use crate::dir_utils::find_all_json_tests;
 use clap::Parser;
-use context::ContextTr;
-use context_interface::block::BlobExcessGasAndPrice;
-use database::states::bundle_state::BundleRetention;
-use database::{EmptyDB, State};
-use inspector::inspectors::TracerEip3155;
-use primitives::{hardfork::SpecId, hex, Address, HashMap, U256};
-use revm::handler::EvmTr;
-use revm::{
-    context::cfg::CfgEnv, context_interface::result::HaltReason, Context, MainBuilder, MainContext,
-};
-use revm::{Database, ExecuteCommitEvm, ExecuteEvm, InspectEvm};
-use serde_json::json;
-use state::AccountInfo;
-use statetest_types::blockchain::{
+
+use revm::statetest_types::blockchain::{
     Account, BlockchainTest, BlockchainTestCase, ForkSpec, Withdrawal,
 };
-use std::collections::BTreeMap;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::time::Instant;
+use revm::{
+    bytecode::Bytecode,
+    context::{cfg::CfgEnv, ContextTr},
+    context_interface::{block::BlobExcessGasAndPrice, result::HaltReason},
+    database::{states::bundle_state::BundleRetention, EmptyDB, State},
+    handler::EvmTr,
+    inspector::inspectors::TracerEip3155,
+    primitives::{hardfork::SpecId, hex, Address, HashMap, U256},
+    state::{bal::Bal, AccountInfo},
+    Context, Database, ExecuteCommitEvm, ExecuteEvm, InspectEvm, MainBuilder, MainContext,
+};
+use serde_json::json;
+use std::{
+    collections::BTreeMap,
+    fs,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Instant,
+};
 use thiserror::Error;
-use walkdir::{DirEntry, WalkDir};
+
+/// Panics if the value cannot be serialized to JSON.
+fn print_json<T: serde::Serialize>(value: &T) {
+    println!("{}", serde_json::to_string(value).unwrap());
+}
 
 /// `blockchaintest` subcommand
 #[derive(Parser, Debug)]
@@ -78,22 +86,6 @@ impl Cmd {
     }
 }
 
-/// Find all JSON test files in the given path
-/// If path is a file, returns it in a vector
-/// If path is a directory, recursively finds all .json files
-pub fn find_all_json_tests(path: &Path) -> Vec<PathBuf> {
-    if path.is_file() {
-        vec![path.to_path_buf()]
-    } else {
-        WalkDir::new(path)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|e| e.path().extension() == Some("json".as_ref()))
-            .map(DirEntry::into_path)
-            .collect()
-    }
-}
-
 /// Run all blockchain tests from the given files
 fn run_tests(
     test_files: Vec<PathBuf>,
@@ -120,7 +112,7 @@ fn run_tests(
                     "status": "skipped",
                     "reason": "known_issue"
                 });
-                println!("{}", serde_json::to_string(&output).unwrap());
+                print_json(&output);
             } else if !omit_progress {
                 println!(
                     "Skipping ({}/{}): {}",
@@ -160,7 +152,7 @@ fn run_tests(
                         "error": e.to_string(),
                         "status": "failed"
                     });
-                    println!("{}", serde_json::to_string(&output).unwrap());
+                    print_json(&output);
                 } else if !omit_progress {
                     eprintln!(
                         "✗ ({}/{}) {} - {}",
@@ -189,7 +181,7 @@ fn run_tests(
                 "duration_secs": duration.as_secs_f64(),
             }
         });
-        println!("{}", serde_json::to_string(&results).unwrap());
+        print_json(&results);
     } else {
         // Print failed test paths if keep-going was enabled
         if keep_going && !failed_paths.is_empty() {
@@ -235,7 +227,7 @@ fn run_test_file(
                 "file": file_path.display().to_string(),
                 "status": "running"
             });
-            println!("{}", serde_json::to_string(&output).unwrap());
+            print_json(&output);
         } else {
             println!("  Running: {test_name}");
         }
@@ -250,7 +242,7 @@ fn run_test_file(
                         "file": file_path.display().to_string(),
                         "status": "passed"
                     });
-                    println!("{}", serde_json::to_string(&output).unwrap());
+                    print_json(&output);
                 }
                 test_count += 1;
             }
@@ -262,10 +254,10 @@ fn run_test_file(
                         "status": "failed",
                         "error": e.to_string()
                     });
-                    println!("{}", serde_json::to_string(&output).unwrap());
+                    print_json(&output);
                 }
                 return Err(Error::TestExecution {
-                    test_name: test_name.clone(),
+                    test_name,
                     test_path: file_path.to_path_buf(),
                     error: e.to_string(),
                 });
@@ -300,12 +292,12 @@ impl DebugInfo {
     fn capture_committed_state(
         state: &State<EmptyDB>,
     ) -> HashMap<Address, (AccountInfo, HashMap<U256, U256>)> {
-        let mut committed_state = HashMap::new();
+        let mut committed_state = HashMap::default();
 
         // Access the cache state to get all accounts
         for (address, cache_account) in &state.cache.accounts {
             if let Some(plain_account) = &cache_account.account {
-                let mut storage = HashMap::new();
+                let mut storage = HashMap::default();
                 for (key, value) in &plain_account.storage {
                     storage.insert(*key, *value);
                 }
@@ -324,6 +316,28 @@ fn validate_post_state(
     debug_info: &DebugInfo,
     print_env_on_error: bool,
 ) -> Result<(), TestExecutionError> {
+    #[allow(clippy::too_many_arguments)]
+    fn make_failure(
+        state: &mut State<EmptyDB>,
+        debug_info: &DebugInfo,
+        expected_post_state: &BTreeMap<Address, Account>,
+        print_env_on_error: bool,
+        address: Address,
+        field: String,
+        expected: String,
+        actual: String,
+    ) -> Result<(), TestExecutionError> {
+        if print_env_on_error {
+            print_error_with_state(debug_info, state, Some(expected_post_state));
+        }
+        Err(TestExecutionError::PostStateValidation {
+            address,
+            field,
+            expected,
+            actual,
+        })
+    }
+
     for (address, expected_account) in expected_post_state {
         // Load account from final state
         let actual_account = state
@@ -337,78 +351,79 @@ fn validate_post_state(
 
         // Validate balance
         if info.balance != expected_account.balance {
-            if print_env_on_error {
-                print_error_with_state(debug_info, state, Some(expected_post_state));
-            }
-            return Err(TestExecutionError::PostStateValidation {
-                address: *address,
-                field: "balance".to_string(),
-                expected: format!("{}", expected_account.balance),
-                actual: format!("{}", info.balance),
-            });
+            return make_failure(
+                state,
+                debug_info,
+                expected_post_state,
+                print_env_on_error,
+                *address,
+                "balance".to_string(),
+                format!("{}", expected_account.balance),
+                format!("{}", info.balance),
+            );
         }
 
         // Validate nonce
         let expected_nonce = expected_account.nonce.to::<u64>();
         if info.nonce != expected_nonce {
-            if print_env_on_error {
-                print_error_with_state(debug_info, state, Some(expected_post_state));
-            }
-            return Err(TestExecutionError::PostStateValidation {
-                address: *address,
-                field: "nonce".to_string(),
-                expected: format!("{expected_nonce}"),
-                actual: format!("{}", info.nonce),
-            });
+            return make_failure(
+                state,
+                debug_info,
+                expected_post_state,
+                print_env_on_error,
+                *address,
+                "nonce".to_string(),
+                format!("{expected_nonce}"),
+                format!("{}", info.nonce),
+            );
         }
 
         // Validate code if present
         if !expected_account.code.is_empty() {
             if let Some(actual_code) = &info.code {
                 if actual_code.original_bytes() != expected_account.code {
-                    if print_env_on_error {
-                        print_error_with_state(debug_info, state, Some(expected_post_state));
-                    }
-                    return Err(TestExecutionError::PostStateValidation {
-                        address: *address,
-                        field: "code".to_string(),
-                        expected: format!("0x{}", hex::encode(&expected_account.code)),
-                        actual: format!("0x{}", hex::encode(actual_code.bytecode())),
-                    });
+                    return make_failure(
+                        state,
+                        debug_info,
+                        expected_post_state,
+                        print_env_on_error,
+                        *address,
+                        "code".to_string(),
+                        format!("0x{}", hex::encode(&expected_account.code)),
+                        format!("0x{}", hex::encode(actual_code.original_byte_slice())),
+                    );
                 }
             } else {
-                if print_env_on_error {
-                    print_error_with_state(debug_info, state, Some(expected_post_state));
-                }
-                return Err(TestExecutionError::PostStateValidation {
-                    address: *address,
-                    field: "code".to_string(),
-                    expected: format!("0x{}", hex::encode(&expected_account.code)),
-                    actual: "empty".to_string(),
-                });
+                return make_failure(
+                    state,
+                    debug_info,
+                    expected_post_state,
+                    print_env_on_error,
+                    *address,
+                    "code".to_string(),
+                    format!("0x{}", hex::encode(&expected_account.code)),
+                    "empty".to_string(),
+                );
             }
         }
 
-        // Check for unexpected storage entries
-        for (slot, actual_value) in actual_account
-            .account
-            .as_ref()
-            .map(|a| &a.storage)
-            .unwrap_or(&HashMap::new())
-            .iter()
-        {
-            let slot = *slot;
-            let actual_value = *actual_value;
-            if !expected_account.storage.contains_key(&slot) && !actual_value.is_zero() {
-                if print_env_on_error {
-                    print_error_with_state(debug_info, state, Some(expected_post_state));
+        // Check for unexpected storage entries. Avoid allocating a temporary HashMap when the account is None.
+        if let Some(acc) = actual_account.account.as_ref() {
+            for (slot, actual_value) in &acc.storage {
+                let slot = *slot;
+                let actual_value = *actual_value;
+                if !expected_account.storage.contains_key(&slot) && !actual_value.is_zero() {
+                    return make_failure(
+                        state,
+                        debug_info,
+                        expected_post_state,
+                        print_env_on_error,
+                        *address,
+                        format!("storage_unexpected[{slot}]"),
+                        "0x0".to_string(),
+                        format!("{actual_value}"),
+                    );
                 }
-                return Err(TestExecutionError::PostStateValidation {
-                    address: *address,
-                    field: format!("storage_unexpected[{slot}]"),
-                    expected: "0x0".to_string(),
-                    actual: format!("{actual_value}"),
-                });
             }
         }
 
@@ -418,16 +433,16 @@ fn validate_post_state(
             let actual_value = actual_value.unwrap_or_default();
 
             if actual_value != *expected_value {
-                if print_env_on_error {
-                    print_error_with_state(debug_info, state, Some(expected_post_state));
-                }
-
-                return Err(TestExecutionError::PostStateValidation {
-                    address: *address,
-                    field: format!("storage_validation[{slot}]"),
-                    expected: format!("{expected_value}"),
-                    actual: format!("{actual_value}"),
-                });
+                return make_failure(
+                    state,
+                    debug_info,
+                    expected_post_state,
+                    print_env_on_error,
+                    *address,
+                    format!("storage_validation[{slot}]"),
+                    format!("{expected_value}"),
+                    format!("{actual_value}"),
+                );
             }
         }
     }
@@ -450,7 +465,7 @@ fn print_error_with_state(
 
     // Print configuration environment
     eprintln!("\n📋 Configuration Environment:");
-    eprintln!("  Spec ID: {:?}", debug_info.cfg_env.spec);
+    eprintln!("  Spec ID: {:?}", debug_info.cfg_env.spec());
     eprintln!("  Chain ID: {}", debug_info.cfg_env.chain_id);
     eprintln!(
         "  Limit contract code size: {:?}",
@@ -470,10 +485,9 @@ fn print_error_with_state(
     eprintln!("  Difficulty: {}", debug_info.block_env.difficulty);
     eprintln!("  Prevrandao: {:?}", debug_info.block_env.prevrandao);
     eprintln!("  Beneficiary: {:?}", debug_info.block_env.beneficiary);
-    eprintln!(
-        "  Blob excess gas: {:?}",
-        debug_info.block_env.blob_excess_gas_and_price
-    );
+    let blob = debug_info.block_env.blob_excess_gas_and_price;
+    eprintln!("  Blob excess gas: {:?}", blob.map(|a| a.excess_blob_gas));
+    eprintln!("  Blob gas price: {:?}", blob.map(|a| a.blob_gasprice));
 
     // Print withdrawals
     if let Some(withdrawals) = &debug_info.withdrawals {
@@ -562,44 +576,48 @@ fn print_error_with_state(
 
     // Print state comparison
     eprintln!("\n💾 Pre-State (Initial):");
-    for (address, (info, storage)) in &debug_info.pre_state {
+    // Sort accounts by address for consistent output
+    let mut sorted_accounts: Vec<_> = debug_info.pre_state.iter().collect();
+    sorted_accounts.sort_by_key(|(addr, _)| *addr);
+    for (address, (info, storage)) in sorted_accounts {
         eprintln!("  Account {address:?}:");
         eprintln!("    Balance: 0x{:x}", info.balance);
         eprintln!("    Nonce: {}", info.nonce);
         eprintln!("    Code hash: {:?}", info.code_hash);
         eprintln!(
             "    Code size: {} bytes",
-            info.code.as_ref().map_or(0, |c| c.bytecode().len())
+            info.code.as_ref().map_or(0, |c| c.len())
         );
         if !storage.is_empty() {
             eprintln!("    Storage ({} slots):", storage.len());
-            for (key, value) in storage.iter().take(5) {
+            let mut sorted_storage: Vec<_> = storage.iter().collect();
+            sorted_storage.sort_by_key(|(key, _)| *key);
+            for (key, value) in sorted_storage.iter() {
                 eprintln!("      {key:?} => {value:?}");
-            }
-            if storage.len() > 5 {
-                eprintln!("      ... and {} more slots", storage.len() - 5);
             }
         }
     }
 
     eprintln!("\n📝 Current State (Actual):");
     let committed_state = DebugInfo::capture_committed_state(current_state);
-    for (address, (info, storage)) in &committed_state {
+    // Sort accounts by address for consistent output
+    let mut sorted_current: Vec<_> = committed_state.iter().collect();
+    sorted_current.sort_by_key(|(addr, _)| *addr);
+    for (address, (info, storage)) in sorted_current {
         eprintln!("  Account {address:?}:");
         eprintln!("    Balance: 0x{:x}", info.balance);
         eprintln!("    Nonce: {}", info.nonce);
         eprintln!("    Code hash: {:?}", info.code_hash);
         eprintln!(
             "    Code size: {} bytes",
-            info.code.as_ref().map_or(0, |c| c.bytecode().len())
+            info.code.as_ref().map_or(0, |c| c.len())
         );
         if !storage.is_empty() {
             eprintln!("    Storage ({} slots):", storage.len());
-            for (key, value) in storage.iter().take(5) {
+            let mut sorted_storage: Vec<_> = storage.iter().collect();
+            sorted_storage.sort_by_key(|(key, _)| *key);
+            for (key, value) in sorted_storage.iter() {
                 eprintln!("      {key:?} => {value:?}");
-            }
-            if storage.len() > 5 {
-                eprintln!("      ... and {} more slots", storage.len() - 5);
             }
         }
     }
@@ -616,11 +634,8 @@ fn print_error_with_state(
             }
             if !account.storage.is_empty() {
                 eprintln!("    Storage ({} slots):", account.storage.len());
-                for (key, value) in account.storage.iter().take(5) {
+                for (key, value) in account.storage.iter() {
                     eprintln!("      {key:?} => {value:?}");
-                }
-                if account.storage.len() > 5 {
-                    eprintln!("      ... and {} more slots", account.storage.len() - 5);
                 }
             }
         }
@@ -650,10 +665,10 @@ fn execute_blockchain_test(
     }
 
     // Create database with initial state
-    let mut state = State::builder().build();
+    let mut state = State::builder().with_bal_builder().build();
 
     // Capture pre-state for debug info
-    let mut pre_state_debug = HashMap::new();
+    let mut pre_state_debug = HashMap::default();
 
     // Insert genesis state into database
     let genesis_state = test_case.pre.clone().into_genesis_state();
@@ -661,8 +676,9 @@ fn execute_blockchain_test(
         let account_info = AccountInfo {
             balance: account.balance,
             nonce: account.nonce,
-            code_hash: primitives::keccak256(&account.code),
-            code: Some(bytecode::Bytecode::new_raw(account.code.clone())),
+            code_hash: revm::primitives::keccak256(&account.code),
+            code: Some(Bytecode::new_raw(account.code.clone())),
+            account_id: None,
         };
 
         // Store for debug info
@@ -681,7 +697,7 @@ fn execute_blockchain_test(
     // Setup configuration based on fork
     let spec_id = fork_to_spec_id(test_case.network);
     let mut cfg = CfgEnv::default();
-    cfg.spec = spec_id;
+    cfg.set_spec_and_mainnet_gas_params(spec_id);
 
     // Genesis block is not used yet.
     let mut parent_block_hash = Some(test_case.genesis_block_header.hash);
@@ -719,10 +735,19 @@ fn execute_blockchain_test(
             this_excess_blob_gas = None;
         }
 
+        let bal_test = block
+            .block_access_list
+            .as_ref()
+            .and_then(|bal| Bal::try_from(bal.clone()).ok())
+            .map(Arc::new);
+
+        //state.set_bal(bal_test);
+        state.reset_bal_index();
+
         // Create EVM context for each transaction to ensure fresh state access
         let evm_context = Context::mainnet()
             .with_block(&block_env)
-            .with_cfg(&cfg)
+            .with_cfg(cfg.clone())
             .with_db(&mut state);
 
         // Build and execute with EVM - always use inspector when JSON output is enabled
@@ -757,7 +782,7 @@ fn execute_blockchain_test(
                         "error": "missing sender",
                         "status": "skipped"
                     });
-                    println!("{}", serde_json::to_string(&output).unwrap());
+                    print_json(&output);
                 } else {
                     eprintln!("⚠️  Skipping block {block_idx} due to missing sender");
                 }
@@ -794,7 +819,7 @@ fn execute_blockchain_test(
                             "error": format!("tx env creation error: {e}"),
                             "status": "skipped"
                         });
-                        println!("{}", serde_json::to_string(&output).unwrap());
+                        print_json(&output);
                     } else {
                         eprintln!(
                             "⚠️  Skipping block {block_idx} due to transaction env creation error: {e}"
@@ -803,6 +828,9 @@ fn execute_blockchain_test(
                     break; // Skip to next block
                 }
             };
+
+            // bump bal index
+            evm.db_mut().bump_bal_index();
 
             // If JSON output requested, output transaction details
             let execution_result = if json_output {
@@ -840,19 +868,19 @@ fn execute_blockchain_test(
                                 test_case.post_state.as_ref(),
                             );
                         }
-                        let exception = block.expect_exception.clone().unwrap_or_default();
+                        let expected_exception = block.expect_exception.clone().unwrap_or_default();
                         if json_output {
                             let output = json!({
                                 "block": block_idx,
                                 "tx": tx_idx,
-                                "error": format!("expected failure: {exception}"),
+                                "expected_exception": expected_exception,
                                 "gas_used": result.result.gas_used(),
                                 "status": "unexpected_success"
                             });
-                            println!("{}", serde_json::to_string(&output).unwrap());
+                            print_json(&output);
                         } else {
                             eprintln!(
-                                "⚠️  Skipping block {block_idx} due to expected failure: {exception}"
+                                "⚠️  Skipping block {block_idx}: transaction unexpectedly succeeded (expected failure: {expected_exception})"
                             );
                         }
                         break; // Skip to next block
@@ -892,7 +920,7 @@ fn execute_blockchain_test(
                                 "error": format!("{e:?}"),
                                 "status": "unexpected_failure"
                             });
-                            println!("{}", serde_json::to_string(&output).unwrap());
+                            print_json(&output);
                         } else {
                             eprintln!(
                                 "⚠️  Skipping block {block_idx} due to unexpected failure: {e:?}"
@@ -907,11 +935,14 @@ fn execute_blockchain_test(
                             "error": format!("{e:?}"),
                             "status": "expected_failure"
                         });
-                        println!("{}", serde_json::to_string(&output).unwrap());
+                        print_json(&output);
                     }
                 }
             }
         }
+
+        // bump bal index
+        evm.db_mut().bump_bal_index();
 
         // uncle rewards are not implemented yet
         post_block::post_block_transition(
@@ -925,6 +956,19 @@ fn execute_blockchain_test(
         state
             .block_hashes
             .insert(block_env.number.to::<u64>(), block_hash.unwrap_or_default());
+
+        if let Some(bal) = state.bal_state.bal_builder.take() {
+            if let Some(state_bal) = bal_test {
+                if &bal != state_bal.as_ref() {
+                    println!("Bal mismatch");
+                    println!("Test bal");
+                    state_bal.pretty_print();
+                    println!("Bal:");
+                    bal.pretty_print();
+                    return Err(TestExecutionError::BalMismatchError);
+                }
+            }
+        }
 
         parent_block_hash = block_hash;
         if let Some(excess_blob_gas) = this_excess_blob_gas {
@@ -979,7 +1023,8 @@ fn fork_to_spec_id(fork: ForkSpec) -> SpecId {
         ForkSpec::Cancun | ForkSpec::ShanghaiToCancunAtTime15k => SpecId::CANCUN,
         ForkSpec::Prague | ForkSpec::CancunToPragueAtTime15k => SpecId::PRAGUE,
         ForkSpec::Osaka | ForkSpec::PragueToOsakaAtTime15k => SpecId::OSAKA,
-        _ => SpecId::OSAKA, // For any unknown forks, use latest available
+        ForkSpec::Amsterdam => SpecId::AMSTERDAM,
+        _ => SpecId::AMSTERDAM, // For any unknown forks, use latest available
     }
 }
 
@@ -997,7 +1042,7 @@ fn skip_test(path: &Path) -> bool {
         return true;
     }
 
-    let name = path.file_name().unwrap().to_str().unwrap();
+    let name = path.file_name().unwrap().to_str().unwrap_or_default();
     // Add any problematic tests here that should be skipped
     matches!(
         name,
@@ -1083,6 +1128,9 @@ pub enum TestExecutionError {
         reason: HaltReason,
         gas_used: u64,
     },
+
+    #[error("BAL error")]
+    BalMismatchError,
 
     #[error(
         "Post-state validation failed for {address:?}.{field}: expected {expected}, got {actual}"

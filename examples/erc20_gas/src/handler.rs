@@ -1,8 +1,8 @@
 use revm::{
-    context::Cfg,
+    context::{journaled_state::account::JournaledAccountTr, Cfg},
     context_interface::{result::HaltReason, Block, ContextTr, JournalTr, Transaction},
     handler::{
-        pre_execution::{calculate_caller_fee, validate_account_nonce_and_code},
+        pre_execution::{calculate_caller_fee, validate_account_nonce_and_code_with_components},
         EvmTr, EvmTrError, FrameResult, FrameTr, Handler,
     },
     interpreter::interpreter_action::FrameInit,
@@ -49,23 +49,22 @@ where
         let (block, tx, cfg, journal, _, _) = evm.ctx_mut().all_mut();
 
         // load TOKEN contract
-        journal.load_account(TOKEN)?.data.mark_touch();
+        journal.load_account_mut(TOKEN)?.touch();
 
         // Load caller's account.
-        let caller_account = journal.load_account_code(tx.caller())?.data;
+        let mut caller_account = journal.load_account_with_code_mut(tx.caller())?;
 
-        validate_account_nonce_and_code(
-            &mut caller_account.info,
-            tx.nonce(),
-            cfg.is_eip3607_disabled(),
-            cfg.is_nonce_check_disabled(),
-        )?;
+        validate_account_nonce_and_code_with_components(&caller_account.account().info, tx, cfg)?;
 
         // make changes to the account. Account balance stays the same
-        caller_account
-            .caller_initial_modification(caller_account.info.balance, tx.kind().is_call());
+        caller_account.touch();
+        if tx.kind().is_call() {
+            caller_account.bump_nonce();
+        }
 
         let account_balance_slot = erc_address_storage(tx.caller());
+
+        drop(caller_account); // Drop caller_account to avoid borrow checker issues.
 
         // load account balance
         let account_balance = journal.sload(TOKEN, account_balance_slot)?.data;

@@ -8,16 +8,19 @@ use crate::{
     eip7702::{Eip7702Bytecode, EIP7702_MAGIC_BYTES},
     BytecodeDecodeError, JumpTable, LegacyAnalyzedBytecode, LegacyRawBytecode,
 };
-use primitives::{keccak256, Address, Bytes, B256, KECCAK_EMPTY};
+use primitives::{
+    alloy_primitives::Sealable, keccak256, Address, Bytes, OnceLock, B256, KECCAK_EMPTY,
+};
+use std::sync::Arc;
 
 /// Main bytecode structure with all variants.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Bytecode {
     /// EIP-7702 delegated bytecode
-    Eip7702(Eip7702Bytecode),
+    Eip7702(Arc<Eip7702Bytecode>),
     /// The bytecode has been analyzed for valid jump destinations.
-    LegacyAnalyzed(LegacyAnalyzedBytecode),
+    LegacyAnalyzed(Arc<LegacyAnalyzedBytecode>),
 }
 
 impl Default for Bytecode {
@@ -27,11 +30,21 @@ impl Default for Bytecode {
     }
 }
 
+impl Sealable for Bytecode {
+    #[inline]
+    fn hash_slow(&self) -> B256 {
+        self.hash_slow()
+    }
+}
+
 impl Bytecode {
     /// Creates a new legacy analyzed [`Bytecode`] with exactly one STOP opcode.
     #[inline]
     pub fn new() -> Self {
-        Self::LegacyAnalyzed(LegacyAnalyzedBytecode::default())
+        static DEFAULT_BYTECODE: OnceLock<Bytecode> = OnceLock::new();
+        DEFAULT_BYTECODE
+            .get_or_init(|| Self::LegacyAnalyzed(Arc::new(LegacyAnalyzedBytecode::default())))
+            .clone()
     }
 
     /// Returns jump table if bytecode is analyzed.
@@ -62,7 +75,7 @@ impl Bytecode {
     /// Creates a new legacy [`Bytecode`].
     #[inline]
     pub fn new_legacy(raw: Bytes) -> Self {
-        Self::LegacyAnalyzed(LegacyRawBytecode(raw).into_analyzed())
+        Self::LegacyAnalyzed(Arc::new(LegacyRawBytecode(raw).into_analyzed()))
     }
 
     /// Creates a new raw [`Bytecode`].
@@ -78,7 +91,7 @@ impl Bytecode {
     /// Creates a new EIP-7702 [`Bytecode`] from [`Address`].
     #[inline]
     pub fn new_eip7702(address: Address) -> Self {
-        Self::Eip7702(Eip7702Bytecode::new(address))
+        Self::Eip7702(Arc::new(Eip7702Bytecode::new(address)))
     }
 
     /// Creates a new raw [`Bytecode`].
@@ -90,7 +103,7 @@ impl Bytecode {
         match prefix {
             Some(prefix) if prefix == &EIP7702_MAGIC_BYTES => {
                 let eip7702 = Eip7702Bytecode::new_raw(bytes)?;
-                Ok(Self::Eip7702(eip7702))
+                Ok(Self::Eip7702(Arc::new(eip7702)))
             }
             _ => Ok(Self::new_legacy(bytes)),
         }
@@ -103,11 +116,11 @@ impl Bytecode {
     /// For possible panics see [`LegacyAnalyzedBytecode::new`].
     #[inline]
     pub fn new_analyzed(bytecode: Bytes, original_len: usize, jump_table: JumpTable) -> Self {
-        Self::LegacyAnalyzed(LegacyAnalyzedBytecode::new(
+        Self::LegacyAnalyzed(Arc::new(LegacyAnalyzedBytecode::new(
             bytecode,
             original_len,
             jump_table,
-        ))
+        )))
     }
 
     /// Returns a reference to the bytecode.
@@ -134,10 +147,7 @@ impl Bytecode {
     /// Returns raw bytes reference.
     #[inline]
     pub fn bytes_ref(&self) -> &Bytes {
-        match self {
-            Self::LegacyAnalyzed(analyzed) => analyzed.bytecode(),
-            Self::Eip7702(code) => code.raw(),
-        }
+        self.bytecode()
     }
 
     /// Returns raw bytes slice.

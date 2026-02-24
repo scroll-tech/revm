@@ -7,16 +7,14 @@ use crate::{
         NON_ZERO_BYTE_COST, OPERATOR_FEE_CONSTANT_OFFSET, OPERATOR_FEE_JOVIAN_MULTIPLIER,
         OPERATOR_FEE_SCALARS_SLOT, OPERATOR_FEE_SCALAR_DECIMAL, OPERATOR_FEE_SCALAR_OFFSET,
     },
-    transaction::estimate_tx_compressed_size,
+    transaction::{estimate_tx_compressed_size, OpTxTr},
     OpSpecId,
 };
 use revm::{
+    context_interface::cfg::gas::{NON_ZERO_BYTE_MULTIPLIER_ISTANBUL, STANDARD_TOKEN_COST},
     database_interface::Database,
-    interpreter::{
-        gas::{get_tokens_in_calldata, NON_ZERO_BYTE_MULTIPLIER_ISTANBUL, STANDARD_TOKEN_COST},
-        Gas,
-    },
-    primitives::{hardfork::SpecId, U256},
+    interpreter::{gas::get_tokens_in_calldata_istanbul, Gas},
+    primitives::U256,
 };
 
 /// L1 block info
@@ -58,8 +56,8 @@ pub struct L1BlockInfo {
 }
 
 impl L1BlockInfo {
-    /// Try to fetch the L1 block info from the database, post-Jovian.
-    fn try_fetch_jovian<DB: Database>(&mut self, db: &mut DB) -> Result<(), DB::Error> {
+    /// Fetch the DA footprint gas scalar from the database.
+    pub fn fetch_da_footprint_gas_scalar<DB: Database>(db: &mut DB) -> Result<u16, DB::Error> {
         let da_footprint_gas_scalar_slot = db
             .storage(L1_BLOCK_CONTRACT, DA_FOOTPRINT_GAS_SCALAR_SLOT)?
             .to_be_bytes::<32>();
@@ -69,7 +67,12 @@ impl L1BlockInfo {
             da_footprint_gas_scalar_slot[DA_FOOTPRINT_GAS_SCALAR_OFFSET],
             da_footprint_gas_scalar_slot[DA_FOOTPRINT_GAS_SCALAR_OFFSET + 1],
         ];
-        self.da_footprint_gas_scalar = Some(u16::from_be_bytes(bytes));
+        Ok(u16::from_be_bytes(bytes))
+    }
+
+    /// Try to fetch the L1 block info from the database, post-Jovian.
+    fn try_fetch_jovian<DB: Database>(&mut self, db: &mut DB) -> Result<(), DB::Error> {
+        self.da_footprint_gas_scalar = Some(Self::fetch_da_footprint_gas_scalar(db)?);
 
         Ok(())
     }
@@ -133,11 +136,8 @@ impl L1BlockInfo {
         l2_block: U256,
         spec_id: OpSpecId,
     ) -> Result<L1BlockInfo, DB::Error> {
-        // Ensure the L1 Block account is loaded into the cache after Ecotone. With EIP-4788, it is no longer the case
-        // that the L1 block account is loaded into the cache prior to the first inquiry for the L1 block info.
-        if spec_id.into_eth_spec().is_enabled_in(SpecId::CANCUN) {
-            let _ = db.basic(L1_BLOCK_CONTRACT)?;
-        }
+        // Ensure the L1 Block account is loaded into the cache.
+        let _ = db.basic(L1_BLOCK_CONTRACT)?;
 
         let mut out = L1BlockInfo {
             l2_block: Some(l2_block),
@@ -234,7 +234,7 @@ impl L1BlockInfo {
         };
 
         // tokens in calldata where non-zero bytes are priced 4 times higher than zero bytes (Same as in Istanbul).
-        let mut tokens_in_transaction_data = get_tokens_in_calldata(input, true);
+        let mut tokens_in_transaction_data = get_tokens_in_calldata_istanbul(input);
 
         // Prior to regolith, an extra 68 non zero bytes were included in the rollup data costs.
         if !spec_id.is_enabled_in(OpSpecId::REGOLITH) {
@@ -254,6 +254,31 @@ impl L1BlockInfo {
     /// Clears the cached L1 cost of the transaction.
     pub fn clear_tx_l1_cost(&mut self) {
         self.tx_l1_cost = None;
+    }
+
+    /// Calculate additional transaction cost with OpTxTr.
+    ///
+    /// Internally calls [`L1BlockInfo::tx_cost`].
+    pub fn tx_cost_with_tx(&mut self, tx: impl OpTxTr, spec: OpSpecId) -> Option<U256> {
+        // account for additional cost of l1 fee and operator fee
+        let enveloped_tx = tx.enveloped_tx()?;
+        let gas_limit = U256::from(tx.gas_limit());
+        Some(self.tx_cost(enveloped_tx, gas_limit, spec))
+    }
+
+    /// Calculate additional transaction cost.
+    #[inline]
+    pub fn tx_cost(&mut self, enveloped_tx: &[u8], gas_limit: U256, spec: OpSpecId) -> U256 {
+        // compute L1 cost
+        let mut additional_cost = self.calculate_tx_l1_cost(enveloped_tx, spec);
+
+        // compute operator fee
+        if spec.is_enabled_in(OpSpecId::ISTHMUS) {
+            let operator_fee_charge = self.operator_fee_charge(enveloped_tx, gas_limit, spec);
+            additional_cost = additional_cost.saturating_add(operator_fee_charge);
+        }
+
+        additional_cost
     }
 
     /// Calculate the gas cost of a transaction based on L1 block data posted on L2, depending on the [OpSpecId] passed.
@@ -318,6 +343,10 @@ impl L1BlockInfo {
     /// `estimatedSize*(baseFeeScalar*l1BaseFee*16 + blobFeeScalar*l1BlobBaseFee)/1e12`
     fn calculate_tx_l1_cost_fjord(&self, input: &[u8]) -> U256 {
         let l1_fee_scaled = self.calculate_l1_fee_scaled_ecotone();
+        if l1_fee_scaled.is_zero() {
+            return U256::ZERO;
+        }
+
         let estimated_size = self.tx_estimated_size_fjord(input);
 
         estimated_size

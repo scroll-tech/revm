@@ -152,6 +152,13 @@ pub trait ContextTr: Host {
         let (_, tx, _, _, _, local) = self.all_mut();
         (tx, local)
     }
+
+    /// Get the configuration and journal mutably
+    #[inline]
+    fn cfg_journal_mut(&mut self) -> (&Self::Cfg, &mut Self::Journal) {
+        let (_, _, cfg, journal, _, _) = self.all_mut();
+        (cfg, journal)
+    }
 }
 
 /// Inner Context error used for Interpreter to set error without returning it from instruction
@@ -193,6 +200,18 @@ impl SStoreResult {
     #[inline]
     pub const fn is_new_eq_present(&self) -> bool {
         self.new_value.const_eq(&self.present_value)
+    }
+
+    /// Returns `true` if the new values changes the present value.
+    #[inline]
+    pub const fn new_values_changes_present(&self) -> bool {
+        !self.is_new_eq_present()
+    }
+
+    /// Returns `true` if the original value is zero and the new value is not zero.
+    #[inline]
+    pub const fn have_changed_from_zero(&self) -> bool {
+        self.is_original_zero() && !self.is_new_zero()
     }
 
     /// Returns `true` if the original value is equal to the present value.

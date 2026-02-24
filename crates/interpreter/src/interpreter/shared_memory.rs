@@ -1,4 +1,6 @@
 use super::MemoryTr;
+use crate::InstructionResult;
+use context_interface::cfg::GasParams;
 use core::{
     cell::{Ref, RefCell, RefMut},
     cmp::min,
@@ -125,6 +127,17 @@ impl MemoryTr for SharedMemory {
         self.resize(new_size);
         true
     }
+
+    /// Returns `true` if the `new_size` for the current context memory will
+    /// make the shared buffer length exceed the `memory_limit`.
+    #[cfg(feature = "memory_limit")]
+    #[inline]
+    fn limit_reached(&self, offset: usize, len: usize) -> bool {
+        self.my_checkpoint
+            .saturating_add(offset)
+            .saturating_add(len) as u64
+            > self.memory_limit
+    }
 }
 
 impl SharedMemory {
@@ -184,6 +197,17 @@ impl SharedMemory {
         }
     }
 
+    /// Sets the memory limit in bytes.
+    #[inline]
+    pub fn set_memory_limit(&mut self, limit: u64) {
+        #[cfg(feature = "memory_limit")]
+        {
+            self.memory_limit = limit;
+        }
+        // for clippy.
+        let _ = limit;
+    }
+
     #[inline]
     fn buffer(&self) -> &Rc<RefCell<Vec<u8>>> {
         debug_assert!(self.buffer.is_some(), "cannot use SharedMemory::empty");
@@ -198,14 +222,6 @@ impl SharedMemory {
     #[inline]
     fn buffer_ref_mut(&self) -> RefMut<'_, Vec<u8>> {
         self.buffer().dbg_borrow_mut()
-    }
-
-    /// Returns `true` if the `new_size` for the current context memory will
-    /// make the shared buffer length exceed the `memory_limit`.
-    #[cfg(feature = "memory_limit")]
-    #[inline]
-    pub fn limit_reached(&self, new_size: usize) -> bool {
-        self.my_checkpoint.saturating_add(new_size) as u64 > self.memory_limit
     }
 
     /// Prepares the shared memory for a new child context.
@@ -542,24 +558,29 @@ unsafe fn set_data(dst: &mut [u8], src: &[u8], dst_offset: usize, src_offset: us
 /// i.e. it rounds up the number bytes to number of words.
 #[inline]
 pub const fn num_words(len: usize) -> usize {
-    len.saturating_add(31) / 32
+    len.div_ceil(32)
 }
 
 /// Performs EVM memory resize.
 #[inline]
-#[must_use]
 pub fn resize_memory<Memory: MemoryTr>(
     gas: &mut crate::Gas,
     memory: &mut Memory,
+    gas_table: &GasParams,
     offset: usize,
     len: usize,
-) -> bool {
+) -> Result<(), InstructionResult> {
+    #[cfg(feature = "memory_limit")]
+    if memory.limit_reached(offset, len) {
+        return Err(InstructionResult::MemoryLimitOOG);
+    }
+
     let new_num_words = num_words(offset.saturating_add(len));
     if new_num_words > gas.memory().words_num {
-        resize_memory_cold(gas, memory, new_num_words)
-    } else {
-        true
+        return resize_memory_cold(gas, memory, gas_table, new_num_words);
     }
+
+    Ok(())
 }
 
 #[cold]
@@ -567,18 +588,21 @@ pub fn resize_memory<Memory: MemoryTr>(
 fn resize_memory_cold<Memory: MemoryTr>(
     gas: &mut crate::Gas,
     memory: &mut Memory,
+    gas_table: &GasParams,
     new_num_words: usize,
-) -> bool {
+) -> Result<(), InstructionResult> {
+    let cost = gas_table.memory_cost(new_num_words);
     let cost = unsafe {
         gas.memory_mut()
-            .record_new_len(new_num_words)
+            .set_words_num(new_num_words, cost)
             .unwrap_unchecked()
     };
+
     if !gas.record_cost(cost) {
-        return false;
+        return Err(InstructionResult::MemoryOOG);
     }
     memory.resize(new_num_words * 32);
-    true
+    Ok(())
 }
 
 #[cfg(test)]
@@ -595,7 +619,9 @@ mod tests {
         assert_eq!(num_words(63), 2);
         assert_eq!(num_words(64), 2);
         assert_eq!(num_words(65), 3);
-        assert_eq!(num_words(usize::MAX), usize::MAX / 32);
+        assert_eq!(num_words(usize::MAX - 31), usize::MAX / 32);
+        assert_eq!(num_words(usize::MAX - 30), (usize::MAX / 32) + 1);
+        assert_eq!(num_words(usize::MAX), (usize::MAX / 32) + 1);
     }
 
     #[test]

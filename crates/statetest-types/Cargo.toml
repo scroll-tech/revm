@@ -1,7 +1,7 @@
 [package]
 name = "revm-statetest-types"
 description = "Statetest types for revme"
-version = "10.1.1"
+version = "14.0.0"
 authors.workspace = true
 edition.workspace = true
 keywords.workspace = true
@@ -18,10 +18,26 @@ rustdoc-args = ["--cfg", "docsrs"]
 workspace = true
 
 [dependencies]
-# revm
-revm = { workspace = true, features = ["std", "serde"] }
+# revm crates
+primitives = { workspace = true, features = ["std", "serde"] }
+bytecode = { workspace = true, features = ["std", "serde"] }
+state = { workspace = true, features = ["std", "serde"] }
+context = { workspace = true, features = ["std", "serde"] }
+context-interface = { workspace = true, features = ["std", "serde"] }
+database = { workspace = true, features = ["std", "serde"] }
+
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true, features = ["preserve_order"] }
 k256 = { workspace = true }
 thiserror = { workspace = true }
-alloy-eips = { workspace = true }
+
+# alloy
+alloy-eip7928 = { workspace = true, features = ["std", "serde", "rlp"] }
+
+[features]
+map-foldhash = [
+    "primitives/map-foldhash",
+    "state/map-foldhash",
+    "context/map-foldhash",
+    "database/map-foldhash",
+]

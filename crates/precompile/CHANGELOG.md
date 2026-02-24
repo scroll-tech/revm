@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [32.0.0](https://github.com/bluealloy/revm/compare/revm-precompile-v31.0.0...revm-precompile-v32.0.0) - 2026-01-15
+
+### Added
+
+- rm gmp use-system-libs ([#3253](https://github.com/bluealloy/revm/pull/3253))
+- dynamically link gmp ([#3250](https://github.com/bluealloy/revm/pull/3250))
+
+### Other
+
+- *(precompile)* extract common pairing_check_bytes logic in bls12_381 ([#3301](https://github.com/bluealloy/revm/pull/3301))
+- apply improvements from ai-bot labeled PRs ([#3297](https://github.com/bluealloy/revm/pull/3297))
+- fix typos, grammar errors, and improve documentation consistency ([#3294](https://github.com/bluealloy/revm/pull/3294))
+- happy new year, 2026 licence ([#3272](https://github.com/bluealloy/revm/pull/3272))
+- optimize vector initialization using size hints ([#3200](https://github.com/bluealloy/revm/pull/3200))
+- optimize precompile `extend()` ([#3192](https://github.com/bluealloy/revm/pull/3192))
+- optimize vector initialization with size hints in state and precompile modules ([#3191](https://github.com/bluealloy/revm/pull/3191))
+- *(fmt)* merge all imports ([#3184](https://github.com/bluealloy/revm/pull/3184))
+
+## [31.0.0](https://github.com/bluealloy/revm/compare/revm-precompile-v29.0.1...revm-precompile-v31.0.0) - 2025-11-10
+
+### Added
+
+- *(precompiles)* add performant PrecompileError::OtherCowStr variant ([#3144](https://github.com/bluealloy/revm/pull/3144))
+- add gas refund to PrecompileOutput ([#3152](https://github.com/bluealloy/revm/pull/3152))
+
+### Other
+
+- merge v98 versions bumps ([#3155](https://github.com/bluealloy/revm/pull/3155))
+
+## [29.0.1](https://github.com/bluealloy/revm/compare/revm-precompile-v29.0.0...revm-precompile-v29.0.1) - 2025-11-07
+
+### Other
+
+- updated the following local packages: revm-primitives
+
+## [29.0.0](https://github.com/bluealloy/revm/compare/revm-precompile-v28.1.1...revm-precompile-v29.0.0) - 2025-10-30
+
+### Other
+
+- *(precompile)* remove unused mainnet_address() function ([#3091](https://github.com/bluealloy/revm/pull/3091))
+
 ## [28.1.1](https://github.com/bluealloy/revm/compare/revm-precompile-v28.1.0...revm-precompile-v28.1.1) - 2025-10-15
 
 ### Other

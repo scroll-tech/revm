@@ -6,7 +6,11 @@ use crate::{
     L1BlockInfo, OpHaltReason, OpSpecId,
 };
 use revm::{
-    context::{result::InvalidTransaction, LocalContextTr},
+    context::{
+        journaled_state::{account::JournaledAccountTr, JournalCheckpoint},
+        result::InvalidTransaction,
+        LocalContextTr,
+    },
     context_interface::{
         context::ContextError,
         result::{EVMError, ExecutionResult, FromStringError},
@@ -16,7 +20,7 @@ use revm::{
         evm::FrameTr,
         handler::EvmTrError,
         post_execution::{self, reimburse_caller},
-        pre_execution::validate_account_nonce_and_code,
+        pre_execution::{calculate_caller_fee, validate_account_nonce_and_code_with_components},
         EthFrame, EvmTr, FrameResult, Handler, MainnetHandler,
     },
     inspector::{Inspector, InspectorEvmTr, InspectorHandler},
@@ -88,6 +92,12 @@ where
             }
             return Ok(());
         }
+
+        // Check that non-deposit transactions have enveloped_tx set
+        if tx.enveloped_tx().is_none() {
+            return Err(OpTransactionError::MissingEnvelopedTx.into());
+        }
+
         self.mainnet.validate_env(evm)
     }
 
@@ -95,24 +105,15 @@ where
         &self,
         evm: &mut Self::Evm,
     ) -> Result<(), Self::Error> {
-        let ctx = evm.ctx();
+        let (block, tx, cfg, journal, chain, _) = evm.ctx().all_mut();
+        let spec = cfg.spec();
 
-        let basefee = ctx.block().basefee() as u128;
-        let blob_price = ctx.block().blob_gasprice().unwrap_or_default();
-        let is_deposit = ctx.tx().tx_type() == DEPOSIT_TRANSACTION_TYPE;
-        let spec = ctx.cfg().spec();
-        let block_number = ctx.block().number();
-        let is_balance_check_disabled = ctx.cfg().is_balance_check_disabled();
-        let is_eip3607_disabled = ctx.cfg().is_eip3607_disabled();
-        let is_nonce_check_disabled = ctx.cfg().is_nonce_check_disabled();
-
-        if is_deposit {
-            let (block, tx, cfg, journal, _, _) = evm.ctx().all_mut();
+        if tx.tx_type() == DEPOSIT_TRANSACTION_TYPE {
             let basefee = block.basefee() as u128;
             let blob_price = block.blob_gasprice().unwrap_or_default();
             // deposit skips max fee check and just deducts the effective balance spending.
 
-            let caller_account = journal.load_account_code(tx.caller())?.data;
+            let mut caller = journal.load_account_with_code_mut(tx.caller())?.data;
 
             let effective_balance_spending = tx
                 .effective_balance_spending(basefee, blob_price)
@@ -120,9 +121,8 @@ where
                 - tx.value();
 
             // Mind value should be added first before subtracting the effective balance spending.
-            let mut new_balance = caller_account
-                .info
-                .balance
+            let mut new_balance = caller
+                .balance()
                 .saturating_add(U256::from(tx.mint().unwrap_or_default()))
                 .saturating_sub(effective_balance_spending);
 
@@ -132,100 +132,52 @@ where
                 new_balance = new_balance.max(tx.value());
             }
 
-            let old_balance =
-                caller_account.caller_initial_modification(new_balance, tx.kind().is_call());
-
-            // NOTE: all changes to the caller account should journaled so in case of error
-            // we can revert the changes.
-            journal.caller_accounting_journal_entry(tx.caller(), old_balance, tx.kind().is_call());
+            // set the new balance and bump the nonce if it is a call
+            caller.set_balance(new_balance);
+            if tx.kind().is_call() {
+                caller.bump_nonce();
+            }
 
             return Ok(());
         }
 
-        let mut additional_cost = U256::ZERO;
-
         // L1 block info is stored in the context for later use.
         // and it will be reloaded from the database if it is not for the current block.
-        if ctx.chain().l2_block != Some(block_number) {
-            *ctx.chain_mut() = L1BlockInfo::try_fetch(ctx.db_mut(), block_number, spec)?;
+        if chain.l2_block != Some(block.number()) {
+            *chain = L1BlockInfo::try_fetch(journal.db_mut(), block.number(), spec)?;
         }
 
-        if !ctx.cfg().is_fee_charge_disabled() {
-            // account for additional cost of l1 fee and operator fee
-            // account for additional cost of l1 fee and operator fee
-            let Some(enveloped_tx) = ctx.tx().enveloped_tx().cloned() else {
+        let mut caller_account = journal.load_account_with_code_mut(tx.caller())?.data;
+
+        // validates account nonce and code
+        validate_account_nonce_and_code_with_components(&caller_account.account().info, tx, cfg)?;
+
+        // check additional cost and deduct it from the caller's balances
+        let mut balance = caller_account.account().info.balance;
+
+        if !cfg.is_fee_charge_disabled() {
+            let Some(additional_cost) = chain.tx_cost_with_tx(tx, spec) else {
                 return Err(ERROR::from_string(
                     "[OPTIMISM] Failed to load enveloped transaction.".into(),
                 ));
             };
-
-            // compute L1 cost
-            additional_cost = ctx.chain_mut().calculate_tx_l1_cost(&enveloped_tx, spec);
-
-            // compute operator fee
-            if spec.is_enabled_in(OpSpecId::ISTHMUS) {
-                let gas_limit = U256::from(ctx.tx().gas_limit());
-                let operator_fee_charge =
-                    ctx.chain()
-                        .operator_fee_charge(&enveloped_tx, gas_limit, spec);
-                additional_cost = additional_cost.saturating_add(operator_fee_charge);
-            }
-        }
-
-        let (tx, journal) = ctx.tx_journal_mut();
-
-        let caller_account = journal.load_account_code(tx.caller())?.data;
-
-        // validates account nonce and code
-        validate_account_nonce_and_code(
-            &mut caller_account.info,
-            tx.nonce(),
-            is_eip3607_disabled,
-            is_nonce_check_disabled,
-        )?;
-
-        let mut new_balance = caller_account.info.balance;
-
-        // Check if account has enough balance for `gas_limit * max_fee`` and value transfer.
-        // Transfer will be done inside `*_inner` functions.
-        if !is_balance_check_disabled {
-            // check additional cost and deduct it from the caller's balances
-            let Some(balance) = new_balance.checked_sub(additional_cost) else {
+            let Some(new_balance) = balance.checked_sub(additional_cost) else {
                 return Err(InvalidTransaction::LackOfFundForMaxFee {
                     fee: Box::new(additional_cost),
-                    balance: Box::new(new_balance),
+                    balance: Box::new(balance),
                 }
                 .into());
             };
-            tx.ensure_enough_balance(balance)?;
+            balance = new_balance
         }
 
-        // subtracting max balance spending with value that is going to be deducted later in the call.
-        let gas_balance_spending = tx
-            .gas_balance_spending(basefee, blob_price)
-            .expect("effective balance is always smaller than max balance so it can't overflow");
+        let balance = calculate_caller_fee(balance, tx, block, cfg)?;
 
-        // If the transaction is not a deposit transaction, subtract the L1 data fee from the
-        // caller's balance directly after minting the requested amount of ETH.
-        // Additionally deduct the operator fee from the caller's account.
-        //
-        // In case of deposit additional cost will be zero.
-        let op_gas_balance_spending = gas_balance_spending.saturating_add(additional_cost);
-
-        new_balance = new_balance.saturating_sub(op_gas_balance_spending);
-
-        if is_balance_check_disabled {
-            // Make sure the caller's balance is at least the value of the transaction.
-            // this is not consensus critical, and it is used in testing.
-            new_balance = new_balance.max(tx.value());
+        // make changes to the account
+        caller_account.set_balance(balance);
+        if tx.kind().is_call() {
+            caller_account.bump_nonce();
         }
-
-        let old_balance =
-            caller_account.caller_initial_modification(new_balance, tx.kind().is_call());
-
-        // NOTE: all changes to the caller account should journaled so in case of error
-        // we can revert the changes.
-        journal.caller_accounting_journal_entry(tx.caller(), old_balance, tx.kind().is_call());
 
         Ok(())
     }
@@ -268,13 +220,10 @@ where
                 // Regolith, gas is reported as normal.
                 gas.erase_cost(remaining);
                 gas.record_refund(refunded);
-            } else if is_deposit {
-                let tx = ctx.tx();
-                if tx.is_system_transaction() {
-                    // System transactions were a special type of deposit transaction in
-                    // the Bedrock hardfork that did not incur any gas costs.
-                    gas.erase_cost(tx_gas_limit);
-                }
+            } else if is_deposit && tx.is_system_transaction() {
+                // System transactions were a special type of deposit transaction in
+                // the Bedrock hardfork that did not incur any gas costs.
+                gas.erase_cost(tx_gas_limit);
             }
         } else if instruction_result.is_revert() {
             // On Optimism, deposit transactions report gas usage uniquely to other
@@ -429,7 +378,11 @@ where
         error: Self::Error,
     ) -> Result<ExecutionResult<Self::HaltReason>, Self::Error> {
         let is_deposit = evm.ctx().tx().tx_type() == DEPOSIT_TRANSACTION_TYPE;
-        let output = if error.is_tx_error() && is_deposit {
+        let is_tx_error = error.is_tx_error();
+        let mut output = Err(error);
+
+        // Deposit transaction can't fail so we manually handle it here.
+        if is_tx_error && is_deposit {
             let ctx = evm.ctx();
             let spec = ctx.cfg().spec();
             let tx = ctx.tx();
@@ -437,9 +390,11 @@ where
             let mint = tx.mint();
             let is_system_tx = tx.is_system_transaction();
             let gas_limit = tx.gas_limit();
+            let journal = evm.ctx().journal_mut();
 
             // discard all changes of this transaction
-            evm.ctx().journal_mut().discard_tx();
+            // Default JournalCheckpoint is the first checkpoint and will wipe all changes.
+            journal.checkpoint_revert(JournalCheckpoint::default());
 
             // If the transaction is a deposit transaction and it failed
             // for any reason, the caller nonce must be bumped, and the
@@ -450,23 +405,14 @@ where
 
             // Increment sender nonce and account balance for the mint amount. Deposits
             // always persist the mint amount, even if the transaction fails.
-            let acc: &mut revm::state::Account = evm.ctx().journal_mut().load_account(caller)?.data;
+            let mut acc = journal.load_account_mut(caller)?;
+            acc.bump_nonce();
+            acc.incr_balance(U256::from(mint.unwrap_or_default()));
 
-            let old_balance = acc.info.balance;
+            drop(acc); // Drop acc to avoid borrow checker issues.
 
-            // decrement transaction id as it was incremented when we discarded the tx.
-            acc.transaction_id -= 1;
-            acc.info.nonce = acc.info.nonce.saturating_add(1);
-            acc.info.balance = acc
-                .info
-                .balance
-                .saturating_add(U256::from(mint.unwrap_or_default()));
-            acc.mark_touch();
-
-            // add journal entry for accounts
-            evm.ctx()
-                .journal_mut()
-                .caller_accounting_journal_entry(caller, old_balance, true);
+            // We can now commit the changes.
+            journal.commit_tx();
 
             // The gas used of a failed deposit post-regolith is the gas
             // limit of the transaction. pre-regolith, it is the gas limit
@@ -478,13 +424,12 @@ where
                 0
             };
             // clear the journal
-            Ok(ExecutionResult::Halt {
+            output = Ok(ExecutionResult::Halt {
                 reason: OpHaltReason::FailedDeposit,
                 gas_used,
             })
-        } else {
-            Err(error)
-        };
+        }
+
         // do the cleanup
         evm.ctx().chain_mut().clear_tx_l1_cost();
         evm.ctx().local_mut().clear();
@@ -512,15 +457,14 @@ mod tests {
     use crate::{
         api::default_ctx::OpContext,
         constants::{
-            BASE_FEE_SCALAR_OFFSET, DA_FOOTPRINT_GAS_SCALAR_SLOT, ECOTONE_L1_BLOB_BASE_FEE_SLOT,
-            ECOTONE_L1_FEE_SCALARS_SLOT, L1_BASE_FEE_SLOT, L1_BLOCK_CONTRACT,
-            OPERATOR_FEE_SCALARS_SLOT,
+            BASE_FEE_SCALAR_OFFSET, ECOTONE_L1_BLOB_BASE_FEE_SLOT, ECOTONE_L1_FEE_SCALARS_SLOT,
+            L1_BASE_FEE_SLOT, L1_BLOCK_CONTRACT, OPERATOR_FEE_SCALARS_SLOT,
         },
         DefaultOp, OpBuilder, OpTransaction,
     };
     use alloy_primitives::uint;
     use revm::{
-        context::{BlockEnv, Context, TxEnv},
+        context::{BlockEnv, CfgEnv, Context, TxEnv},
         context_interface::result::InvalidTransaction,
         database::InMemoryDB,
         database_interface::EmptyDB,
@@ -567,7 +511,7 @@ mod tests {
                     .base(TxEnv::builder().gas_limit(100))
                     .build_fill(),
             )
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::BEDROCK);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::BEDROCK));
 
         let gas = call_last_frame_return(ctx, InstructionResult::Revert, Gas::new(90));
         assert_eq!(gas.remaining(), 90);
@@ -583,7 +527,7 @@ mod tests {
                     .base(TxEnv::builder().gas_limit(100))
                     .build_fill(),
             )
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH));
 
         let gas = call_last_frame_return(ctx, InstructionResult::Stop, Gas::new(90));
         assert_eq!(gas.remaining(), 90);
@@ -600,7 +544,7 @@ mod tests {
                     .source_hash(B256::from([1u8; 32]))
                     .build_fill(),
             )
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH));
 
         let mut ret_gas = Gas::new(90);
         ret_gas.record_refund(20);
@@ -625,7 +569,7 @@ mod tests {
                     .source_hash(B256::from([1u8; 32]))
                     .build_fill(),
             )
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::BEDROCK);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::BEDROCK));
         let gas = call_last_frame_return(ctx, InstructionResult::Stop, Gas::new(90));
         assert_eq!(gas.remaining(), 0);
         assert_eq!(gas.spent(), 100);
@@ -642,7 +586,7 @@ mod tests {
                     .is_system_transaction()
                     .build_fill(),
             )
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::BEDROCK);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::BEDROCK));
         let gas = call_last_frame_return(ctx, InstructionResult::Stop, Gas::new(90));
         assert_eq!(gas.remaining(), 100);
         assert_eq!(gas.spent(), 0);
@@ -669,7 +613,7 @@ mod tests {
                 l1_base_fee_scalar: U256::from(1_000),
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH));
         ctx.modify_tx(|tx| {
             tx.deposit.source_hash = B256::from([1u8; 32]);
             tx.deposit.mint = Some(10);
@@ -708,7 +652,7 @@ mod tests {
                 l2_block: Some(U256::from(0)),
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH)
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH))
             .with_tx(
                 OpTransaction::builder()
                     .base(TxEnv::builder().gas_limit(100))
@@ -781,7 +725,7 @@ mod tests {
                 number: BLOCK_NUM,
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS));
 
         let mut evm = ctx.build_op();
 
@@ -824,15 +768,14 @@ mod tests {
             0,
             0,
         ]);
-        const OPERATOR_FEE_SCALAR: u64 = 5;
-        const OPERATOR_FEE_CONST: u64 = 6;
-        const OPERATOR_FEE: U256 =
-            U256::from_limbs([OPERATOR_FEE_CONST, OPERATOR_FEE_SCALAR, 0, 0]);
-        const DA_FOOTPRINT_GAS_SCALAR: u16 = 7;
-        const DA_FOOTPRINT_GAS_SCALAR_U64: u64 =
-            u64::from_be_bytes([0, DA_FOOTPRINT_GAS_SCALAR as u8, 0, 0, 0, 0, 0, 0]);
-        const DA_FOOTPRINT_GAS_SCALAR_SLOT_VALUE: U256 =
-            U256::from_limbs([0, 0, 0, DA_FOOTPRINT_GAS_SCALAR_U64]);
+        const OPERATOR_FEE_SCALAR: u8 = 5;
+        const OPERATOR_FEE_CONST: u8 = 6;
+        const DA_FOOTPRINT_GAS_SCALAR: u8 = 7;
+        let mut operator_fee_and_da_footprint = [0u8; 32];
+        operator_fee_and_da_footprint[31] = OPERATOR_FEE_CONST;
+        operator_fee_and_da_footprint[23] = OPERATOR_FEE_SCALAR;
+        operator_fee_and_da_footprint[19] = DA_FOOTPRINT_GAS_SCALAR;
+        let operator_fee_and_da_footprint_u256 = U256::from_be_bytes(operator_fee_and_da_footprint);
 
         let mut db = InMemoryDB::default();
         let l1_block_contract = db.load_account(L1_BLOCK_CONTRACT).unwrap();
@@ -845,12 +788,9 @@ mod tests {
         l1_block_contract
             .storage
             .insert(ECOTONE_L1_FEE_SCALARS_SLOT, L1_FEE_SCALARS);
-        l1_block_contract
-            .storage
-            .insert(OPERATOR_FEE_SCALARS_SLOT, OPERATOR_FEE);
         l1_block_contract.storage.insert(
-            DA_FOOTPRINT_GAS_SCALAR_SLOT,
-            DA_FOOTPRINT_GAS_SCALAR_SLOT_VALUE,
+            OPERATOR_FEE_SCALARS_SLOT,
+            operator_fee_and_da_footprint_u256,
         );
         db.insert_account_info(
             Address::ZERO,
@@ -872,7 +812,7 @@ mod tests {
                 number: BLOCK_NUM,
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::JOVIAN)
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::JOVIAN))
             // set the operator fee to a low value
             .with_tx(
                 OpTransaction::builder()
@@ -904,7 +844,7 @@ mod tests {
                 operator_fee_scalar: Some(U256::from(OPERATOR_FEE_SCALAR)),
                 operator_fee_constant: Some(U256::from(OPERATOR_FEE_CONST)),
                 tx_l1_cost: Some(U256::ZERO),
-                da_footprint_gas_scalar: Some(DA_FOOTPRINT_GAS_SCALAR),
+                da_footprint_gas_scalar: Some(DA_FOOTPRINT_GAS_SCALAR as u16),
             }
         );
     }
@@ -940,7 +880,7 @@ mod tests {
                 number: BLOCK_NUM,
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH));
 
         let mut evm = ctx.build_op();
         assert_ne!(evm.ctx().chain().l2_block, Some(BLOCK_NUM));
@@ -1000,7 +940,7 @@ mod tests {
                 number: BLOCK_NUM,
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ECOTONE);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::ECOTONE));
 
         let mut evm = ctx.build_op();
         assert_ne!(evm.ctx().chain().l2_block, Some(BLOCK_NUM));
@@ -1073,7 +1013,7 @@ mod tests {
                 number: BLOCK_NUM,
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS));
 
         let mut evm = ctx.build_op();
 
@@ -1123,7 +1063,7 @@ mod tests {
                 l2_block: Some(U256::from(0)),
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH)
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH))
             .with_tx(
                 OpTransaction::builder()
                     .base(TxEnv::builder().gas_limit(100))
@@ -1166,7 +1106,7 @@ mod tests {
                 l2_block: Some(U256::from(0)),
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS)
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS))
             .with_tx(
                 OpTransaction::builder()
                     .base(TxEnv::builder().gas_limit(10))
@@ -1208,7 +1148,7 @@ mod tests {
                 l2_block: Some(U256::from(0)),
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::JOVIAN)
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::JOVIAN))
             .with_tx(
                 OpTransaction::builder()
                     .base(TxEnv::builder().gas_limit(10))
@@ -1250,7 +1190,7 @@ mod tests {
                 l2_block: Some(U256::from(0)),
                 ..Default::default()
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH)
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH))
             .modify_tx_chained(|tx| {
                 tx.enveloped_tx = Some(bytes!("FACADE"));
             });
@@ -1281,7 +1221,7 @@ mod tests {
                 tx.deposit.source_hash = B256::from([1u8; 32]);
                 tx.deposit.is_system_transaction = true;
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH));
 
         let mut evm = ctx.build_op();
         let handler =
@@ -1294,7 +1234,11 @@ mod tests {
             ))
         );
 
-        evm.ctx().modify_cfg(|cfg| cfg.spec = OpSpecId::BEDROCK);
+        // With BEDROCK spec.
+        let ctx = evm.into_context();
+        let mut evm = ctx
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::BEDROCK))
+            .build_op();
 
         // Pre-regolith system transactions should be allowed.
         assert!(handler.validate_env(&mut evm).is_ok());
@@ -1307,7 +1251,7 @@ mod tests {
             .modify_tx_chained(|tx| {
                 tx.deposit.source_hash = B256::from([1u8; 32]);
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH));
 
         let mut evm = ctx.build_op();
         let handler =
@@ -1323,7 +1267,7 @@ mod tests {
             .modify_tx_chained(|tx| {
                 tx.deposit.source_hash = B256::from([1u8; 32]);
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH));
 
         let mut evm = ctx.build_op();
         let handler =
@@ -1340,7 +1284,7 @@ mod tests {
                 // Set up as deposit transaction by having a deposit with source_hash
                 tx.deposit.source_hash = B256::from([1u8; 32]);
             })
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::REGOLITH);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::REGOLITH));
 
         let mut evm = ctx.build_op();
         let mut handler =
@@ -1349,14 +1293,14 @@ mod tests {
         assert_eq!(
             handler.execution_result(
                 &mut evm,
-                FrameResult::Call(CallOutcome {
-                    result: InterpreterResult {
+                FrameResult::Call(CallOutcome::new(
+                    InterpreterResult {
                         result: InstructionResult::OutOfGas,
                         output: Default::default(),
                         gas: Default::default(),
                     },
-                    memory_offset: Default::default(),
-                })
+                    Default::default()
+                ))
             ),
             Err(EVMError::Transaction(
                 OpTransactionError::HaltedDepositPostRegolith
@@ -1423,7 +1367,7 @@ mod tests {
                     })
                     .build_fill(),
             )
-            .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS);
+            .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS));
 
         let mut evm = ctx.build_op();
         let handler =
@@ -1498,6 +1442,29 @@ mod tests {
                 .info
                 .nonce,
             0
+        );
+    }
+
+    #[test]
+    fn test_validate_missing_enveloped_tx() {
+        use crate::transaction::deposit::DepositTransactionParts;
+
+        // Create a non-deposit transaction without enveloped_tx
+        let ctx = Context::op().with_tx(OpTransaction {
+            base: TxEnv::builder().build_fill(),
+            enveloped_tx: None, // Missing enveloped_tx for non-deposit transaction
+            deposit: DepositTransactionParts::default(), // No source_hash means non-deposit
+        });
+
+        let mut evm = ctx.build_op();
+        let handler =
+            OpHandler::<_, EVMError<_, OpTransactionError>, EthFrame<EthInterpreter>>::new();
+
+        assert_eq!(
+            handler.validate_env(&mut evm),
+            Err(EVMError::Transaction(
+                OpTransactionError::MissingEnvelopedTx
+            ))
         );
     }
 }

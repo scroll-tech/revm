@@ -11,20 +11,19 @@ use revm::{
         result::{ExecutionResult, OutOfGasError},
         BlockEnv, CfgEnv, TxEnv,
     },
-    context_interface::result::HaltReason,
-    database::{BenchmarkDB, EmptyDB, BENCH_CALLER, BENCH_CALLER_BALANCE, BENCH_TARGET},
-    handler::system_call::SYSTEM_ADDRESS,
-    interpreter::{
-        gas::{calculate_initial_tx_gas, InitialAndFloorGas},
-        Interpreter, InterpreterTypes,
+    context_interface::{
+        cfg::{gas::TOTAL_COST_FLOOR_PER_TOKEN, GasId, GasParams},
+        result::HaltReason,
     },
+    database::{BenchmarkDB, EmptyDB, State, BENCH_CALLER, BENCH_CALLER_BALANCE, BENCH_TARGET},
+    handler::system_call::SYSTEM_ADDRESS,
+    interpreter::{gas::InitialAndFloorGas, InterpreterTypes},
     precompile::{bls12_381_const, bls12_381_utils, bn254, secp256r1, u64_to_address},
-    primitives::{bytes, eip7825, Address, Bytes, Log, TxKind, U256},
+    primitives::{address, bytes, eip7702, eip7825, Address, Bytes, Log, TxKind, U256},
     state::Bytecode,
     Context, ExecuteEvm, InspectEvm, Inspector, Journal, SystemCallEvm,
 };
-use std::path::PathBuf;
-use std::vec::Vec;
+use std::{path::PathBuf, vec::Vec};
 
 // Re-export the constant for testdata directory path
 const TESTS_TESTDATA: &str = "tests/op_revm_testdata";
@@ -52,7 +51,7 @@ fn test_deposit_tx() {
                 .source_hash(revm::primitives::B256::from([1u8; 32]))
                 .build_fill(),
         )
-        .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::HOLOCENE);
+        .with_cfg(CfgEnv::new_with_spec(OpSpecId::HOLOCENE));
 
     let mut evm = ctx.build_op();
 
@@ -84,7 +83,7 @@ fn test_halted_deposit_tx() {
                 .source_hash(revm::primitives::B256::from([1u8; 32]))
                 .build_fill(),
         )
-        .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::HOLOCENE)
+        .with_cfg(CfgEnv::new_with_spec(OpSpecId::HOLOCENE))
         .with_db(BenchmarkDB::new_bytecode(Bytecode::new_legacy(
             [opcode::POP].into(),
         )));
@@ -114,19 +113,8 @@ fn p256verify_test_tx(
 ) -> Context<BlockEnv, OpTransaction<TxEnv>, CfgEnv<OpSpecId>, EmptyDB, Journal<EmptyDB>, L1BlockInfo>
 {
     const SPEC_ID: OpSpecId = OpSpecId::FJORD;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &[],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
-    );
+    let InitialAndFloorGas { initial_gas, .. } =
+        GasParams::new_spec(SPEC_ID.into()).initial_tx_gas(&[], false, 0, 0, 0);
 
     Context::op()
         .with_tx(
@@ -138,7 +126,7 @@ fn p256verify_test_tx(
                 )
                 .build_fill(),
         )
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID)
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID))
 }
 
 #[test]
@@ -157,19 +145,8 @@ fn test_tx_call_p256verify() {
 #[test]
 fn test_halted_tx_call_p256verify() {
     const SPEC_ID: OpSpecId = OpSpecId::FJORD;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &[],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
-    );
+    let InitialAndFloorGas { initial_gas, .. } =
+        GasParams::new_spec(SPEC_ID.into()).initial_tx_gas(&[], false, 0, 0, 0);
     let original_gas_limit = initial_gas + secp256r1::P256VERIFY_BASE_GAS_FEE;
 
     let ctx = Context::op()
@@ -182,7 +159,7 @@ fn test_halted_tx_call_p256verify() {
                 )
                 .build_fill(),
         )
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID);
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -203,19 +180,23 @@ fn bn254_pair_test_tx(
     spec: OpSpecId,
 ) -> Context<BlockEnv, OpTransaction<TxEnv>, CfgEnv<OpSpecId>, EmptyDB, Journal<EmptyDB>, L1BlockInfo>
 {
-    let is_eip7702_enabled = spec >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = spec >= OpSpecId::ISTHMUS;
     let input = Bytes::from([1; GRANITE_MAX_INPUT_SIZE + 2]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        spec.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
-    );
+    let mut gas_params = GasParams::new_spec(spec.into());
+    if spec >= OpSpecId::ISTHMUS {
+        gas_params.override_gas(
+            [
+                (
+                    GasId::tx_eip7702_per_empty_account_cost(),
+                    eip7702::PER_EMPTY_ACCOUNT_COST,
+                ),
+                (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+                (GasId::tx_floor_cost_base_gas(), 21000),
+            ]
+            .into_iter(),
+        );
+    }
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
     Context::op()
         .with_tx(
@@ -228,7 +209,7 @@ fn bn254_pair_test_tx(
                 )
                 .build_fill(),
         )
-        .modify_cfg_chained(|cfg| cfg.spec = spec)
+        .with_cfg(CfgEnv::new_with_spec(spec))
 }
 
 #[test]
@@ -285,7 +266,7 @@ fn test_halted_tx_call_bls12_381_g1_add_out_of_gas() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS);
+        .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS));
 
     let mut evm = ctx.build_op();
 
@@ -322,7 +303,7 @@ fn test_halted_tx_call_bls12_381_g1_add_input_wrong_size() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS);
+        .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -346,20 +327,21 @@ fn g1_msm_test_tx(
 ) -> Context<BlockEnv, OpTransaction<TxEnv>, CfgEnv<OpSpecId>, EmptyDB, Journal<EmptyDB>, L1BlockInfo>
 {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::G1_MSM_INPUT_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs1_msm_gas = bls12_381_utils::msm_required_gas(
         1,
         &bls12_381_const::DISCOUNT_TABLE_G1_MSM,
@@ -381,26 +363,27 @@ fn g1_msm_test_tx(
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID)
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID))
 }
 
 #[test]
 fn test_halted_tx_call_bls12_381_g1_msm_input_wrong_size() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::G1_MSM_INPUT_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs1_msm_gas = bls12_381_utils::msm_required_gas(
         1,
         &bls12_381_const::DISCOUNT_TABLE_G1_MSM,
@@ -422,7 +405,7 @@ fn test_halted_tx_call_bls12_381_g1_msm_input_wrong_size() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID);
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -445,20 +428,21 @@ fn test_halted_tx_call_bls12_381_g1_msm_input_wrong_size() {
 #[test]
 fn test_halted_tx_call_bls12_381_g1_msm_out_of_gas() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::G1_MSM_INPUT_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs1_msm_gas = bls12_381_utils::msm_required_gas(
         1,
         &bls12_381_const::DISCOUNT_TABLE_G1_MSM,
@@ -480,7 +464,7 @@ fn test_halted_tx_call_bls12_381_g1_msm_out_of_gas() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID);
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -538,7 +522,7 @@ fn test_halted_tx_call_bls12_381_g2_add_out_of_gas() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS);
+        .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS));
 
     let mut evm = ctx.build_op();
 
@@ -575,7 +559,7 @@ fn test_halted_tx_call_bls12_381_g2_add_input_wrong_size() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS);
+        .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS));
 
     let mut evm = ctx.build_op();
 
@@ -600,20 +584,21 @@ fn g2_msm_test_tx(
 ) -> Context<BlockEnv, OpTransaction<TxEnv>, CfgEnv<OpSpecId>, EmptyDB, Journal<EmptyDB>, L1BlockInfo>
 {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::G2_MSM_INPUT_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs2_msm_gas = bls12_381_utils::msm_required_gas(
         1,
         &bls12_381_const::DISCOUNT_TABLE_G2_MSM,
@@ -635,26 +620,27 @@ fn g2_msm_test_tx(
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID)
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID))
 }
 
 #[test]
 fn test_halted_tx_call_bls12_381_g2_msm_input_wrong_size() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::G2_MSM_INPUT_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs2_msm_gas = bls12_381_utils::msm_required_gas(
         1,
         &bls12_381_const::DISCOUNT_TABLE_G2_MSM,
@@ -676,7 +662,7 @@ fn test_halted_tx_call_bls12_381_g2_msm_input_wrong_size() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID);
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -699,20 +685,21 @@ fn test_halted_tx_call_bls12_381_g2_msm_input_wrong_size() {
 #[test]
 fn test_halted_tx_call_bls12_381_g2_msm_out_of_gas() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::G2_MSM_INPUT_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs2_msm_gas = bls12_381_utils::msm_required_gas(
         1,
         &bls12_381_const::DISCOUNT_TABLE_G2_MSM,
@@ -734,7 +721,7 @@ fn test_halted_tx_call_bls12_381_g2_msm_out_of_gas() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID);
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -780,20 +767,21 @@ fn bl12_381_pairing_test_tx(
 ) -> Context<BlockEnv, OpTransaction<TxEnv>, CfgEnv<OpSpecId>, EmptyDB, Journal<EmptyDB>, L1BlockInfo>
 {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::PAIRING_INPUT_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
     let pairing_gas: u64 =
         bls12_381_const::PAIRING_MULTIPLIER_BASE + bls12_381_const::PAIRING_OFFSET_BASE;
@@ -813,26 +801,27 @@ fn bl12_381_pairing_test_tx(
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS)
+        .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS))
 }
 
 #[test]
 fn test_halted_tx_call_bls12_381_pairing_input_wrong_size() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::PAIRING_INPUT_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let pairing_gas: u64 =
         bls12_381_const::PAIRING_MULTIPLIER_BASE + bls12_381_const::PAIRING_OFFSET_BASE;
 
@@ -851,7 +840,7 @@ fn test_halted_tx_call_bls12_381_pairing_input_wrong_size() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS);
+        .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -874,20 +863,21 @@ fn test_halted_tx_call_bls12_381_pairing_input_wrong_size() {
 #[test]
 fn test_halted_tx_call_bls12_381_pairing_out_of_gas() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::PAIRING_INPUT_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let pairing_gas: u64 =
         bls12_381_const::PAIRING_MULTIPLIER_BASE + bls12_381_const::PAIRING_OFFSET_BASE;
 
@@ -906,7 +896,7 @@ fn test_halted_tx_call_bls12_381_pairing_out_of_gas() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = OpSpecId::ISTHMUS);
+        .with_cfg(CfgEnv::new_with_spec(OpSpecId::ISTHMUS));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -951,20 +941,21 @@ fn test_tx_call_bls12_381_pairing_wrong_input_layout() {
 #[test]
 fn test_halted_tx_call_bls12_381_map_fp_to_g1_out_of_gas() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::PADDED_FP_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
     let ctx = Context::op()
         .with_tx(
@@ -981,7 +972,7 @@ fn test_halted_tx_call_bls12_381_map_fp_to_g1_out_of_gas() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID);
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -1004,20 +995,21 @@ fn test_halted_tx_call_bls12_381_map_fp_to_g1_out_of_gas() {
 #[test]
 fn test_halted_tx_call_bls12_381_map_fp_to_g1_input_wrong_size() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::PADDED_FP_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
     let ctx = Context::op()
         .with_tx(
@@ -1034,7 +1026,7 @@ fn test_halted_tx_call_bls12_381_map_fp_to_g1_input_wrong_size() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID);
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -1057,20 +1049,21 @@ fn test_halted_tx_call_bls12_381_map_fp_to_g1_input_wrong_size() {
 #[test]
 fn test_halted_tx_call_bls12_381_map_fp2_to_g2_out_of_gas() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::PADDED_FP2_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
     let ctx = Context::op()
         .with_tx(
@@ -1087,7 +1080,7 @@ fn test_halted_tx_call_bls12_381_map_fp2_to_g2_out_of_gas() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID);
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -1108,22 +1101,61 @@ fn test_halted_tx_call_bls12_381_map_fp2_to_g2_out_of_gas() {
 }
 
 #[test]
+fn test_l1block_load_for_pre_regolith() {
+    const SPEC_ID: OpSpecId = OpSpecId::REGOLITH;
+
+    let ctx = Context::op()
+        .with_tx(
+            OpTransaction::builder()
+                .base(
+                    TxEnv::builder()
+                        .caller(BENCH_CALLER)
+                        .kind(TxKind::Call(address!(
+                            "0x0000000000000000000000000000000000100000"
+                        )))
+                        .value(U256::from(1))
+                        .gas_limit(100_000),
+                )
+                .build_fill(),
+        )
+        .modify_chain_chained(|l1_block| {
+            l1_block.l2_block = None;
+        })
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID));
+
+    let mut evm = ctx
+        .with_db(
+            State::builder()
+                .with_database(BenchmarkDB::default())
+                .build(),
+        )
+        .build_op();
+    let output = evm.replay().unwrap();
+
+    // assert out of gas
+    assert!(output.result.is_success());
+
+    compare_or_save_op_testdata("test_l1block_load_for_pre_regolith.json", &output);
+}
+
+#[test]
 fn test_halted_tx_call_bls12_381_map_fp2_to_g2_input_wrong_size() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
-    let is_eip7702_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-    let is_eip7623_enabled = SPEC_ID >= OpSpecId::ISTHMUS;
-
     let input = Bytes::from([1; bls12_381_const::PADDED_FP2_LENGTH]);
-    let InitialAndFloorGas { initial_gas, .. } = calculate_initial_tx_gas(
-        SPEC_ID.into(),
-        &input[..],
-        false,
-        is_eip7702_enabled,
-        is_eip7623_enabled,
-        0,
-        0,
-        0,
+    let mut gas_params = GasParams::new_spec(SPEC_ID.into());
+    gas_params.override_gas(
+        [
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]
+        .into_iter(),
     );
+    let InitialAndFloorGas { initial_gas, .. } =
+        gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
     let ctx = Context::op()
         .with_tx(
@@ -1140,7 +1172,7 @@ fn test_halted_tx_call_bls12_381_map_fp2_to_g2_input_wrong_size() {
             l1_block.operator_fee_constant = Some(U256::ZERO);
             l1_block.operator_fee_scalar = Some(U256::ZERO)
         })
-        .modify_cfg_chained(|cfg| cfg.spec = SPEC_ID);
+        .with_cfg(CfgEnv::new_with_spec(SPEC_ID));
 
     let mut evm = ctx.build_op();
     let output = evm.replay().unwrap();
@@ -1216,8 +1248,8 @@ struct LogInspector {
 }
 
 impl<CTX, INTR: InterpreterTypes> Inspector<CTX, INTR> for LogInspector {
-    fn log(&mut self, _interp: &mut Interpreter<INTR>, _context: &mut CTX, log: Log) {
-        self.logs.push(log)
+    fn log(&mut self, _context: &mut CTX, log: Log) {
+        self.logs.push(log);
     }
 }
 

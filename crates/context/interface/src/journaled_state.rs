@@ -1,22 +1,31 @@
 //! Journaled state trait [`JournalTr`] and related types.
+
+pub mod account;
+pub mod entry;
+
 use crate::{
     context::{SStoreResult, SelfDestructResult},
     host::LoadError,
+    journaled_state::account::JournaledAccountTr,
+    ErasedError,
 };
 use core::ops::{Deref, DerefMut};
 use database_interface::Database;
 use primitives::{
-    hardfork::SpecId, Address, Bytes, HashSet, Log, StorageKey, StorageValue, B256, U256,
+    hardfork::SpecId, Address, Bytes, HashMap, HashSet, Log, StorageKey, StorageValue, B256, U256,
 };
 use state::{Account, AccountInfo, Bytecode};
 use std::{borrow::Cow, vec::Vec};
-
 /// Trait that contains database and journal of all changes that were made to the state.
 pub trait JournalTr {
     /// Database type that is used in the journal.
     type Database: Database;
     /// State type that is returned by the journal after finalization.
     type State;
+    /// Journal account allows modification of account with all needed changes.
+    type JournaledAccount<'a>: JournaledAccountTr
+    where
+        Self: 'a;
 
     /// Creates new Journaled state.
     ///
@@ -80,27 +89,22 @@ pub trait JournalTr {
     /// Logs the log in Journal state.
     fn log(&mut self, log: Log);
 
+    /// Take logs from journal.
+    fn take_logs(&mut self) -> Vec<Log>;
+
+    /// Returns the logs from journal.
+    fn logs(&self) -> &[Log];
+
     /// Marks the account for selfdestruction and transfers all the balance to the target.
     fn selfdestruct(
         &mut self,
         address: Address,
         target: Address,
-    ) -> Result<StateLoad<SelfDestructResult>, <Self::Database as Database>::Error>;
+        skip_cold_load: bool,
+    ) -> Result<StateLoad<SelfDestructResult>, JournalLoadError<<Self::Database as Database>::Error>>;
 
-    /// Warms the account and storage.
-    fn warm_account_and_storage(
-        &mut self,
-        address: Address,
-        storage_keys: impl IntoIterator<Item = StorageKey>,
-    ) -> Result<(), <Self::Database as Database>::Error>;
-
-    /// Warms the account. Internally calls [`JournalTr::warm_account_and_storage`] with empty storage keys.
-    fn warm_account(
-        &mut self,
-        address: Address,
-    ) -> Result<(), <Self::Database as Database>::Error> {
-        self.warm_account_and_storage(address, [])
-    }
+    /// Sets access list inside journal.
+    fn warm_access_list(&mut self, access_list: HashMap<Address, HashSet<StorageKey>>);
 
     /// Warms the coinbase account.
     fn warm_coinbase_account(&mut self, address: Address);
@@ -155,13 +159,23 @@ pub trait JournalTr {
     fn load_account(
         &mut self,
         address: Address,
-    ) -> Result<StateLoad<&mut Account>, <Self::Database as Database>::Error>;
+    ) -> Result<StateLoad<&Account>, <Self::Database as Database>::Error>;
 
-    /// Loads the account code.
+    /// Loads the account code, use `load_account_with_code` instead.
+    #[inline]
+    #[deprecated(note = "Use `load_account_with_code` instead")]
     fn load_account_code(
         &mut self,
         address: Address,
-    ) -> Result<StateLoad<&mut Account>, <Self::Database as Database>::Error>;
+    ) -> Result<StateLoad<&Account>, <Self::Database as Database>::Error> {
+        self.load_account_with_code(address)
+    }
+
+    /// Loads the account with code.
+    fn load_account_with_code(
+        &mut self,
+        address: Address,
+    ) -> Result<StateLoad<&Account>, <Self::Database as Database>::Error>;
 
     /// Loads the account delegated.
     fn load_account_delegated(
@@ -169,6 +183,38 @@ pub trait JournalTr {
         is_eip7702_enabled: bool,
         address: Address,
     ) -> Result<StateLoad<AccountLoad>, <Self::Database as Database>::Error>;
+
+    /// Loads the journaled account.
+    #[inline]
+    fn load_account_mut(
+        &mut self,
+        address: Address,
+    ) -> Result<StateLoad<Self::JournaledAccount<'_>>, <Self::Database as Database>::Error> {
+        self.load_account_mut_skip_cold_load(address, false)
+    }
+
+    /// Loads the journaled account.
+    fn load_account_mut_skip_cold_load(
+        &mut self,
+        address: Address,
+        skip_cold_load: bool,
+    ) -> Result<StateLoad<Self::JournaledAccount<'_>>, <Self::Database as Database>::Error>;
+
+    /// Loads the journaled account.
+    #[inline]
+    fn load_account_with_code_mut(
+        &mut self,
+        address: Address,
+    ) -> Result<StateLoad<Self::JournaledAccount<'_>>, <Self::Database as Database>::Error> {
+        self.load_account_mut_optional_code(address, true)
+    }
+
+    /// Loads the journaled account.
+    fn load_account_mut_optional_code(
+        &mut self,
+        address: Address,
+        load_code: bool,
+    ) -> Result<StateLoad<Self::JournaledAccount<'_>>, <Self::Database as Database>::Error>;
 
     /// Sets bytecode with hash. Assume that account is warm.
     fn set_code_with_hash(&mut self, address: Address, code: Bytecode, hash: B256);
@@ -188,7 +234,7 @@ pub trait JournalTr {
         &mut self,
         address: Address,
     ) -> Result<StateLoad<Bytes>, <Self::Database as Database>::Error> {
-        let a = self.load_account_code(address)?;
+        let a = self.load_account_with_code(address)?;
         // SAFETY: Safe to unwrap as load_code will insert code if it is empty.
         let code = a.info.code.as_ref().unwrap().original_bytes();
 
@@ -200,7 +246,7 @@ pub trait JournalTr {
         &mut self,
         address: Address,
     ) -> Result<StateLoad<B256>, <Self::Database as Database>::Error> {
-        let acc = self.load_account_code(address)?;
+        let acc = self.load_account_with_code(address)?;
         if acc.is_empty() {
             return Ok(StateLoad::new(B256::ZERO, acc.is_cold));
         }
@@ -235,9 +281,6 @@ pub trait JournalTr {
     /// Returns the depth of the journal.
     fn depth(&self) -> usize;
 
-    /// Take logs from journal.
-    fn take_logs(&mut self) -> Vec<Log>;
-
     /// Commit current transaction journal and returns transaction logs.
     fn commit_tx(&mut self);
 
@@ -268,6 +311,9 @@ pub enum JournalLoadError<E> {
     /// Cold load skipped.
     ColdLoadSkipped,
 }
+
+/// Journal error on loading of storage or account with Boxed Database error.
+pub type JournalLoadErasedError = JournalLoadError<ErasedError>;
 
 impl<E> JournalLoadError<E> {
     /// Returns true if the error is a database error.
@@ -308,6 +354,18 @@ impl<E> JournalLoadError<E> {
         match self {
             JournalLoadError::DBError(e) => (LoadError::DBError, Some(e)),
             JournalLoadError::ColdLoadSkipped => (LoadError::ColdLoadSkipped, None),
+        }
+    }
+
+    /// Maps the database error to a new error.
+    #[inline]
+    pub fn map<B, F>(self, f: F) -> JournalLoadError<B>
+    where
+        F: FnOnce(E) -> B,
+    {
+        match self {
+            JournalLoadError::DBError(e) => JournalLoadError::DBError(f(e)),
+            JournalLoadError::ColdLoadSkipped => JournalLoadError::ColdLoadSkipped,
         }
     }
 }
@@ -374,6 +432,7 @@ impl<T> DerefMut for StateLoad<T> {
 
 impl<T> StateLoad<T> {
     /// Returns a new [`StateLoad`] with the given data and cold load status.
+    #[inline]
     pub fn new(data: T, is_cold: bool) -> Self {
         Self { data, is_cold }
     }
@@ -381,6 +440,7 @@ impl<T> StateLoad<T> {
     /// Maps the data of the [`StateLoad`] to a new value.
     ///
     /// Useful for transforming the data of the [`StateLoad`] without changing the cold load status.
+    #[inline]
     pub fn map<B, F>(self, f: F) -> StateLoad<B>
     where
         F: FnOnce(T) -> B,
@@ -413,6 +473,7 @@ pub struct AccountInfoLoad<'a> {
 
 impl<'a> AccountInfoLoad<'a> {
     /// Creates new [`AccountInfoLoad`] with the given account info, cold load status and empty status.
+    #[inline]
     pub fn new(account: &'a AccountInfo, is_cold: bool, is_empty: bool) -> Self {
         Self {
             account: Cow::Borrowed(account),
@@ -424,6 +485,7 @@ impl<'a> AccountInfoLoad<'a> {
     /// Maps the account info of the [`AccountInfoLoad`] to a new [`StateLoad`].
     ///
     /// Useful for transforming the account info of the [`AccountInfoLoad`] and preserving the cold load status.
+    #[inline]
     pub fn into_state_load<F, O>(self, f: F) -> StateLoad<O>
     where
         F: FnOnce(Cow<'a, AccountInfo>) -> O,

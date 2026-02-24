@@ -2,11 +2,10 @@ mod call_helpers;
 
 pub use call_helpers::{
     get_memory_input_and_out_ranges, load_acc_and_calc_gas, load_account_delegated,
-    load_account_delegated_handle_error, new_account_cost, resize_memory,
+    load_account_delegated_handle_error, resize_memory,
 };
 
 use crate::{
-    gas,
     instructions::utility::IntoAddress,
     interpreter_action::FrameInput,
     interpreter_types::{InputsTr, InterpreterTypes, LoopControl, MemoryTr, RuntimeFlag, StackTr},
@@ -51,11 +50,20 @@ pub fn create<WIRE: InterpreterTypes, const IS_CREATE2: bool, H: Host + ?Sized>(
                     .halt(InstructionResult::CreateInitCodeSizeLimit);
                 return;
             }
-            gas!(context.interpreter, gas::initcode_cost(len));
+            gas!(
+                context.interpreter,
+                context.host.gas_params().initcode_cost(len)
+            );
         }
 
         let code_offset = as_usize_or_fail!(context.interpreter, code_offset);
-        resize_memory!(context.interpreter, code_offset, len);
+        resize_memory!(
+            context.interpreter,
+            context.host.gas_params(),
+            code_offset,
+            len
+        );
+
         code = Bytes::copy_from_slice(
             context
                 .interpreter
@@ -69,10 +77,13 @@ pub fn create<WIRE: InterpreterTypes, const IS_CREATE2: bool, H: Host + ?Sized>(
     let scheme = if IS_CREATE2 {
         popn!([salt], context.interpreter);
         // SAFETY: `len` is reasonable in size as gas for it is already deducted.
-        gas_or_fail!(context.interpreter, gas::create2_cost(len));
+        gas!(
+            context.interpreter,
+            context.host.gas_params().create2_cost(len)
+        );
         CreateScheme::Create2 { salt }
     } else {
-        gas!(context.interpreter, gas::CREATE);
+        gas!(context.interpreter, context.host.gas_params().create_cost());
         CreateScheme::Create
     };
 
@@ -86,7 +97,7 @@ pub fn create<WIRE: InterpreterTypes, const IS_CREATE2: bool, H: Host + ?Sized>(
         .is_enabled_in(SpecId::TANGERINE)
     {
         // Take remaining gas and deduce l64 part of it.
-        gas_limit -= gas_limit / 64
+        gas_limit = context.host.gas_params().call_stipend_reduction(gas_limit);
     }
     gas!(context.interpreter, gas_limit);
 
@@ -95,13 +106,13 @@ pub fn create<WIRE: InterpreterTypes, const IS_CREATE2: bool, H: Host + ?Sized>(
         .interpreter
         .bytecode
         .set_action(InterpreterAction::NewFrame(FrameInput::Create(Box::new(
-            CreateInputs {
-                caller: context.interpreter.input.target_address(),
+            CreateInputs::new(
+                context.interpreter.input.target_address(),
                 scheme,
                 value,
-                init_code: code,
+                code,
                 gas_limit,
-            },
+            ),
         ))));
 }
 
@@ -123,10 +134,13 @@ pub fn call<WIRE: InterpreterTypes, H: Host + ?Sized>(
             .halt(InstructionResult::CallNotAllowedInsideStatic);
         return;
     }
-    let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(context.interpreter)
+
+    let Some((input, return_memory_offset)) =
+        get_memory_input_and_out_ranges(context.interpreter, context.host.gas_params())
     else {
         return;
     };
+
     let Some((gas_limit, bytecode, bytecode_hash)) =
         load_acc_and_calc_gas(&mut context, to, has_transfer, true, local_gas_limit)
     else {
@@ -144,8 +158,7 @@ pub fn call<WIRE: InterpreterTypes, H: Host + ?Sized>(
                 target_address: to,
                 caller: context.interpreter.input.target_address(),
                 bytecode_address: to,
-                bytecode,
-                bytecode_hash,
+                known_bytecode: Some((bytecode_hash, bytecode)),
                 value: CallValue::Transfer(value),
                 scheme: CallScheme::Call,
                 is_static: context.interpreter.runtime_flag.is_static(),
@@ -166,7 +179,8 @@ pub fn call_code<WIRE: InterpreterTypes, H: Host + ?Sized>(
     let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
     let has_transfer = !value.is_zero();
 
-    let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(context.interpreter)
+    let Some((input, return_memory_offset)) =
+        get_memory_input_and_out_ranges(context.interpreter, context.host.gas_params())
     else {
         return;
     };
@@ -188,8 +202,7 @@ pub fn call_code<WIRE: InterpreterTypes, H: Host + ?Sized>(
                 target_address: context.interpreter.input.target_address(),
                 caller: context.interpreter.input.target_address(),
                 bytecode_address: to,
-                bytecode,
-                bytecode_hash,
+                known_bytecode: Some((bytecode_hash, bytecode)),
                 value: CallValue::Transfer(value),
                 scheme: CallScheme::CallCode,
                 is_static: context.interpreter.runtime_flag.is_static(),
@@ -210,7 +223,8 @@ pub fn delegate_call<WIRE: InterpreterTypes, H: Host + ?Sized>(
     // Max gas limit is not possible in real ethereum situation.
     let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
 
-    let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(context.interpreter)
+    let Some((input, return_memory_offset)) =
+        get_memory_input_and_out_ranges(context.interpreter, context.host.gas_params())
     else {
         return;
     };
@@ -232,8 +246,7 @@ pub fn delegate_call<WIRE: InterpreterTypes, H: Host + ?Sized>(
                 target_address: context.interpreter.input.target_address(),
                 caller: context.interpreter.input.caller_address(),
                 bytecode_address: to,
-                bytecode,
-                bytecode_hash,
+                known_bytecode: Some((bytecode_hash, bytecode)),
                 value: CallValue::Apparent(context.interpreter.input.call_value()),
                 scheme: CallScheme::DelegateCall,
                 is_static: context.interpreter.runtime_flag.is_static(),
@@ -254,7 +267,8 @@ pub fn static_call<WIRE: InterpreterTypes, H: Host + ?Sized>(
     // Max gas limit is not possible in real ethereum situation.
     let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
 
-    let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(context.interpreter)
+    let Some((input, return_memory_offset)) =
+        get_memory_input_and_out_ranges(context.interpreter, context.host.gas_params())
     else {
         return;
     };
@@ -276,8 +290,7 @@ pub fn static_call<WIRE: InterpreterTypes, H: Host + ?Sized>(
                 target_address: to,
                 caller: context.interpreter.input.target_address(),
                 bytecode_address: to,
-                bytecode,
-                bytecode_hash,
+                known_bytecode: Some((bytecode_hash, bytecode)),
                 value: CallValue::Transfer(U256::ZERO),
                 scheme: CallScheme::StaticCall,
                 is_static: true,

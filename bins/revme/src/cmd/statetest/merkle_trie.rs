@@ -1,11 +1,13 @@
 use std::convert::Infallible;
 
 use alloy_rlp::{RlpEncodable, RlpMaxEncodedLen};
-use context::result::{EVMError, ExecutionResult, HaltReason, InvalidTransaction};
-use database::{EmptyDB, PlainAccount, State};
 use hash_db::Hasher;
 use plain_hasher::PlainHasher;
-use revm::primitives::{keccak256, Address, Log, B256, U256};
+use revm::{
+    context::result::{EVMError, ExecutionResult, HaltReason, InvalidTransaction},
+    database::{bal::EvmDatabaseError, EmptyDB, PlainAccount, State},
+    primitives::{keccak256, Address, Log, B256, U256},
+};
 use triehash::sec_trie_root;
 
 pub struct TestValidationResult {
@@ -14,7 +16,10 @@ pub struct TestValidationResult {
 }
 
 pub fn compute_test_roots(
-    exec_result: &Result<ExecutionResult<HaltReason>, EVMError<Infallible, InvalidTransaction>>,
+    exec_result: &Result<
+        ExecutionResult<HaltReason>,
+        EVMError<EvmDatabaseError<Infallible>, InvalidTransaction>,
+    >,
     db: &State<EmptyDB>,
 ) -> TestValidationResult {
     TestValidationResult {

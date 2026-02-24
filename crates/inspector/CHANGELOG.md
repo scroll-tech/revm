@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [15.0.0](https://github.com/bluealloy/revm/compare/revm-inspector-v14.1.0...revm-inspector-v15.0.0) - 2026-01-15
+
+### Added
+
+- *(inspector)* make TestInspector public for testing EVM variants ([#3282](https://github.com/bluealloy/revm/pull/3282))
+- move GasParams to Cfg ([#3229](https://github.com/bluealloy/revm/pull/3229))
+- BAL EIP-7928 ([#3070](https://github.com/bluealloy/revm/pull/3070))
+- Gas params ([#3132](https://github.com/bluealloy/revm/pull/3132))
+
+### Other
+
+- fix typos, grammar errors, and improve documentation consistency ([#3294](https://github.com/bluealloy/revm/pull/3294))
+- happy new year, 2026 licence ([#3272](https://github.com/bluealloy/revm/pull/3272))
+- replace HashMap with fixed-size array for opcode counts in CountInspector ([#3203](https://github.com/bluealloy/revm/pull/3203))
+- *(fmt)* merge all imports ([#3184](https://github.com/bluealloy/revm/pull/3184))
+
+## [14.1.0](https://github.com/bluealloy/revm/compare/revm-inspector-v14.0.0...revm-inspector-v14.1.0) - 2025-11-14
+
+### Other
+
+- call Inspector::log_full ([#3164](https://github.com/bluealloy/revm/pull/3164))
+
+## [14.0.0](https://github.com/bluealloy/revm/compare/revm-inspector-v12.0.2...revm-inspector-v14.0.0) - 2025-11-10
+
+### Added
+
+- process precompile logs to inspector ([#3148](https://github.com/bluealloy/revm/pull/3148))
+
+## [12.0.2](https://github.com/bluealloy/revm/compare/revm-inspector-v12.0.1...revm-inspector-v12.0.2) - 2025-11-10
+
+### Other
+
+- updated the following local packages: revm-database, revm-context, revm-handler
+
+## [12.0.1](https://github.com/bluealloy/revm/compare/revm-inspector-v12.0.0...revm-inspector-v12.0.1) - 2025-11-07
+
+### Other
+
+- updated the following local packages: revm-primitives, revm-context, revm-state, revm-database-interface, revm-database, revm-interpreter, revm-handler
+
+## [12.0.0](https://github.com/bluealloy/revm/compare/revm-inspector-v11.2.0...revm-inspector-v12.0.0) - 2025-10-30
+
+### Other
+
+- remove redundant alloy-eip7702 from handler dev-dependencies ([#3105](https://github.com/bluealloy/revm/pull/3105))
+- *(inspector)* remove redundant EthInterpreter import in either.rs ([#3093](https://github.com/bluealloy/revm/pull/3093))
+
+## [11.2.0](https://github.com/bluealloy/revm/compare/revm-inspector-v11.1.2...revm-inspector-v11.2.0) - 2025-10-17
+
+### Other
+
+- updated the following local packages: revm-interpreter, revm-handler
+
+## [11.1.2](https://github.com/bluealloy/revm/compare/revm-inspector-v11.1.1...revm-inspector-v11.1.2) - 2025-10-15
+
+### Other
+
+- updated the following local packages: revm-state, revm-database-interface, revm-context, revm-database, revm-interpreter, revm-handler
+
 ## [11.1.1](https://github.com/bluealloy/revm/compare/revm-inspector-v11.1.0...revm-inspector-v11.1.1) - 2025-10-15
 
 ### Other

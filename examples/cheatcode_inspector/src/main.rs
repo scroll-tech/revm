@@ -8,7 +8,7 @@
 
 use revm::{
     context::{
-        journaled_state::{AccountInfoLoad, JournalLoadError},
+        journaled_state::{account::JournaledAccount, AccountInfoLoad, JournalLoadError},
         result::InvalidTransaction,
         BlockEnv, Cfg, CfgEnv, ContextTr, Evm, LocalContext, TxEnv,
     },
@@ -60,6 +60,7 @@ impl Backend {
 impl JournalTr for Backend {
     type Database = InMemoryDB;
     type State = EvmState;
+    type JournaledAccount<'a> = JournaledAccount<'a, InMemoryDB, JournalEntry>;
 
     fn new(database: InMemoryDB) -> Self {
         Self::new(SpecId::default(), database)
@@ -102,21 +103,25 @@ impl JournalTr for Backend {
         self.journaled_state.log(log)
     }
 
+    fn logs(&self) -> &[Log] {
+        self.journaled_state.logs()
+    }
+
     fn selfdestruct(
         &mut self,
         address: Address,
         target: Address,
-    ) -> Result<StateLoad<SelfDestructResult>, Infallible> {
-        self.journaled_state.selfdestruct(address, target)
+        skip_cold_load: bool,
+    ) -> Result<StateLoad<SelfDestructResult>, JournalLoadError<Infallible>> {
+        self.journaled_state
+            .selfdestruct(address, target, skip_cold_load)
     }
 
-    fn warm_account_and_storage(
+    fn warm_access_list(
         &mut self,
-        address: Address,
-        storage_keys: impl IntoIterator<Item = StorageKey>,
-    ) -> Result<(), <Self::Database as Database>::Error> {
-        self.journaled_state
-            .warm_account_and_storage(address, storage_keys)
+        access_list: revm::primitives::HashMap<Address, HashSet<StorageKey>>,
+    ) {
+        self.journaled_state.warm_access_list(access_list);
     }
 
     fn warm_coinbase_account(&mut self, address: Address) {
@@ -157,15 +162,15 @@ impl JournalTr for Backend {
         self.journaled_state.transfer_loaded(from, to, balance)
     }
 
-    fn load_account(&mut self, address: Address) -> Result<StateLoad<&mut Account>, Infallible> {
+    fn load_account(&mut self, address: Address) -> Result<StateLoad<&Account>, Infallible> {
         self.journaled_state.load_account(address)
     }
 
-    fn load_account_code(
+    fn load_account_with_code(
         &mut self,
         address: Address,
-    ) -> Result<StateLoad<&mut Account>, Infallible> {
-        self.journaled_state.load_account_code(address)
+    ) -> Result<StateLoad<&Account>, Infallible> {
+        self.journaled_state.load_account_with_code(address)
     }
 
     fn load_account_delegated(
@@ -289,22 +294,36 @@ impl JournalTr for Backend {
             .sstore_skip_cold_load(address, key, value, skip_cold_load)
     }
 
+    fn load_account_mut_skip_cold_load(
+        &mut self,
+        address: Address,
+        skip_cold_load: bool,
+    ) -> Result<StateLoad<Self::JournaledAccount<'_>>, Infallible> {
+        self.journaled_state
+            .load_account_mut_skip_cold_load(address, skip_cold_load)
+    }
+
     fn load_account_info_skip_cold_load(
         &mut self,
         address: Address,
         load_code: bool,
         skip_cold_load: bool,
-    ) -> Result<AccountInfoLoad<'_>, JournalLoadError<<Self::Database as Database>::Error>> {
+    ) -> Result<AccountInfoLoad<'_>, JournalLoadError<Infallible>> {
         self.journaled_state
             .load_account_info_skip_cold_load(address, load_code, skip_cold_load)
+    }
+
+    fn load_account_mut_optional_code(
+        &mut self,
+        address: Address,
+        load_code: bool,
+    ) -> Result<StateLoad<Self::JournaledAccount<'_>>, Infallible> {
+        self.journaled_state
+            .load_account_mut_optional_code(address, load_code)
     }
 }
 
 impl JournalExt for Backend {
-    fn logs(&self) -> &[Log] {
-        self.journaled_state.logs()
-    }
-
     fn journal(&self) -> &[JournalEntry] {
         self.journaled_state.journal()
     }

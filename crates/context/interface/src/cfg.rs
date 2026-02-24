@@ -1,7 +1,12 @@
 //! Configuration for the EVM. Containing [`SpecId`].
+
+pub mod gas;
+pub mod gas_params;
+
+pub use gas_params::{GasId, GasParams};
+
 use auto_impl::auto_impl;
-use core::fmt::Debug;
-use core::hash::Hash;
+use core::{fmt::Debug, hash::Hash};
 use primitives::{hardfork::SpecId, Address, TxKind, U256};
 
 /// Configuration for the EVM.
@@ -66,14 +71,18 @@ pub trait Cfg {
     fn is_fee_charge_disabled(&self) -> bool;
 
     /// Returns whether the EIP-7702 is enabled.
+    /// Used for: (1) allowing EIP-7702 tx type before Prague, (2) delegation loading.
     fn is_eip7702_enabled(&self) -> bool;
-
-    /// Returns whether the EIP-7623 is enabled.
-    fn is_eip7623_enabled(&self) -> bool;
 
     /// Returns whether the L1 data fee buffer check is required.
     /// When enabled, validates balance >= L2_fee + 2 * L1_fee but only charges L2_fee + L1_fee.
     fn is_l1_data_fee_buffer_required(&self) -> bool;
+
+    /// Returns the limit in bytes for the memory buffer.
+    fn memory_limit(&self) -> u64;
+
+    /// Returns the gas params for the EVM.
+    fn gas_params(&self) -> &GasParams;
 }
 
 /// What bytecode analysis to perform

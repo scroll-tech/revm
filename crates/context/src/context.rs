@@ -1,6 +1,7 @@
 //! This module contains [`Context`] struct and implements [`ContextTr`] trait for it.
 use crate::{block::BlockEnv, cfg::CfgEnv, journal::Journal, tx::TxEnv, LocalContext};
 use context_interface::{
+    cfg::GasParams,
     context::{ContextError, ContextSetters, SStoreResult, SelfDestructResult, StateLoad},
     host::LoadError,
     journaled_state::AccountInfoLoad,
@@ -8,7 +9,9 @@ use context_interface::{
 };
 use database_interface::{Database, DatabaseRef, EmptyDB, WrapDatabaseRef};
 use derive_where::derive_where;
-use primitives::{hardfork::SpecId, Address, Log, StorageKey, StorageValue, B256, U256};
+use primitives::{
+    hardfork::SpecId, hints_util::cold_path, Address, Log, StorageKey, StorageValue, B256, U256,
+};
 
 /// EVM context contains data that EVM needs for execution.
 #[derive_where(Clone, Debug; BLOCK, CFG, CHAIN, TX, DB, JOURNAL, <DB as Database>::Error, LOCAL)]
@@ -70,7 +73,7 @@ impl<
         let block = &self.block;
         let tx = &self.tx;
         let cfg = &self.cfg;
-        let db = &self.journaled_state.db();
+        let db = self.journaled_state.db();
         let journal = &self.journaled_state;
         let chain = &self.chain;
         let local = &self.local;
@@ -131,21 +134,19 @@ impl<
         JOURNAL: JournalTr<Database = DB>,
         CHAIN: Default,
         LOCAL: LocalContextTr + Default,
-    > Context<BLOCK, TX, CfgEnv, DB, JOURNAL, CHAIN, LOCAL>
+        SPEC: Default + Into<SpecId> + Clone,
+    > Context<BLOCK, TX, CfgEnv<SPEC>, DB, JOURNAL, CHAIN, LOCAL>
 {
     /// Creates a new context with a new database type.
     ///
     /// This will create a new [`Journal`] object.
-    pub fn new(db: DB, spec: SpecId) -> Self {
+    pub fn new(db: DB, spec: SPEC) -> Self {
         let mut journaled_state = JOURNAL::new(db);
-        journaled_state.set_spec_id(spec);
+        journaled_state.set_spec_id(spec.clone().into());
         Self {
             tx: TX::default(),
             block: BLOCK::default(),
-            cfg: CfgEnv {
-                spec,
-                ..Default::default()
-            },
+            cfg: CfgEnv::new_with_spec(spec),
             local: LOCAL::default(),
             journaled_state,
             chain: Default::default(),
@@ -449,6 +450,11 @@ impl<
         self.block().prevrandao().map(|r| r.into())
     }
 
+    #[inline]
+    fn gas_params(&self) -> &GasParams {
+        self.cfg().gas_params()
+    }
+
     fn block_number(&self) -> U256 {
         self.block().number()
     }
@@ -498,6 +504,7 @@ impl<
         self.db_mut()
             .block_hash(requested_number)
             .map_err(|e| {
+                cold_path();
                 *self.error() = Err(e.into());
             })
             .ok()
@@ -521,19 +528,26 @@ impl<
     }
 
     /// Marks `address` to be deleted, with funds transferred to `target`.
+    #[inline]
     fn selfdestruct(
         &mut self,
         address: Address,
         target: Address,
-    ) -> Option<StateLoad<SelfDestructResult>> {
+        skip_cold_load: bool,
+    ) -> Result<StateLoad<SelfDestructResult>, LoadError> {
         self.journal_mut()
-            .selfdestruct(address, target)
+            .selfdestruct(address, target, skip_cold_load)
             .map_err(|e| {
-                *self.error() = Err(e.into());
+                cold_path();
+                let (ret, err) = e.into_parts();
+                if let Some(err) = err {
+                    *self.error() = Err(err.into());
+                }
+                ret
             })
-            .ok()
     }
 
+    #[inline]
     fn sstore_skip_cold_load(
         &mut self,
         address: Address,
@@ -544,6 +558,7 @@ impl<
         self.journal_mut()
             .sstore_skip_cold_load(address, key, value, skip_cold_load)
             .map_err(|e| {
+                cold_path();
                 let (ret, err) = e.into_parts();
                 if let Some(err) = err {
                     *self.error() = Err(err.into());
@@ -552,6 +567,7 @@ impl<
             })
     }
 
+    #[inline]
     fn sload_skip_cold_load(
         &mut self,
         address: Address,
@@ -561,6 +577,7 @@ impl<
         self.journal_mut()
             .sload_skip_cold_load(address, key, skip_cold_load)
             .map_err(|e| {
+                cold_path();
                 let (ret, err) = e.into_parts();
                 if let Some(err) = err {
                     *self.error() = Err(err.into());
@@ -569,20 +586,24 @@ impl<
             })
     }
 
+    #[inline]
     fn load_account_info_skip_cold_load(
         &mut self,
         address: Address,
         load_code: bool,
         skip_cold_load: bool,
     ) -> Result<AccountInfoLoad<'_>, LoadError> {
-        let error = &mut self.error;
-        let journal = &mut self.journaled_state;
-        match journal.load_account_info_skip_cold_load(address, load_code, skip_cold_load) {
+        match self.journaled_state.load_account_info_skip_cold_load(
+            address,
+            load_code,
+            skip_cold_load,
+        ) {
             Ok(a) => Ok(a),
             Err(e) => {
+                cold_path();
                 let (ret, err) = e.into_parts();
                 if let Some(err) = err {
-                    *error = Err(err.into());
+                    self.error = Err(err.into());
                 }
                 Err(ret)
             }

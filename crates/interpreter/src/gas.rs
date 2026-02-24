@@ -1,10 +1,6 @@
 //! EVM gas calculation utilities.
 
-mod calc;
-mod constants;
-
-pub use calc::*;
-pub use constants::*;
+pub use context_interface::cfg::gas::*;
 
 /// Represents the state of gas during execution.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
@@ -89,11 +85,6 @@ impl Gas {
     #[inline]
     pub const fn remaining(&self) -> u64 {
         self.remaining
-    }
-
-    /// Return remaining gas after subtracting 63/64 parts.
-    pub const fn remaining_63_of_64_parts(&self) -> u64 {
-        self.remaining - self.remaining / 64
     }
 
     /// Erases a gas cost from the totals.
@@ -199,18 +190,42 @@ impl MemoryGas {
         }
     }
 
+    /// Sets the number of words and the expansion cost.
+    ///
+    /// Returns the difference between the new and old expansion cost.
+    #[inline]
+    pub fn set_words_num(&mut self, words_num: usize, mut expansion_cost: u64) -> Option<u64> {
+        self.words_num = words_num;
+        core::mem::swap(&mut self.expansion_cost, &mut expansion_cost);
+        self.expansion_cost.checked_sub(expansion_cost)
+    }
+
     /// Records a new memory length and calculates additional cost if memory is expanded.
     /// Returns the additional gas cost required, or None if no expansion is needed.
     #[inline]
-    pub fn record_new_len(&mut self, new_num: usize) -> Option<u64> {
+    pub fn record_new_len(
+        &mut self,
+        new_num: usize,
+        linear_cost: u64,
+        quadratic_cost: u64,
+    ) -> Option<u64> {
         if new_num <= self.words_num {
             return None;
         }
         self.words_num = new_num;
-        let mut cost = crate::gas::calc::memory_gas(new_num);
+        let mut cost = memory_gas(new_num, linear_cost, quadratic_cost);
         core::mem::swap(&mut self.expansion_cost, &mut cost);
         // Safe to subtract because we know that new_len > length
         // Notice the swap above.
         Some(self.expansion_cost - cost)
     }
+}
+
+/// Memory expansion cost calculation for a given number of words.
+#[inline]
+pub const fn memory_gas(num_words: usize, linear_cost: u64, quadratic_cost: u64) -> u64 {
+    let num_words = num_words as u64;
+    linear_cost
+        .saturating_mul(num_words)
+        .saturating_add(num_words.saturating_mul(num_words) / quadratic_cost)
 }

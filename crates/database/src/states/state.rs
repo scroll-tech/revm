@@ -3,13 +3,19 @@ use super::{
     CacheAccount, StateBuilder, TransitionAccount, TransitionState,
 };
 use bytecode::Bytecode;
-use database_interface::{Database, DatabaseCommit, DatabaseRef, EmptyDB};
+use database_interface::{
+    bal::{BalState, EvmDatabaseError},
+    Database, DatabaseCommit, DatabaseRef, EmptyDB,
+};
 use primitives::{hash_map, Address, HashMap, StorageKey, StorageValue, B256, BLOCK_HASH_HISTORY};
-use state::{Account, AccountInfo};
+use state::{
+    bal::{alloy::AlloyBal, Bal},
+    Account, AccountInfo,
+};
 use std::{
     boxed::Box,
     collections::{btree_map, BTreeMap},
-    vec::Vec,
+    sync::Arc,
 };
 
 /// Database boxed with a lifetime and Send
@@ -44,13 +50,13 @@ pub struct State<DB> {
     ///
     /// Build reverts and state that gets applied to the state.
     pub transition_state: Option<TransitionState>,
-    /// After block is finishes we merge those changes inside bundle
+    /// After block finishes we merge those changes inside bundle
     ///
     /// Bundle is used to update database and create changesets.
     ///
     /// Bundle state can be set on initialization if we want to use preloaded bundle.
     pub bundle_state: BundleState,
-    /// Addition layer that is going to be used to fetched values before fetching values
+    /// Additional layer that is going to be used to fetch values before fetching values
     /// from database
     ///
     /// Bundle is the main output of the state execution and this allows setting previous bundle
@@ -63,6 +69,10 @@ pub struct State<DB> {
     ///
     /// The fork block is different or some blocks are not saved inside database.
     pub block_hashes: BTreeMap<u64, B256>,
+    /// BAL state.
+    ///
+    /// Can contain both the BAL for reads and BAL builder that is used to build BAL.
+    pub bal_state: BalState,
 }
 
 // Have ability to call State::builder without having to specify the type.
@@ -79,62 +89,6 @@ impl<DB: Database> State<DB> {
     /// See [BundleState::size_hint] for more info.
     pub fn bundle_size_hint(&self) -> usize {
         self.bundle_state.size_hint()
-    }
-
-    /// Iterates over received balances and increment all account balances.
-    ///
-    /// **Note**: If account is not found inside cache state it will be loaded from database.
-    ///
-    /// Update will create transitions for all accounts that are updated.
-    ///
-    /// If using this to implement withdrawals, zero balances must be filtered out before calling this function.
-    pub fn increment_balances(
-        &mut self,
-        balances: impl IntoIterator<Item = (Address, u128)>,
-    ) -> Result<(), DB::Error> {
-        // Make transition and update cache state
-        let balances = balances.into_iter();
-        let mut transitions = Vec::with_capacity(balances.size_hint().0);
-        for (address, balance) in balances {
-            if balance == 0 {
-                continue;
-            }
-            let original_account = self.load_cache_account(address)?;
-            transitions.push((
-                address,
-                original_account
-                    .increment_balance(balance)
-                    .expect("Balance is not zero"),
-            ))
-        }
-        // Append transition
-        if let Some(s) = self.transition_state.as_mut() {
-            s.add_transitions(transitions)
-        }
-        Ok(())
-    }
-
-    /// Drains balances from given account and return those values.
-    ///
-    /// It is used for DAO hardfork state change to move values from given accounts.
-    pub fn drain_balances(
-        &mut self,
-        addresses: impl IntoIterator<Item = Address>,
-    ) -> Result<Vec<u128>, DB::Error> {
-        // Make transition and update cache state
-        let mut transitions = Vec::new();
-        let mut balances = Vec::new();
-        for address in addresses {
-            let original_account = self.load_cache_account(address)?;
-            let (balance, transition) = original_account.drain_balance();
-            balances.push(balance);
-            transitions.push((address, transition))
-        }
-        // Append transition
-        if let Some(s) = self.transition_state.as_mut() {
-            s.add_transitions(transitions)
-        }
-        Ok(balances)
     }
 
     /// State clear EIP-161 is enabled in Spurious Dragon hardfork.
@@ -164,7 +118,10 @@ impl<DB: Database> State<DB> {
     }
 
     /// Applies evm transitions to transition state.
-    pub fn apply_transition(&mut self, transitions: Vec<(Address, TransitionAccount)>) {
+    pub fn apply_transition(
+        &mut self,
+        transitions: impl IntoIterator<Item = (Address, TransitionAccount)>,
+    ) {
         // Add transition to transition state.
         if let Some(s) = self.transition_state.as_mut() {
             s.add_transitions(transitions)
@@ -188,16 +145,39 @@ impl<DB: Database> State<DB> {
     /// If the account is not found in the cache, it will be loaded from the
     /// database and inserted into the cache.
     pub fn load_cache_account(&mut self, address: Address) -> Result<&mut CacheAccount, DB::Error> {
-        match self.cache.accounts.entry(address) {
+        Self::load_cache_account_with(
+            &mut self.cache,
+            self.use_preloaded_bundle,
+            &self.bundle_state,
+            &mut self.database,
+            address,
+        )
+    }
+
+    /// Get a mutable reference to the [`CacheAccount`] for the given address.
+    ///
+    /// If the account is not found in the cache, it will be loaded from the
+    /// database and inserted into the cache.
+    ///
+    /// This function accepts destructed fields of [`Self`] as arguments and
+    /// returns a cached account with the lifetime of the provided cache reference.
+    fn load_cache_account_with<'a>(
+        cache: &'a mut CacheState,
+        use_preloaded_bundle: bool,
+        bundle_state: &BundleState,
+        database: &mut DB,
+        address: Address,
+    ) -> Result<&'a mut CacheAccount, DB::Error> {
+        Ok(match cache.accounts.entry(address) {
             hash_map::Entry::Vacant(entry) => {
-                if self.use_preloaded_bundle {
+                if use_preloaded_bundle {
                     // Load account from bundle state
-                    if let Some(account) = self.bundle_state.account(&address).map(Into::into) {
+                    if let Some(account) = bundle_state.account(&address).map(Into::into) {
                         return Ok(entry.insert(account));
                     }
                 }
                 // If not found in bundle, load it from database
-                let info = self.database.basic(address)?;
+                let info = database.basic(address)?;
                 let account = match info {
                     None => CacheAccount::new_loaded_not_existing(),
                     Some(acc) if acc.is_empty() => {
@@ -205,14 +185,14 @@ impl<DB: Database> State<DB> {
                     }
                     Some(acc) => CacheAccount::new_loaded(acc, HashMap::default()),
                 };
-                Ok(entry.insert(account))
+                entry.insert(account)
             }
-            hash_map::Entry::Occupied(entry) => Ok(entry.into_mut()),
-        }
+            hash_map::Entry::Occupied(entry) => entry.into_mut(),
+        })
     }
 
     // TODO : Make cache aware of transitions dropping by having global transition counter.
-    /// Takess the [`BundleState`] changeset from the [`State`], replacing it
+    /// Takes the [`BundleState`] changeset from the [`State`], replacing it
     /// with an empty one.
     ///
     /// This will not apply any pending [`TransitionState`].
@@ -225,13 +205,99 @@ impl<DB: Database> State<DB> {
     pub fn take_bundle(&mut self) -> BundleState {
         core::mem::take(&mut self.bundle_state)
     }
+
+    /// Takes build bal from bal state.
+    #[inline]
+    pub fn take_built_bal(&mut self) -> Option<Bal> {
+        self.bal_state.take_built_bal()
+    }
+
+    /// Takes built alloy bal from bal state.
+    #[inline]
+    pub fn take_built_alloy_bal(&mut self) -> Option<AlloyBal> {
+        self.bal_state.take_built_alloy_bal()
+    }
+
+    /// Bump BAL index.
+    #[inline]
+    pub fn bump_bal_index(&mut self) {
+        self.bal_state.bump_bal_index();
+    }
+
+    /// Set BAL index.
+    #[inline]
+    pub fn set_bal_index(&mut self, index: u64) {
+        self.bal_state.bal_index = index;
+    }
+
+    /// Reset BAL index.
+    #[inline]
+    pub fn reset_bal_index(&mut self) {
+        self.bal_state.reset_bal_index();
+    }
+
+    /// Set BAL.
+    #[inline]
+    pub fn set_bal(&mut self, bal: Option<Arc<Bal>>) {
+        self.bal_state.bal = bal;
+    }
+
+    /// Gets storage value of address at index.
+    #[inline]
+    fn storage(&mut self, address: Address, index: StorageKey) -> Result<StorageValue, DB::Error> {
+        // If account is not found in cache, it will be loaded from database.
+        let account = Self::load_cache_account_with(
+            &mut self.cache,
+            self.use_preloaded_bundle,
+            &self.bundle_state,
+            &mut self.database,
+            address,
+        )?;
+
+        // Account will always be some, but if it is not, StorageValue::ZERO will be returned.
+        let is_storage_known = account.status.is_storage_known();
+        Ok(account
+            .account
+            .as_mut()
+            .map(|account| match account.storage.entry(index) {
+                hash_map::Entry::Occupied(entry) => Ok(*entry.get()),
+                hash_map::Entry::Vacant(entry) => {
+                    // If account was destroyed or account is newly built
+                    // we return zero and don't ask database.
+                    let value = if is_storage_known {
+                        StorageValue::ZERO
+                    } else {
+                        self.database.storage(address, index)?
+                    };
+                    entry.insert(value);
+                    Ok(value)
+                }
+            })
+            .transpose()?
+            .unwrap_or_default())
+    }
 }
 
 impl<DB: Database> Database for State<DB> {
-    type Error = DB::Error;
+    type Error = EvmDatabaseError<DB::Error>;
 
     fn basic(&mut self, address: Address) -> Result<Option<AccountInfo>, Self::Error> {
-        self.load_cache_account(address).map(|a| a.account_info())
+        // if bal is existing but account is not found, error will be returned.
+        let account_id = self
+            .bal_state
+            .get_account_id(&address)
+            .map_err(EvmDatabaseError::Bal)?;
+
+        let mut basic = self
+            .load_cache_account(address)
+            .map(|a| a.account_info())
+            .map_err(EvmDatabaseError::Database)?;
+        // will populate account code if there was a bal change to it. If there is no change
+        // it will be fetched in code_by_hash.
+        if let Some(account_id) = account_id {
+            self.bal_state.basic_by_account_id(account_id, &mut basic);
+        }
+        Ok(basic)
     }
 
     fn code_by_hash(&mut self, code_hash: B256) -> Result<Bytecode, Self::Error> {
@@ -245,7 +311,10 @@ impl<DB: Database> Database for State<DB> {
                     }
                 }
                 // If not found in bundle ask database
-                let code = self.database.code_by_hash(code_hash)?;
+                let code = self
+                    .database
+                    .code_by_hash(code_hash)
+                    .map_err(EvmDatabaseError::Database)?;
                 entry.insert(code.clone());
                 Ok(code)
             }
@@ -258,40 +327,42 @@ impl<DB: Database> Database for State<DB> {
         address: Address,
         index: StorageKey,
     ) -> Result<StorageValue, Self::Error> {
-        // Account is guaranteed to be loaded.
-        // Note that storage from bundle is already loaded with account.
-        if let Some(account) = self.cache.accounts.get_mut(&address) {
-            // Account will always be some, but if it is not, StorageValue::ZERO will be returned.
-            let is_storage_known = account.status.is_storage_known();
-            Ok(account
-                .account
-                .as_mut()
-                .map(|account| match account.storage.entry(index) {
-                    hash_map::Entry::Occupied(entry) => Ok(*entry.get()),
-                    hash_map::Entry::Vacant(entry) => {
-                        // If account was destroyed or account is newly built
-                        // we return zero and don't ask database.
-                        let value = if is_storage_known {
-                            StorageValue::ZERO
-                        } else {
-                            self.database.storage(address, index)?
-                        };
-                        entry.insert(value);
-                        Ok(value)
-                    }
-                })
-                .transpose()?
-                .unwrap_or_default())
-        } else {
-            unreachable!("For accessing any storage account is guaranteed to be loaded beforehand")
+        if let Some(storage) = self
+            .bal_state
+            .storage(&address, index)
+            .map_err(EvmDatabaseError::Bal)?
+        {
+            // return bal value if it is found
+            return Ok(storage);
         }
+        self.storage(address, index)
+            .map_err(EvmDatabaseError::Database)
+    }
+
+    fn storage_by_account_id(
+        &mut self,
+        address: Address,
+        account_id: usize,
+        key: StorageKey,
+    ) -> Result<StorageValue, Self::Error> {
+        if let Some(storage) = self.bal_state.storage_by_account_id(account_id, key)? {
+            return Ok(storage);
+        }
+
+        self.database
+            .storage(address, key)
+            .map_err(EvmDatabaseError::Database)
     }
 
     fn block_hash(&mut self, number: u64) -> Result<B256, Self::Error> {
         match self.block_hashes.entry(number) {
             btree_map::Entry::Occupied(entry) => Ok(*entry.get()),
             btree_map::Entry::Vacant(entry) => {
-                let ret = *entry.insert(self.database.block_hash(number)?);
+                let ret = *entry.insert(
+                    self.database
+                        .block_hash(number)
+                        .map_err(EvmDatabaseError::Database)?,
+                );
 
                 // Prune all hashes that are older than BLOCK_HASH_HISTORY
                 let last_block = number.saturating_sub(BLOCK_HASH_HISTORY);
@@ -310,28 +381,69 @@ impl<DB: Database> Database for State<DB> {
 }
 
 impl<DB: Database> DatabaseCommit for State<DB> {
-    fn commit(&mut self, evm_state: HashMap<Address, Account>) {
-        let transitions = self.cache.apply_evm_state(evm_state);
-        self.apply_transition(transitions);
+    fn commit(&mut self, changes: HashMap<Address, Account>) {
+        self.bal_state.commit(&changes);
+        let transitions = self.cache.apply_evm_state_iter(changes, |_, _| {});
+        if let Some(s) = self.transition_state.as_mut() {
+            s.add_transitions(transitions)
+        } else {
+            // Advance the iter to apply all state updates.
+            transitions.for_each(|_| {});
+        }
+    }
+
+    fn commit_iter(&mut self, changes: &mut dyn Iterator<Item = (Address, Account)>) {
+        let transitions = self
+            .cache
+            .apply_evm_state_iter(changes, |address, account| {
+                self.bal_state.commit_one(*address, account);
+            });
+        if let Some(s) = self.transition_state.as_mut() {
+            s.add_transitions(transitions)
+        } else {
+            // Advance the iter to apply all state updates.
+            transitions.for_each(|_| {});
+        }
     }
 }
 
 impl<DB: DatabaseRef> DatabaseRef for State<DB> {
-    type Error = DB::Error;
+    type Error = EvmDatabaseError<DB::Error>;
 
     fn basic_ref(&self, address: Address) -> Result<Option<AccountInfo>, Self::Error> {
+        // if bal is present and account is not found, error will be returned.
+        let account_id = self.bal_state.get_account_id(&address)?;
+
         // Account is already in cache
+        let mut loaded_account = None;
         if let Some(account) = self.cache.accounts.get(&address) {
-            return Ok(account.account_info());
-        }
+            loaded_account = Some(account.account_info());
+        };
+
         // If bundle state is used, check if account is in bundle state
-        if self.use_preloaded_bundle {
+        if self.use_preloaded_bundle && loaded_account.is_none() {
             if let Some(account) = self.bundle_state.account(&address) {
-                return Ok(account.account_info());
+                loaded_account = Some(account.account_info());
             }
         }
+
         // If not found, load it from database
-        self.database.basic_ref(address)
+        if loaded_account.is_none() {
+            loaded_account = Some(
+                self.database
+                    .basic_ref(address)
+                    .map_err(EvmDatabaseError::Database)?,
+            );
+        }
+
+        // safe to unwrap as it in some in condition above
+        let mut account = loaded_account.unwrap();
+
+        // if it is inside bal, overwrite the account with the bal changes.
+        if let Some(account_id) = account_id {
+            self.bal_state.basic_by_account_id(account_id, &mut account);
+        }
+        Ok(account)
     }
 
     fn code_by_hash_ref(&self, code_hash: B256) -> Result<Bytecode, Self::Error> {
@@ -346,7 +458,9 @@ impl<DB: DatabaseRef> DatabaseRef for State<DB> {
             }
         }
         // If not found, load it from database
-        self.database.code_by_hash_ref(code_hash)
+        self.database
+            .code_by_hash_ref(code_hash)
+            .map_err(EvmDatabaseError::Database)
     }
 
     fn storage_ref(
@@ -354,6 +468,11 @@ impl<DB: DatabaseRef> DatabaseRef for State<DB> {
         address: Address,
         index: StorageKey,
     ) -> Result<StorageValue, Self::Error> {
+        // if bal has storage value, return it
+        if let Some(storage) = self.bal_state.storage(&address, index)? {
+            return Ok(storage);
+        }
+
         // Check if account is in cache, the account is not guaranteed to be loaded
         if let Some(account) = self.cache.accounts.get(&address) {
             if let Some(plain_account) = &account.account {
@@ -368,8 +487,11 @@ impl<DB: DatabaseRef> DatabaseRef for State<DB> {
                 }
             }
         }
+
         // If not found, load it from database
-        self.database.storage_ref(address, index)
+        self.database
+            .storage_ref(address, index)
+            .map_err(EvmDatabaseError::Database)
     }
 
     fn block_hash_ref(&self, number: u64) -> Result<B256, Self::Error> {
@@ -377,7 +499,9 @@ impl<DB: DatabaseRef> DatabaseRef for State<DB> {
             return Ok(*entry);
         }
         // If not found, load it from database
-        self.database.block_hash_ref(number)
+        self.database
+            .block_hash_ref(number)
+            .map_err(EvmDatabaseError::Database)
     }
 }
 

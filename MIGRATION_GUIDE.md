@@ -1,4 +1,98 @@
 
+# v103 tag (revm v34.0.0)
+
+* BAL (EIP-7928) support added to Database implementations.
+* `GasParams` is new struct where you can set dynamic opcode gas params. Initialized and can be found in cfg.
+  * Gas calculation functions moved from `revm-interpreter` to be part of gas params.
+  * Gas constants moved from `revm_interpreter`::gas to `revm_context_interface::cfg::gas`
+* `CreateInputs` struct fields made private with accessor pattern.
+  * Use `CreateInputs::created_address()` getter (now cached).
+* `Host::selfdestruct` signature changed to support OOG on cold load for target account.
+* Inspector `log` function renamed:
+  * `Inspector::log` renamed to `log` and `log_full`.
+  * `log_full` default impl calls `log`.
+  * `log_full` has `Interpreter` input while `log` does not.
+  * `log` is called in places where Interpreter is not found.
+* `PrecompileError::Other` now contains `Cow<'static, str>` instead of `&'static str`.
+  * Allows setting both `&'static str` (no perf penalty) and `String` if needed.
+* `JournaledAccount` struct added for tracking account changes.
+  * `JournalTr` functions that fetch account now return a ref.
+  * New function `load_account_mut` returns `JournaledAccount`.
+* `JournalTr::load_account_code` deprecated, renamed to `JournalTr::load_account_with_code`.
+* `JournalTr::warm_account_and_storage` and `JournalTr::warm_account` removed.
+  * Access list is now separate from the main Journal EvmState.
+  * Use `JournalTr::warm_access_list` to import access list.
+* Declarative macros `tri!`, `gas_or_fail!`, `otry!` removed from `revm-interpreter`.
+* `MemoryGas` API signature changes.
+* Removed deprecated methods including `into_plain_state`, `regenerate_hash`.
+* `State.bal_state` field added (breaks struct literal constructors).
+* `DatabaseCommitExt::drain_balances` and `increment_balances` added.
+* First precompile error now bubbles up with detailed error messages.
+  * New `PrecompileError` variants added.
+
+# 102 tag ( revm v33.1.0)
+
+No breaking changes
+
+# 101 tag ( revm v33.1.0)
+
+No breaking changes
+
+# v100 tag (revm v33.0.0)
+
+* Additionally to v99 version:
+  * `Host::selfdestruct` function got changed to support oog on cold load for target account. 
+
+# v99 tag ( revm v32.0.0 )
+
+(yanked version)
+
+* Added support for transmitting Logs set from precompiles.
+   * `Inspector::log` function got renamed to `log` and `log_full`
+   * `log_full` default impl will call `log`
+   * difference is that `log_full` has `Interpreter` input while `log` does not
+     and `log` will be called in places where Interpreter is not found.
+* `PrecompileError` now contains `Other` as `Cow<'static, str>`
+   * It allows setting both `&'static str` that is without perf penalty and `String` if needed.
+
+# v98 tag
+
+No breaking changes.
+
+# v97 tag
+
+No breaking changes.
+
+# v96 tag
+
+No breaking changes.
+
+# v95 tag ( revm v31.0.0)
+
+* Cfg added `memory_limit()` function
+* `JournaledAccount` have been added that wraps account changes, touching and creating journal entry.
+  * Past function that fetches account now return a ref and new function `load_account_mut` now return `JournaledAccount`
+  * `JournalEntry` type is added to `JournalTr` so JournaledAccount can create it.
+* `JournalTr::load_account_code` is deprecated/renamed to `JournalTr::load_account_with_code`
+* `JournalTr::warm_account_and_storage` and `JournalTr::warm_account` are removed as access list is now separate from the main
+  Journal EvmState. Function that imports access list to the Journal is `JournalTr::warm_access_list`
+
+# v94 tag ( op-revm )
+
+No breaking changes
+
+# v93 tag ( op-revm )
+
+No breaking changes
+
+# v93 tag ( revm v30.1.0)
+
+No breaking changes
+
+# v92 tag ( revm v30.1.2)
+
+No breaking changes
+
 # v91 tag ( revm v30.1.1)
 
 No breaking changes

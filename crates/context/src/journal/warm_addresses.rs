@@ -3,9 +3,18 @@
 //! It is used to optimize access to precompile addresses.
 
 use bitvec::{bitvec, vec::BitVec};
-use primitives::{short_address, Address, HashSet, SHORT_ADDRESS_CAP};
+use context_interface::journaled_state::JournalLoadError;
+use primitives::{short_address, Address, HashMap, HashSet, StorageKey, SHORT_ADDRESS_CAP};
 
 /// Stores addresses that are warm loaded. Contains precompiles and coinbase address.
+///
+/// It contains precompiles addresses that are not changed frequently and AccessList that
+/// is changed per transaction.
+///
+/// [WarmAddresses::precompiles] will always contain all precompile addresses.
+///
+/// As precompiles addresses are usually very small, precompile_short_addresses will
+/// contain bitset of shrunk precompile address.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct WarmAddresses {
@@ -15,9 +24,11 @@ pub struct WarmAddresses {
     /// will be stored in this bit vector for faster access.
     precompile_short_addresses: BitVec,
     /// `true` if all precompiles are short addresses.
-    all_short_addresses: bool,
+    precompile_all_short_addresses: bool,
     /// Coinbase address.
     coinbase: Option<Address>,
+    /// Access list
+    access_list: HashMap<Address, HashSet<StorageKey>>,
 }
 
 impl Default for WarmAddresses {
@@ -33,8 +44,9 @@ impl WarmAddresses {
         Self {
             precompile_set: HashSet::default(),
             precompile_short_addresses: bitvec![0; SHORT_ADDRESS_CAP],
-            all_short_addresses: true,
+            precompile_all_short_addresses: true,
             coinbase: None,
+            access_list: HashMap::default(),
         }
     }
 
@@ -64,7 +76,7 @@ impl WarmAddresses {
             }
         }
 
-        self.all_short_addresses = all_short_addresses;
+        self.precompile_all_short_addresses = all_short_addresses;
         self.precompile_set = addresses;
     }
 
@@ -74,10 +86,29 @@ impl WarmAddresses {
         self.coinbase = Some(address);
     }
 
+    /// Set the access list.
+    #[inline]
+    pub fn set_access_list(&mut self, access_list: HashMap<Address, HashSet<StorageKey>>) {
+        self.access_list = access_list;
+    }
+
+    /// Returns the access list.
+    #[inline]
+    pub fn access_list(&self) -> &HashMap<Address, HashSet<StorageKey>> {
+        &self.access_list
+    }
+
     /// Clear the coinbase address.
     #[inline]
     pub fn clear_coinbase(&mut self) {
         self.coinbase = None;
+    }
+
+    /// Clear the coinbase and access list.
+    #[inline]
+    pub fn clear_coinbase_and_access_list(&mut self) {
+        self.coinbase = None;
+        self.access_list.clear();
     }
 
     /// Returns true if the address is warm loaded.
@@ -85,6 +116,11 @@ impl WarmAddresses {
     pub fn is_warm(&self, address: &Address) -> bool {
         // check if it is coinbase
         if Some(*address) == self.coinbase {
+            return true;
+        }
+
+        // if it is part of access list.
+        if self.access_list.contains_key(address) {
             return true;
         }
 
@@ -98,19 +134,44 @@ impl WarmAddresses {
             return self.precompile_short_addresses[short_address];
         }
 
-        // if all precompiles are short addresses, it is cold loaded.
-        if self.all_short_addresses {
-            return false;
+        if !self.precompile_all_short_addresses {
+            // in the end check if it is inside precompile set
+            return self.precompile_set.contains(address);
         }
 
-        // in the end check if it is inside precompile set
-        self.precompile_set.contains(address)
+        false
+    }
+
+    /// Returns true if the storage is warm loaded.
+    #[inline]
+    pub fn is_storage_warm(&self, address: &Address, key: &StorageKey) -> bool {
+        if let Some(access_list) = self.access_list.get(address) {
+            return access_list.contains(key);
+        }
+
+        false
     }
 
     /// Returns true if the address is cold loaded.
     #[inline]
     pub fn is_cold(&self, address: &Address) -> bool {
         !self.is_warm(address)
+    }
+
+    /// Checks if the address is cold loaded and returns an error if it is and skip_cold_load is true.
+    #[inline(never)]
+    pub fn check_is_cold<E>(
+        &self,
+        address: &Address,
+        skip_cold_load: bool,
+    ) -> Result<bool, JournalLoadError<E>> {
+        let is_cold = self.is_cold(address);
+
+        if is_cold && skip_cold_load {
+            return Err(JournalLoadError::ColdLoadSkipped);
+        }
+
+        Ok(is_cold)
     }
 }
 
@@ -146,7 +207,7 @@ mod tests {
         assert!(warm_addresses.is_warm(&coinbase_addr));
 
         // Test clearing coinbase
-        warm_addresses.clear_coinbase();
+        warm_addresses.clear_coinbase_and_access_list();
         assert!(warm_addresses.coinbase.is_none());
         assert!(!warm_addresses.is_warm(&coinbase_addr));
     }
