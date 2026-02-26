@@ -346,13 +346,10 @@ impl<SPEC> CfgEnv<SPEC> {
         self.enable_eip7702 = true;
         use context_interface::cfg::gas_params::GasId;
         use primitives::eip7702;
-        self.gas_params.override_gas(
-            [(
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            )]
-            .into_iter(),
-        );
+        self.gas_params.override_gas([(
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        )]);
         self
     }
 
@@ -361,16 +358,13 @@ impl<SPEC> CfgEnv<SPEC> {
     pub fn enable_eip_7623(mut self) -> CfgEnv<SPEC> {
         self.enable_eip7623 = true;
         use context_interface::cfg::{gas, gas_params::GasId};
-        self.gas_params.override_gas(
-            [
-                (
-                    GasId::tx_floor_cost_per_token(),
-                    gas::TOTAL_COST_FLOOR_PER_TOKEN,
-                ),
-                (GasId::tx_floor_cost_base_gas(), 21000),
-            ]
-            .into_iter(),
-        );
+        self.gas_params.override_gas([
+            (
+                GasId::tx_floor_cost_per_token(),
+                gas::TOTAL_COST_FLOOR_PER_TOKEN,
+            ),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]);
         self
     }
 

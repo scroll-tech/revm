@@ -183,17 +183,14 @@ fn bn254_pair_test_tx(
     let input = Bytes::from([1; GRANITE_MAX_INPUT_SIZE + 2]);
     let mut gas_params = GasParams::new_spec(spec.into());
     if spec >= OpSpecId::ISTHMUS {
-        gas_params.override_gas(
-            [
-                (
-                    GasId::tx_eip7702_per_empty_account_cost(),
-                    eip7702::PER_EMPTY_ACCOUNT_COST,
-                ),
-                (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-                (GasId::tx_floor_cost_base_gas(), 21000),
-            ]
-            .into_iter(),
-        );
+        gas_params.override_gas([
+            (
+                GasId::tx_eip7702_per_empty_account_cost(),
+                eip7702::PER_EMPTY_ACCOUNT_COST,
+            ),
+            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+            (GasId::tx_floor_cost_base_gas(), 21000),
+        ]);
     }
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
@@ -329,17 +326,14 @@ fn g1_msm_test_tx(
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::G1_MSM_INPUT_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs1_msm_gas = bls12_381_utils::msm_required_gas(
@@ -371,17 +365,14 @@ fn test_halted_tx_call_bls12_381_g1_msm_input_wrong_size() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::G1_MSM_INPUT_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs1_msm_gas = bls12_381_utils::msm_required_gas(
@@ -430,17 +421,14 @@ fn test_halted_tx_call_bls12_381_g1_msm_out_of_gas() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::G1_MSM_INPUT_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs1_msm_gas = bls12_381_utils::msm_required_gas(
@@ -586,17 +574,14 @@ fn g2_msm_test_tx(
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::G2_MSM_INPUT_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs2_msm_gas = bls12_381_utils::msm_required_gas(
@@ -628,17 +613,14 @@ fn test_halted_tx_call_bls12_381_g2_msm_input_wrong_size() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::G2_MSM_INPUT_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs2_msm_gas = bls12_381_utils::msm_required_gas(
@@ -687,17 +669,14 @@ fn test_halted_tx_call_bls12_381_g2_msm_out_of_gas() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::G2_MSM_INPUT_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let gs2_msm_gas = bls12_381_utils::msm_required_gas(
@@ -769,17 +748,14 @@ fn bl12_381_pairing_test_tx(
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::PAIRING_INPUT_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
@@ -809,17 +785,14 @@ fn test_halted_tx_call_bls12_381_pairing_input_wrong_size() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::PAIRING_INPUT_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let pairing_gas: u64 =
@@ -865,17 +838,14 @@ fn test_halted_tx_call_bls12_381_pairing_out_of_gas() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::PAIRING_INPUT_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
     let pairing_gas: u64 =
@@ -943,17 +913,14 @@ fn test_halted_tx_call_bls12_381_map_fp_to_g1_out_of_gas() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::PADDED_FP_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
@@ -997,17 +964,14 @@ fn test_halted_tx_call_bls12_381_map_fp_to_g1_input_wrong_size() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::PADDED_FP_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
@@ -1051,17 +1015,14 @@ fn test_halted_tx_call_bls12_381_map_fp2_to_g2_out_of_gas() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::PADDED_FP2_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
@@ -1143,17 +1104,14 @@ fn test_halted_tx_call_bls12_381_map_fp2_to_g2_input_wrong_size() {
     const SPEC_ID: OpSpecId = OpSpecId::ISTHMUS;
     let input = Bytes::from([1; bls12_381_const::PADDED_FP2_LENGTH]);
     let mut gas_params = GasParams::new_spec(SPEC_ID.into());
-    gas_params.override_gas(
-        [
-            (
-                GasId::tx_eip7702_per_empty_account_cost(),
-                eip7702::PER_EMPTY_ACCOUNT_COST,
-            ),
-            (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
-            (GasId::tx_floor_cost_base_gas(), 21000),
-        ]
-        .into_iter(),
-    );
+    gas_params.override_gas([
+        (
+            GasId::tx_eip7702_per_empty_account_cost(),
+            eip7702::PER_EMPTY_ACCOUNT_COST,
+        ),
+        (GasId::tx_floor_cost_per_token(), TOTAL_COST_FLOOR_PER_TOKEN),
+        (GasId::tx_floor_cost_base_gas(), 21000),
+    ]);
     let InitialAndFloorGas { initial_gas, .. } =
         gas_params.initial_tx_gas(&input[..], false, 0, 0, 0);
 
